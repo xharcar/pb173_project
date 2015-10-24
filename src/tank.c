@@ -3,7 +3,8 @@
 int main()
 {
     printf("tank.c: ");
-    printf(logger);
+    printf(test_msg);
+    printf("Binary name: "TANK"\n");
     return 0;
 }
 

@@ -3,6 +3,7 @@
 int main()
 {
     printf("tankclient.c: ");
-    printf(logger);
+    printf(test_msg);
+    printf("Binary name: "TANKCLIENT"\n");
     return 0;
 }
