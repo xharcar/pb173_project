@@ -1,11 +1,82 @@
 #include "world.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <getopt.h>
 
-int main()
+
+int arg_height,arg_width,redTanks,greenTanks,respawns;
+
+
+int printHelp()
 {
-    /* parse arguments */
+    printf("=====================================================\n");
+    printf("|         PB173 Internet Of Tanks presents:  WORLD  |\n");;
+    printf("-----------------------------------------------------\n");
+    printf("                    USAGE                            \n");
+    printf("  -h | --help           Show this help                   \n");
+    printf("  --green-tanks [n]     create n green tanks             \n");
+    printf("  --red-tanks [n]       create n red tanks               \n");
+    printf("  --total-respawn [n]   number of tanks to be    \n");
+    printf("                        respawned in both teams \n");
+    printf("  --area-size [n] [m]   size of area NxM             \n");
+    printf("=====================================================\n");
+
+    return 1;
+}
+
+int printError()
+{
+    fprintf(stderr, "Wrong arguments\n");
+    return 1;
+}
+
+int parseArgs(int argc, char *argv[])
+{
+    struct option longopts[] = {
+       { "green-tanks",     required_argument,       NULL,  'g'   },
+       { "red-tanks",    required_argument, NULL,   'r' },
+       { "total-respawn",    required_argument, NULL,   'w' },
+       { "area-size",    required_argument, NULL,   'a' },
+       { "help",    no_argument,       NULL,    'h' },
+      { 0, 0, 0, 0 }
+    };
+    int option_index = 0;
+    int c;
+    while ((c = getopt_long(argc, argv, "g:r:w:a:h", longopts, NULL)) != -1) {
+        switch (c) {
+        case 'a':
+            arg_width = atoi(argv[optind-1]);
+            arg_height = atoi(argv[optind]);
+            break;
+        case 'g':   greenTanks = atoi(optarg);
+            break;
+        case 'r':   redTanks = atoi(optarg);
+            break;
+        case 'w' :  respawns = atoi(optarg);
+            break;
+        case 'h':  return printHelp();
+            break;
+        default:  return printError();
+        }
+
+    }
+   // printf("X: %i, Y: %i\n", areaX, areaY);
+
+    if(arg_height<=0 || arg_width<=0)   //we need both opts, redtanks, respawn and greentanks can be zero
+        return printError();
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    if(parseArgs(argc, argv) == 1)  //parse arguments
+        return 1;
     /* example arguments */
-    int arg_height = 15;
-    int arg_width = 40;
+//    arg_height = 15;
+//    arg_width = 40;
 
     worldloop(arg_height, arg_width);
 
@@ -94,6 +165,7 @@ bool add_tank(World * world, int x, int y, int tank_color)
 
     return true;
 }
+<<<<<<< HEAD
 
 void spawn_tank_process()
 {
@@ -105,3 +177,5 @@ void spawn_tank_process()
         execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
     }
 }
+=======
+>>>>>>> 709229837b91d3a8705a6e64b5f179e416283643
