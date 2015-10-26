@@ -1,10 +1,4 @@
 #include "tank.h"
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-#include <getopt.h>
 
 
 int maxFlag, minFlag, sleepMax, sleepMin;

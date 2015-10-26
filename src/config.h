@@ -2,6 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <ctype.h>
+#include <sys/types.h>
 
 #define BIN_DIR "../src"
 #define WORLD_BIN      BIN_DIR "/" "world"

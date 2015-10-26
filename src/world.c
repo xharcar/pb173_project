@@ -1,50 +1,37 @@
 #include "world.h"
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-#include <getopt.h>
 
+int arg_height, arg_width, tanks_red, tanks_green, respawns, tanks_number;
+int green_kills = 0, red_kills = 0;
 
-int arg_height,arg_width,redTanks,greenTanks,respawns;
-int tanks_number;
-int green_kills = 0;
-int red_kills = 0;
-
-
-int printHelp()
+void print_help()
 {
     printf("=====================================================\n");
     printf("|         PB173 Internet Of Tanks presents:  WORLD  |\n");;
     printf("-----------------------------------------------------\n");
     printf("                    USAGE                            \n");
-    printf("  -h | --help           Show this help                   \n");
-    printf("  --green-tanks [n]     create n green tanks             \n");
-    printf("  --red-tanks [n]       create n red tanks               \n");
-    printf("  --total-respawn [n]   number of tanks to be    \n");
-    printf("                        respawned in both teams \n");
+    printf("  -h | --help           Show this help               \n");
+    printf("  --green-tanks [n]     create n green tanks         \n");
+    printf("  --red-tanks [n]       create n red tanks           \n");
+    printf("  --total-respawn [n]   number of tanks to be        \n");
+    printf("                        respawned in both teams      \n");
     printf("  --area-size [n] [m]   size of area NxM             \n");
     printf("=====================================================\n");
-
-    return 1;
 }
 
-int printError()
+void print_error()
 {
     fprintf(stderr, "Wrong arguments\n");
-    return 1;
 }
 
-int parseArgs(int argc, char *argv[])
+void parse_args(int argc, char *argv[])
 {
     struct option longopts[] = {
-       { "green-tanks",     required_argument,       NULL,  'g'   },
-       { "red-tanks",    required_argument, NULL,   'r' },
-       { "total-respawn",    required_argument, NULL,   'w' },
-       { "area-size",    required_argument, NULL,   'a' },
-       { "help",    no_argument,       NULL,    'h' },
-      { 0, 0, 0, 0 }
+        { "green-tanks",   required_argument, NULL, 'g' },
+        { "red-tanks",     required_argument, NULL, 'r' },
+        { "total-respawn", required_argument, NULL, 'w' },
+        { "area-size",     required_argument, NULL, 'a' },
+        { "help",          no_argument,       NULL, 'h' },
+        { 0, 0, 0, 0 }
     };
     int option_index = 0;
     int c;
@@ -54,32 +41,35 @@ int parseArgs(int argc, char *argv[])
             arg_width = atoi(argv[optind-1]);
             arg_height = atoi(argv[optind]);
             break;
-        case 'g':   greenTanks = atoi(optarg);
+        case 'g':
+            tanks_green = atoi(optarg);
             break;
-        case 'r':   redTanks = atoi(optarg);
+        case 'r':
+            tanks_red = atoi(optarg);
             break;
-        case 'w' :  respawns = atoi(optarg);
+        case 'w' :
+            respawns = atoi(optarg);
             break;
-        case 'h':  return printHelp();
-            break;
-        default:  return printError();
+        case 'h':
+            print_help();
+            exit(0);
+        default:
+            print_error();
+            exit(-1);
         }
-
     }
-   // printf("X: %i, Y: %i\n", areaX, areaY);
-
-    if(arg_height<=0 || arg_width<=0)   //we need both opts, redtanks, respawn and greentanks can be zero
-        return printError();
-    return 0;
+    // printf("X: %i, Y: %i\n", areaX, areaY);
+    /* we need both opts, redtanks, respawn and greentanks can be zero */
+    if(arg_height<=0 || arg_width<=0) {
+        print_error();
+        exit(-1);
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    if(parseArgs(argc, argv) == 1)  //parse arguments
-        return 1;
+    parse_args(argc, argv);
 
-    //arg_height = 15; arg_width = 30;
-    //greenTanks = 2; redTanks = 3; respawns = 1;
     worldloop(arg_height, arg_width);
 
     return 0;
@@ -93,16 +83,16 @@ void worldloop(int height, int width)
     init_pair(GREEN, COLOR_GREEN, COLOR_GREEN);
 
     World * w = init_world(height, width);
-    int tanks_number = redTanks + greenTanks;
+    int tanks_number = tanks_red + tanks_green;
 
     refresh();
 
     /* Adding initial number of tanks */
     int i;
-    for (i = 0; i < greenTanks; i++) {
+    for (i = 0; i < tanks_green; i++) {
         add_tank(w, rand()%width, rand()%height, GREEN);
     }
-    for (i = 0; i < redTanks; i++) {
+    for (i = 0; i < tanks_red; i++) {
         add_tank(w, rand()%width, rand()%height, RED);
     }
     refresh();
