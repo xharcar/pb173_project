@@ -1,13 +1,20 @@
 #include "config.h"
 #include <ncurses.h>
+#include <unistd.h>
+#include <ctype.h>
+
+#define COMPILE_TIME_WIDTH 80
 
 enum TANK { EMPTY, RED, GREEN };
 
+//T foo( size_t cols, int (*arr)[cols], size_t rows)
+
 typedef struct {
-    int ** zone;
-    WINDOW * win;
     int height;
     int width;
+    int (* zone)[COMPILE_TIME_WIDTH];
+//    int zone[100][100];
+    WINDOW * win;
 } World;
 
 void worldloop(int height, int width);
@@ -22,3 +29,4 @@ World * init_world(int height, int width);
  */
 bool add_tank(World * world, int x, int y, int tank_color);
 
+void spawn_tank_process();
