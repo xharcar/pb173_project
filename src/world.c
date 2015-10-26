@@ -93,9 +93,12 @@ void worldloop(int height, int width)
     World * w = init_world(height, width);
 
     /* Add initial number of tanks */
-    /* add_tank() */
-
-    add_tank(w, 4, 1, RED);
+    for (int i = 0; i < greenTanks; i++) {
+        add_tank(w, rand()%width, rand()%height, GREEN);
+    }
+    for (int i = 0; i < redTanks; i++) {
+        add_tank(w, rand()%width, rand()%height, RED);
+    }
 
     int status;
     while (status) {
@@ -154,7 +157,7 @@ bool add_tank(World * world, int x, int y, int tank_color)
     }
     (world->zone)[x][y] = tank_color;
 
-    spawn_tank_process();
+    spawn_tank_process(world, tank_color);
 
     wmove(world->win, y, x);
     /* fixme: Vykreslit tank barevne */
@@ -165,17 +168,19 @@ bool add_tank(World * world, int x, int y, int tank_color)
 
     return true;
 }
-<<<<<<< HEAD
 
-void spawn_tank_process()
+void spawn_tank_process(World * w, int tank_color)
 {
     pid_t child = fork();
     if (child == -1) {
         perror("Failed to spawn tank process");
         exit(-1);
     } else if (child == 0) {
-        execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
+        //execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
+        system(TANK_BIN" --sleep-max=5 sleep-min=1");
+        if (respawns > 0) {
+            add_tank(w, rand()%w->width, rand()%w->height, tank_color);
+        }
     }
 }
-=======
->>>>>>> 709229837b91d3a8705a6e64b5f179e416283643
+
