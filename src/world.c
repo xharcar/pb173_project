@@ -172,7 +172,7 @@ void spawn_tank_process(World * w, int tank_color)
         exit(-1);
     } else if (child == 0) {
         //execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
-        system(TANK_BIN" --sleep-max=5 sleep-min=1");
+        system("sh -c "TANK_BIN" --sleep-max 5 sleep-min 1");
         tanks_number--;
         if (respawns > 0) {
             add_tank(w, rand()%w->width, rand()%w->height, tank_color);
