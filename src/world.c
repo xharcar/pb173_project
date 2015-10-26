@@ -9,6 +9,8 @@
 
 int arg_height,arg_width,redTanks,greenTanks,respawns;
 int tanks_number;
+int green_kills = 0;
+int red_kills = 0;
 
 
 int printHelp()
@@ -76,6 +78,8 @@ int main(int argc, char *argv[])
     if(parseArgs(argc, argv) == 1)  //parse arguments
         return 1;
 
+    //arg_height = 15; arg_width = 30;
+    //greenTanks = 2; redTanks = 3; respawns = 1;
     worldloop(arg_height, arg_width);
 
     return 0;
@@ -89,22 +93,31 @@ void worldloop(int height, int width)
     init_pair(GREEN, COLOR_GREEN, COLOR_GREEN);
 
     World * w = init_world(height, width);
-    int tanks_number;
+    int tanks_number = redTanks + greenTanks;
+
+    refresh();
 
     /* Adding initial number of tanks */
-    for (int i = 0; i < greenTanks; i++) {
+    int i;
+    for (i = 0; i < greenTanks; i++) {
         add_tank(w, rand()%width, rand()%height, GREEN);
     }
-    for (int i = 0; i < redTanks; i++) {
+    for (i = 0; i < redTanks; i++) {
         add_tank(w, rand()%width, rand()%height, RED);
     }
+    refresh();
 
     while (tanks_number > 0);
+
+    refresh();
 
     delwin(w->win);
     endwin();
 
     /* Print statistics */
+    printf("Area size: %d %d\n", height, width);
+    printf("Red kills: %d\n", red_kills);
+    printf("Green kills: %d\n", green_kills);
 
     /* Free resources */
     if (w->zone != NULL) {
@@ -147,7 +160,7 @@ bool add_tank(World * world, int x, int y, int tank_color)
     if ( (world->zone)[x][y] != EMPTY) {
         return false;
     }
-    if (tank_color != RED || tank_color != GREEN) {
+    if (tank_color != RED && tank_color != GREEN) {
         return false;
     }
     (world->zone)[x][y] = tank_color;
@@ -157,7 +170,9 @@ bool add_tank(World * world, int x, int y, int tank_color)
     wmove(world->win, y, x);
     /* fixme: Draw the tank in color */
     attrset(COLOR_PAIR(tank_color));
-    wprintw(world->win, "T");
+    //wprintw(world->win, "T");
+    mvprintw(y, x, "T");
+    attroff(COLOR_PAIR(tank_color));
     /* fixme: Make the cursor disappear */
     wrefresh(world->win);
 
@@ -166,15 +181,23 @@ bool add_tank(World * world, int x, int y, int tank_color)
 
 void spawn_tank_process(World * w, int tank_color)
 {
+    tanks_number--;
+    if (tank_color == RED) {
+        green_kills++;
+    } else {
+        red_kills++;
+    }
     pid_t child = fork();
     if (child == -1) {
         perror("Failed to spawn tank process");
         exit(-1);
     } else if (child == 0) {
         //execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
-        system("sh -c "TANK_BIN" --sleep-max 5 sleep-min 1");
-        tanks_number--;
+        system(TANK_BIN" --sleep-max 5 sleep-min 1");
+    } else {
         if (respawns > 0) {
+            respawns--;
+            tanks_number++;
             add_tank(w, rand()%w->width, rand()%w->height, tank_color);
         }
     }

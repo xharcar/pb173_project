@@ -2,6 +2,8 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <sys/types.h>
+
 
 #define COMPILE_TIME_WIDTH 80
 
@@ -29,4 +31,7 @@ World * init_world(int height, int width);
  */
 bool add_tank(World * world, int x, int y, int tank_color);
 
+/*
+ *
+ */
 void spawn_tank_process();
