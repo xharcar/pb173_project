@@ -8,6 +8,7 @@
 
 
 int arg_height,arg_width,redTanks,greenTanks,respawns;
+int tanks_number;
 
 
 int printHelp()
@@ -74,9 +75,6 @@ int main(int argc, char *argv[])
 {
     if(parseArgs(argc, argv) == 1)  //parse arguments
         return 1;
-    /* example arguments */
-//    arg_height = 15;
-//    arg_width = 40;
 
     worldloop(arg_height, arg_width);
 
@@ -91,8 +89,9 @@ void worldloop(int height, int width)
     init_pair(GREEN, COLOR_GREEN, COLOR_GREEN);
 
     World * w = init_world(height, width);
+    int tanks_number;
 
-    /* Add initial number of tanks */
+    /* Adding initial number of tanks */
     for (int i = 0; i < greenTanks; i++) {
         add_tank(w, rand()%width, rand()%height, GREEN);
     }
@@ -100,12 +99,8 @@ void worldloop(int height, int width)
         add_tank(w, rand()%width, rand()%height, RED);
     }
 
-    int status;
-    while (status) {
-        wrefresh(w->win);
-        /* Add respawned tanks */
-    }
-    while (1);
+    while (tanks_number > 0);
+
     delwin(w->win);
     endwin();
 
@@ -160,10 +155,10 @@ bool add_tank(World * world, int x, int y, int tank_color)
     spawn_tank_process(world, tank_color);
 
     wmove(world->win, y, x);
-    /* fixme: Vykreslit tank barevne */
+    /* fixme: Draw the tank in color */
     attrset(COLOR_PAIR(tank_color));
     wprintw(world->win, "T");
-    /* fixme: Nechat zmizet kurzot */
+    /* fixme: Make the cursor disappear */
     wrefresh(world->win);
 
     return true;
@@ -178,6 +173,7 @@ void spawn_tank_process(World * w, int tank_color)
     } else if (child == 0) {
         //execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
         system(TANK_BIN" --sleep-max=5 sleep-min=1");
+        tanks_number--;
         if (respawns > 0) {
             add_tank(w, rand()%w->width, rand()%w->height, tank_color);
         }

@@ -4,6 +4,6 @@ int main()
 {
     printf("tankclient.c: ");
     printf(test_msg);
-    printf("Binary name: "TANKCLIENT"\n");
+    printf("Binary name: "TANKCLIENT_BIN"\n");
     return 0;
 }
