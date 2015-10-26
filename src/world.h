@@ -1,10 +1,5 @@
 #include "config.h"
 #include <ncurses.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <time.h>
-#include <getopt.h>
 
 
 #define COMPILE_TIME_WIDTH 80
