@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #define BIN_DIR "../src"
-#define WORLD      BIN_DIR "/" "world"
-#define TANK       BIN_DIR "/" "tank"
-#define TANKCLIENT BIN_DIR "/" "tankclent"
+#define WORLD_BIN      BIN_DIR "/" "world"
+#define TANK_BIN       BIN_DIR "/" "tank"
+#define TANKCLIENT_BIN BIN_DIR "/" "tankclent"
 
 #define DEBUG_MSG(level,format,args...) \
     if(debug_level>=level)\
