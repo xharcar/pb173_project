@@ -85,21 +85,15 @@ void worldloop(int height, int width)
     World * w = init_world(height, width);
     int tanks_number = tanks_red + tanks_green;
 
-    refresh();
-
     /* Adding initial number of tanks */
-    int i;
-    for (i = 0; i < tanks_green; i++) {
+    for (int i = 0; i < tanks_green; i++) {
         add_tank(w, rand()%width, rand()%height, GREEN);
     }
-    for (i = 0; i < tanks_red; i++) {
+    for (int i = 0; i < tanks_red; i++) {
         add_tank(w, rand()%width, rand()%height, RED);
     }
-    refresh();
 
     while (tanks_number > 0);
-
-    refresh();
 
     delwin(w->win);
     endwin();
@@ -183,7 +177,7 @@ void spawn_tank_process(World * w, int tank_color)
         exit(-1);
     } else if (child == 0) {
         //execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
-        system(TANK_BIN" --sleep-max 5 sleep-min 1");
+        system(TANK_BIN" --sleep-max 5 --sleep-min 1");
     } else {
         if (respawns > 0) {
             respawns--;

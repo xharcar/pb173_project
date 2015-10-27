@@ -61,10 +61,6 @@ int parseArgs(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-    printf("tank.c: ");
-    printf(test_msg);
-    printf("Binary name: "TANK_BIN"\n");
-
     if(parseArgs(argc, argv) == 1)  //parse arguments
         return 1;
 

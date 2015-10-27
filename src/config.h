@@ -7,7 +7,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 
-#define BIN_DIR "../src"
+#define BIN_DIR "../bin"
 #define WORLD_BIN      BIN_DIR "/" "world"
 #define TANK_BIN       BIN_DIR "/" "tank"
 #define TANKCLIENT_BIN BIN_DIR "/" "tankclent"
