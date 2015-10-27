@@ -1,4 +1,4 @@
-# World of Tanks
+# Internet of Tanks
 
 ## How to build World of Tanks
 1. Navigate to `bin` directory in the project:

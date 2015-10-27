@@ -1,4 +1,4 @@
-project(World-of-Tanks)
+project(Internet-of-Tanks)
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lncurses")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -pedantic -Wall -Wextra -ggdb3")
