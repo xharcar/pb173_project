@@ -67,12 +67,8 @@ int main(int argc, char *argv[])
     srand(time(NULL));
     int sleepSecs;
     sleepSecs = rand() % (sleepMax-sleepMin) + sleepMin;
-    printf("sleep for %i seconds", sleepSecs);
-    printf("\n");
 
     usleep(sleepSecs*1000000);
-
-
 
     return 0;
 }

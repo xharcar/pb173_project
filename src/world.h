@@ -1,34 +1,40 @@
 #include "config.h"
 #include <ncurses.h>
 
-
 #define COMPILE_TIME_WIDTH 80
 
-enum TANK { EMPTY, RED, GREEN };
 
-//T foo( size_t cols, int (*arr)[cols], size_t rows)
+enum TANK { EMPTY, RED, GREEN };
 
 typedef struct {
     int height;
     int width;
     int (* zone)[COMPILE_TIME_WIDTH];
-//    int zone[100][100];
     WINDOW * win;
 } World;
 
 void worldloop(int height, int width);
 
-/*
- * Initializes world including the spawn of ncurses window
+void init_ncurses();
+
+/**
+ * @brief init_world Initializes world including the spawn of ncurses window
+ * @param height
+ * @param width
+ * @return
  */
 World * init_world(int height, int width);
 
-/*
- * add_tank calls ncurses wrefresh() upon its invocation
- */
 bool add_tank(World * world, int x, int y, int tank_color);
 
-/*
- *
+/**
+ * @brief spawn_tank_process calls fork() and synchroniously spawns tank process
+ * fixme: report statistics
  */
 void spawn_tank_process();
+
+void draw_tank(World * world, int x, int y, int tank_color);
+
+void destroy_tank(World * world, int x, int y);
+
+void print_stats(int height, int width);

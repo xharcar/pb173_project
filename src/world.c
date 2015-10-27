@@ -66,24 +66,53 @@ void parse_args(int argc, char *argv[])
     }
 }
 
+void testdraw_worldloop(int height, int width)
+{
+    tanks_red = 2, tanks_green = 2;
+    tanks_number = tanks_red + tanks_green;
+    respawns = 0;
+
+    init_ncurses();
+
+    World * w = init_world(height, width);
+
+    draw_tank(w, 0, 0, GREEN);
+    draw_tank(w, 2, 2, GREEN);
+    draw_tank(w, 4, 4, RED);
+    for(int i = 0; i < 1000000000; i++);
+    destroy_tank(w, 4, 4);
+
+    while (1);
+
+    delwin(w->win);
+    endwin();
+
+    /* Free resources */
+    if (w->zone != NULL) {
+        free(w->zone);
+    }
+    if (w != NULL) {
+        free(w);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     parse_args(argc, argv);
 
     worldloop(arg_height, arg_width);
+//    testdraw_worldloop(8, 15);
 
     return 0;
 }
 
 void worldloop(int height, int width)
 {
-    initscr();
-    start_color();
-    init_pair(RED, COLOR_RED, COLOR_RED);
-    init_pair(GREEN, COLOR_GREEN, COLOR_GREEN);
+    init_ncurses();
 
     World * w = init_world(height, width);
-    int tanks_number = tanks_red + tanks_green;
+
+    tanks_number = tanks_red + tanks_green;
 
     /* Adding initial number of tanks */
     for (int i = 0; i < tanks_green; i++) {
@@ -99,9 +128,7 @@ void worldloop(int height, int width)
     endwin();
 
     /* Print statistics */
-    printf("Area size: %d %d\n", height, width);
-    printf("Red kills: %d\n", red_kills);
-    printf("Green kills: %d\n", green_kills);
+    print_stats(height, width);
 
     /* Free resources */
     if (w->zone != NULL) {
@@ -111,6 +138,21 @@ void worldloop(int height, int width)
         free(w);
     }
 }
+
+void init_ncurses()
+{
+    initscr();
+    start_color();
+    if (has_colors()) {
+        DEBUG_MSG(6, "has_color, TRUE");
+    } else {
+        DEBUG_MSG(6, "has_color, FALSE");
+    }
+    init_pair(RED, COLOR_RED, COLOR_RED);
+    init_pair(GREEN, COLOR_GREEN, COLOR_GREEN);
+    curs_set(0);
+}
+
 
 World * init_world(int height, int width)
 {
@@ -130,8 +172,12 @@ World * init_world(int height, int width)
 
     local_world->height = height;
     local_world->width = width;
-    local_world->win = newwin(height, width, 0, 0);
+    /* Add padding for borders */
+    local_world->win = newwin(height + 2, width + 2, 0, 0);
     local_world->zone = zone;
+
+    box(local_world->win, 0, 0);
+    wrefresh(local_world->win);
 
     return local_world;
 }
@@ -149,18 +195,30 @@ bool add_tank(World * world, int x, int y, int tank_color)
     }
     (world->zone)[x][y] = tank_color;
 
+    draw_tank(world, x, y, tank_color);
     spawn_tank_process(world, tank_color);
 
-    wmove(world->win, y, x);
-    /* fixme: Draw the tank in color */
-    attrset(COLOR_PAIR(tank_color));
-    //wprintw(world->win, "T");
-    mvprintw(y, x, "T");
-    attroff(COLOR_PAIR(tank_color));
-    /* fixme: Make the cursor disappear */
-    wrefresh(world->win);
-
     return true;
+}
+
+void draw_tank(World * world, int x, int y, int tank_color)
+{
+    /* Compensate for border padding */
+    x++, y++;
+    wattrset(world->win, COLOR_PAIR(tank_color));
+    mvwaddch(world->win, y, x, ACS_BLOCK);
+    wattroff(world->win, COLOR_PAIR(tank_color));
+    wrefresh(world->win);
+}
+
+void destroy_tank(World * world, int x, int y)
+{
+    /* Compensate for border padding */
+    x++; y++;
+    wattrset(world->win, COLOR_PAIR(0));
+    mvwaddch(world->win, y, x, ' ');
+    wattroff(world->win, COLOR_PAIR(0));
+    wrefresh(world->win);
 }
 
 void spawn_tank_process(World * w, int tank_color)
@@ -185,5 +243,12 @@ void spawn_tank_process(World * w, int tank_color)
             add_tank(w, rand()%w->width, rand()%w->height, tank_color);
         }
     }
+}
+
+void print_stats(int height, int width)
+{
+    printf("Area size: %d %d\n", height, width);
+    printf("Red kills: %d\n", red_kills);
+    printf("Green kills: %d\n", green_kills);
 }
 

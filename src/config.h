@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <syslog.h>
 
 #define BIN_DIR "../bin"
 #define WORLD_BIN      BIN_DIR "/" "world"
@@ -14,6 +15,4 @@
 
 #define DEBUG_MSG(level,format,args...) \
     if(debug_level>=level)\
-    {syslog(LOG_WARNING, "%s:%d : "format"\n",__FILE__,__LINE__,##args);}
-
-char * test_msg = "Testing message\n";
+    { syslog(LOG_WARNING, "%s:%d : "format"\n",__FILE__,__LINE__,##args); }
