@@ -76,11 +76,13 @@ void testdraw_worldloop(int height, int width)
 
     World * w = init_world(height, width);
 
+    stats_refresh(w, 0, 0);
     draw_tank(w, 0, 0, GREEN);
     draw_tank(w, 2, 2, GREEN);
     draw_tank(w, 4, 4, RED);
     for(int i = 0; i < 1000000000; i++);
     destroy_tank(w, 4, 4);
+    stats_refresh(w, 3, 9);
 
     while (1);
 
@@ -101,7 +103,7 @@ int main(int argc, char *argv[])
     parse_args(argc, argv);
 
     worldloop(arg_height, arg_width);
-//    testdraw_worldloop(8, 15);
+    //testdraw_worldloop(8, 15);
 
     return 0;
 }
@@ -143,19 +145,20 @@ void init_ncurses()
 {
     initscr();
     start_color();
-    if (has_colors()) {
-        DEBUG_MSG(6, "has_color, TRUE");
-    } else {
-        DEBUG_MSG(6, "has_color, FALSE");
-    }
     init_pair(RED, COLOR_RED, COLOR_RED);
     init_pair(GREEN, COLOR_GREEN, COLOR_GREEN);
     curs_set(0);
 }
 
-
-World * init_world(int height, int width)
+void stats_refresh(World * world, int green_kills, int red_kills)
 {
+    werase(world->win_stats);
+    wprintw(world->win_stats, "Green tanks killed %d\n", green_kills);
+    wprintw(world->win_stats, "Red tanks killed %d\n", red_kills);
+    wrefresh(world->win_stats);
+}
+
+World * init_world(int height, int width) {
     World * local_world = malloc(sizeof(World));
     if (local_world == NULL) {
         perror("Failed to allocate memory for world");
@@ -172,9 +175,10 @@ World * init_world(int height, int width)
 
     local_world->height = height;
     local_world->width = width;
+    local_world->zone = zone;
     /* Add padding for borders */
     local_world->win = newwin(height + 2, width + 2, 0, 0);
-    local_world->zone = zone;
+    local_world->win_stats = newwin(10, 20, 1, width + 2 + 3);
 
     box(local_world->win, 0, 0);
     wrefresh(local_world->win);
@@ -251,4 +255,3 @@ void print_stats(int height, int width)
     printf("Red kills: %d\n", red_kills);
     printf("Green kills: %d\n", green_kills);
 }
-

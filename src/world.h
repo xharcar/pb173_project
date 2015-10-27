@@ -11,6 +11,7 @@ typedef struct {
     int width;
     int (* zone)[COMPILE_TIME_WIDTH];
     WINDOW * win;
+    WINDOW * win_stats;
 } World;
 
 void worldloop(int height, int width);
@@ -24,6 +25,8 @@ void init_ncurses();
  * @return
  */
 World * init_world(int height, int width);
+
+void stats_refresh(World * world, int green_kills, int red_kills);
 
 bool add_tank(World * world, int x, int y, int tank_color);
 
