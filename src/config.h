@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <syslog.h>
 
 #define BIN_DIR "../bin"

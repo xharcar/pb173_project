@@ -28,13 +28,13 @@ World * init_world(int height, int width);
 
 void stats_refresh(World * world, int green_kills, int red_kills);
 
-bool add_tank(World * world, int x, int y, int tank_color);
+pid_t add_tank(World * world, int x, int y, int tank_color);
 
 /**
  * @brief spawn_tank_process calls fork() and synchroniously spawns tank process
  * fixme: report statistics
  */
-void spawn_tank_process();
+pid_t spawn_tank_process();
 
 void draw_tank(World * world, int x, int y, int tank_color);
 

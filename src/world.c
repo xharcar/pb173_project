@@ -66,44 +66,11 @@ void parse_args(int argc, char *argv[])
     }
 }
 
-void testdraw_worldloop(int height, int width)
-{
-    tanks_red = 2, tanks_green = 2;
-    tanks_number = tanks_red + tanks_green;
-    respawns = 0;
-
-    init_ncurses();
-
-    World * w = init_world(height, width);
-
-    stats_refresh(w, 0, 0);
-    draw_tank(w, 0, 0, GREEN);
-    draw_tank(w, 2, 2, GREEN);
-    draw_tank(w, 4, 4, RED);
-    for(int i = 0; i < 1000000000; i++);
-    destroy_tank(w, 4, 4);
-    stats_refresh(w, 3, 9);
-
-    while (1);
-
-    delwin(w->win);
-    endwin();
-
-    /* Free resources */
-    if (w->zone != NULL) {
-        free(w->zone);
-    }
-    if (w != NULL) {
-        free(w);
-    }
-}
-
 int main(int argc, char *argv[])
 {
     parse_args(argc, argv);
 
     worldloop(arg_height, arg_width);
-    //testdraw_worldloop(8, 15);
 
     return 0;
 }
@@ -124,7 +91,15 @@ void worldloop(int height, int width)
         add_tank(w, rand()%width, rand()%height, RED);
     }
 
-    while (tanks_number > 0);
+    while (tanks_number > 0) {
+        wait(NULL);
+        tanks_number--;
+        if (respawns > 0) {
+            respawns--;
+            tanks_number++;
+            add_tank(w, rand()%w->width, rand()%w->height, 1);
+        }
+    }
 
     delwin(w->win);
     endwin();
@@ -148,14 +123,6 @@ void init_ncurses()
     init_pair(RED, COLOR_RED, COLOR_RED);
     init_pair(GREEN, COLOR_GREEN, COLOR_GREEN);
     curs_set(0);
-}
-
-void stats_refresh(World * world, int green_kills, int red_kills)
-{
-    werase(world->win_stats);
-    wprintw(world->win_stats, "Green tanks killed %d\n", green_kills);
-    wprintw(world->win_stats, "Red tanks killed %d\n", red_kills);
-    wrefresh(world->win_stats);
 }
 
 World * init_world(int height, int width) {
@@ -186,23 +153,30 @@ World * init_world(int height, int width) {
     return local_world;
 }
 
-bool add_tank(World * world, int x, int y, int tank_color)
+
+void stats_refresh(World * world, int green_kills, int red_kills)
+{
+    werase(world->win_stats);
+    wprintw(world->win_stats, "Green tanks killed %d\n", green_kills);
+    wprintw(world->win_stats, "Red tanks killed %d\n", red_kills);
+    wrefresh(world->win_stats);
+}
+
+pid_t add_tank(World * world, int x, int y, int tank_color)
 {
     if (x < 0 || x > world->width || y < 0 || y > world->height) {
-        return false;
+        return 0;
     }
     if ( (world->zone)[x][y] != EMPTY) {
-        return false;
+        return 0;
     }
     if (tank_color != RED && tank_color != GREEN) {
-        return false;
+        return 0;
     }
     (world->zone)[x][y] = tank_color;
 
     draw_tank(world, x, y, tank_color);
-    spawn_tank_process(world, tank_color);
-
-    return true;
+    return spawn_tank_process(world, tank_color);
 }
 
 void draw_tank(World * world, int x, int y, int tank_color)
@@ -225,27 +199,16 @@ void destroy_tank(World * world, int x, int y)
     wrefresh(world->win);
 }
 
-void spawn_tank_process(World * w, int tank_color)
+pid_t spawn_tank_process(World * w, int tank_color)
 {
-    tanks_number--;
-    if (tank_color == RED) {
-        green_kills++;
-    } else {
-        red_kills++;
-    }
     pid_t child = fork();
     if (child == -1) {
         perror("Failed to spawn tank process");
         exit(-1);
     } else if (child == 0) {
-        //execl(TANK_BIN, TANK_BIN, "--sleep-max=5", "sleep-min=1", (char *)NULL);
         system(TANK_BIN" --sleep-max 5 --sleep-min 1");
     } else {
-        if (respawns > 0) {
-            respawns--;
-            tanks_number++;
-            add_tank(w, rand()%w->width, rand()%w->height, tank_color);
-        }
+        return child;
     }
 }
 
