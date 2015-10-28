@@ -3,6 +3,9 @@
 int arg_height, arg_width, tanks_red, tanks_green, respawns, tanks_number;
 int green_kills = 0, red_kills = 0;
 
+Tankprocess* red_team;
+Tankprocess* green_team;
+
 void print_help()
 {
     printf("=====================================================\n");
@@ -43,9 +46,11 @@ void parse_args(int argc, char *argv[])
             break;
         case 'g':
             tanks_green = atoi(optarg);
+            green_team = (Tankprocess*) malloc(sizeof(Tankprocess)*tanks_green);
             break;
         case 'r':
             tanks_red = atoi(optarg);
+            red_team = (Tankprocess*) malloc(sizeof(Tankprocess)*tanks_red);
             break;
         case 'w' :
             respawns = atoi(optarg);
@@ -66,12 +71,11 @@ void parse_args(int argc, char *argv[])
     }
 }
 
-int main(int argc, char *argv[])
-{
-    parse_args(argc, argv);
-
+int main(int argc, char** argv){
+    parse_args(argc,argv);
     worldloop(arg_height, arg_width);
-
+    
+    
     return 0;
 }
 
@@ -82,25 +86,74 @@ void worldloop(int height, int width)
     World * w = init_world(height, width);
 
     tanks_number = tanks_red + tanks_green;
-
-    /* Adding initial number of tanks */
-    for (int i = 0; i < tanks_green; i++) {
-        add_tank(w, rand()%width, rand()%height, GREEN);
+            
+    /* Adding initial number of green tanks */
+    int i;
+    for (i = 0; i < tanks_green; i++) {
+        // store tank position for easy access
+        // assuming map <= 65535x65535
+        short xco = rand()%width; 
+        short yco = rand()%height;
+        
+        // initialize tank:
+        // 1) check if process creation was successful; if not, retry
+        // 2) if successful, store appropriate values in structure
+        pid_t tid = add_tank(w, xco, yco, GREEN); // tid = tank id
+        if(tid > 1){
+            init_tank_process(green_team+i,tid,xco,yco);
+        }
+        // fixme:closing read end of pipe in tank
     }
-    for (int i = 0; i < tanks_red; i++) {
-        add_tank(w, rand()%width, rand()%height, RED);
+    
+    /* Adding initial red tanks*/
+    for (i = 0; i < tanks_red; i++) {
+        short xco = rand()%width; 
+        short yco = rand()%height;
+        
+        pid_t tid = add_tank(w, xco, yco, RED);
+        if(tid > 1){
+            init_tank_process(red_team+i,tid,xco,yco);
+        }
+        // fixme:closing read end of pipe in tank
     }
 
     while (tanks_number > 0) {
-        wait(NULL);
+        int respawnflag = 0;
+        pid_t id =  wait(NULL);
         tanks_number--;
-        if (respawns > 0) {
-            respawns--;
-            tanks_number++;
-            add_tank(w, rand()%w->width, rand()%w->height, 1);
+        for(i=0;i<tanks_green;i++){
+            if(respawnflag) break;
+            if(green_team[i].pid == id){
+                respawnflag = 1;
+                if (respawns > 0) {
+                short xco = rand()%width; 
+                short yco = rand()%height;
+                pid_t tid = add_tank(w, xco, yco, GREEN);
+                    if(tid>1){
+                        init_tank_process(green_team+i,tid,xco,yco);
+                        respawns--;
+                        tanks_number++;
+                    }
+                }
+            }
+        }
+        for(i=0;i<tanks_red;i++){
+            if(respawnflag) break;
+            if(red_team[i].pid == id){
+                respawnflag = 1;
+                if (respawns > 0) {
+                short xco = rand()%width; 
+                short yco = rand()%height;
+                pid_t tid = add_tank(w, xco, yco, RED);
+                    if(tid>1){
+                        init_tank_process(red_team+i,tid,xco,yco);
+                        respawns--;
+                        tanks_number++;
+                    }
+                }
+            }
         }
     }
-
     delwin(w->win);
     endwin();
 
@@ -114,8 +167,9 @@ void worldloop(int height, int width)
     if (w != NULL) {
         free(w);
     }
+    
+    
 }
-
 void init_ncurses()
 {
     initscr();
@@ -162,23 +216,6 @@ void stats_refresh(World * world, int green_kills, int red_kills)
     wrefresh(world->win_stats);
 }
 
-pid_t add_tank(World * world, int x, int y, int tank_color)
-{
-    if (x < 0 || x > world->width || y < 0 || y > world->height) {
-        return 0;
-    }
-    if ( (world->zone)[x][y] != EMPTY) {
-        return 0;
-    }
-    if (tank_color != RED && tank_color != GREEN) {
-        return 0;
-    }
-    (world->zone)[x][y] = tank_color;
-
-    draw_tank(world, x, y, tank_color);
-    return spawn_tank_process(world, tank_color);
-}
-
 void draw_tank(World * world, int x, int y, int tank_color)
 {
     /* Compensate for border padding */
@@ -189,6 +226,12 @@ void draw_tank(World * world, int x, int y, int tank_color)
     wrefresh(world->win);
 }
 
+/*
+ * Stops drawing a tank that has been destroyed
+ * Does not end the process of said tank
+ * @param x position of tank relative to X-axis
+ * @param y position of tank relative to Y-axis 
+ */
 void destroy_tank(World * world, int x, int y)
 {
     /* Compensate for border padding */
@@ -199,12 +242,56 @@ void destroy_tank(World * world, int x, int y)
     wrefresh(world->win);
 }
 
+void print_stats(int height, int width)
+{
+    printf("Area size: %d %d\n", height, width);
+    printf("Red kills: %d\n", red_kills);
+    printf("Green kills: %d\n", green_kills);
+}
+
+
+pid_t add_tank(World * world, int x, int y, int tank_color)
+{
+    pid_t rv; // unified return value for all outcomes
+    if (x < 0 || x > world->width || y < 0 || y > world->height) {
+        fprintf(stderr,"Coordinates %d %d outside map boundaries",x,y);
+        rv = -2;
+        return rv;
+    }
+    if ( (world->zone)[x][y] != EMPTY) {
+        fprintf(stderr,"Coordinates %d %d not empty",x,y);
+        rv = -3;
+        return rv;
+    }
+    if (tank_color != RED && tank_color != GREEN) {
+        fprintf(stderr,"Wrong tank color");
+        rv = -4;
+        return rv;
+    }
+    // Fix: checks return nonzero to clearly indicate error
+    // (0 being the "all-clear" by convention)
+    
+    /*
+    (world->zone)[x][y] = tank_color;
+    draw_tank(world, x, y, tank_color);
+     This would draw a tank even if process spawn failed; fixed
+     */ 
+    rv = spawn_tank_process(world, tank_color);
+    if(rv != -1){
+        (world->zone)[x][y] = tank_color;
+        draw_tank(world, x, y, tank_color);
+        
+    }
+    return rv;
+}
+
 pid_t spawn_tank_process(World * w, int tank_color)
 {
     pid_t child = fork();
     if (child == -1) {
         perror("Failed to spawn tank process");
-        exit(-1);
+        return -1;
+        // exit() terminates the calling process (== main?)
     } else if (child == 0) {
         system(TANK_BIN" --sleep-max 5 --sleep-min 1");
     } else {
@@ -212,9 +299,10 @@ pid_t spawn_tank_process(World * w, int tank_color)
     }
 }
 
-void print_stats(int height, int width)
-{
-    printf("Area size: %d %d\n", height, width);
-    printf("Red kills: %d\n", red_kills);
-    printf("Green kills: %d\n", green_kills);
+void init_tank_process(Tankprocess* tp, pid_t id, short xco, short yco){
+    tp->pid = id;
+    tp->pos_x = xco;
+    tp->pos_y = yco;
+    pipe(tp->pipe_in);
+    close(tp->pipe_in[1]);
 }

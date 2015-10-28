@@ -41,3 +41,19 @@ void draw_tank(World * world, int x, int y, int tank_color);
 void destroy_tank(World * world, int x, int y);
 
 void print_stats(int height, int width);
+
+
+/*
+ * Tank process representative;
+ * pid = PID to be saved here when new tank is created, used to send kill signal
+ * when tank is destroyed
+ * pipe_in = pipe for incoming communication(tank sending info)
+ * pos_x = position of tank relative to X axis
+ * pos_y = position of tank relative to Y axis
+ */
+typedef struct{
+    pid_t pid;
+    int pipe_in[2];
+    short pos_x;
+    short pos_y;
+}Tankprocess;
