@@ -21,4 +21,3 @@
 // static constexpr const char* WORLD_BIN      = BIN_DIR "/" "world";
 // static constexpr const char* TANK_BIN       = BIN_DIR "/" "tank";
 // static constexpr const char* TANKCLIENT_BIN = BIN_DIR "/" "tankclent";
-

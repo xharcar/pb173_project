@@ -13,9 +13,16 @@ int main()
     }
 
     int green_tanks = 15;
+    int red_tanks = 15;
+    int tanks_number = green_tanks + red_tanks;
     NCursesWorld w(15, 30);
     for (int i = 0; i < green_tanks; i++) {
-        Tank t = Tank(w.free_coord(), GREEN);
-        w.add_tank( t );
+        Tank t = Tank(w.free_coord(), Color::GREEN);
+        w.add_tank(t);
     }
+    for (int i = 0; i < red_tanks; i++) {
+        Tank t = Tank(w.free_coord(), Color::RED);
+        w.add_tank(t);
+    }
+
 }

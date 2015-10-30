@@ -25,22 +25,34 @@ public:
     const int y;
     const Color color;
 public:
-    Tank(int x, int y, Color color) : x(x), y(y), color(color) {
+    Tank(int x, int y, Color color) : pid(0), x(x), y(y), color(color) {
+        if (color != Color::RED && color != Color::GREEN) {
+            /* Worng input color, Log -> handle failiure */
+        }
+    }
+
+    Tank(Coord coord, Color color) : Tank(coord.first, coord.second, color) { }
+
+    void spawn_process() {
+        if (pid != 0) {
+            /* Process for this tank has already been spawned */
+            return;
+        }
         pid = fork();
         if (pid == -1) {
             /* Log unsuccessful fork() and exit? */
         } else if (pid == 0) {
-            execl(TANK_BIN, "--sleep-max 5", "--sleep-min 1");
+            execl(TANK_BIN, TANK_BIN, "--sleep-max 5", "--sleep-min 1");
             /* Should not be reached, log failure -> exit/handle failiure, insert assert */
         }
     }
-    Tank(Coord coord, Color color) : Tank(coord.first, coord.second, color) { }
 };
 
 class World {
     /* fixme: Missing tank collection */
     // vector<Tank> tanks;
-    vector<Tank> tanks;
+    vector<Tank> green_tanks;
+    vector<Tank> red_tanks;
 protected:
     vector< vector<Color> > zone;
     const int height;
@@ -56,9 +68,13 @@ public:
      * @param t
      */
     void add_tank(Tank& t) {
-        if (zone[t.x][t.y] != 0) {
-        }
         zone[t.x][t.y] = t.color;
+        if (t.color == Color::RED) {
+            red_tanks.push_back(t);
+        } else {
+            green_tanks.push_back(t);
+        }
+        t.spawn_process();
     }
 
     Coord free_coord() const {
@@ -76,7 +92,7 @@ public:
     // }
 };
 
-class NCursesWorld  : World {
+class NCursesWorld  : public World {
     WINDOW * nc_world;
     WINDOW * nc_stats;
 public:
@@ -106,6 +122,7 @@ public:
         wattrset(nc_world, COLOR_PAIR(t.color));
         /* Compensate for border padding */
         mvwaddch(nc_world, t.y + 1, t.x + 1, ACS_BLOCK);
+        /* type cast enum class color */
         wattroff(nc_world, COLOR_PAIR(t.color));
         wrefresh(nc_world);
     }
@@ -164,7 +181,7 @@ public:
         // unlink()
     }
 
-    void quit() {
+    void static quit(int signal) {
 
     }
 };
