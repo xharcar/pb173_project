@@ -12,5 +12,10 @@ int main()
         /* this is the first instance */
     }
 
+    int green_tanks = 15;
     NCursesWorld w(15, 30);
+    for (int i = 0; i < green_tanks; i++) {
+        Tank t = Tank(w.free_coord(), GREEN);
+        w.add_tank( t );
+    }
 }

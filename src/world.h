@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <csignal>
 #include <sys/file.h>
+#include <ctime>
 
 using std::vector;
 using std::unordered_map;
@@ -20,13 +21,11 @@ enum Color { RED = 1, GREEN = 2 };
 class Tank {
     pid_t pid;
 public:
-    const Coord coord;
-    // const int x;
-    // const int y;
+    const int x;
+    const int y;
     const Color color;
 public:
-    // Tank(int x, int y, Color color) : x(x), y(y), color(color) {
-    Tank(Coord coord, Color color) : coord(coord), color(color) {
+    Tank(int x, int y, Color color) : x(x), y(y), color(color) {
         pid = fork();
         if (pid == -1) {
             /* Log unsuccessful fork() and exit? */
@@ -35,21 +34,27 @@ public:
             /* Should not be reached, log failure -> exit/handle failiure, insert assert */
         }
     }
+    Tank(Coord coord, Color color) : Tank(coord.first, coord.second, color) { }
 };
 
 class World {
     /* fixme: Missing tank collection */
     // vector<Tank> tanks;
-    vector< vector<Color> > zone;
     vector<Tank> tanks;
 protected:
+    vector< vector<Color> > zone;
     const int height;
     const int width;
 public:
     World(const int height, const int width) : height(height), width(width) {
+        srand(std::time(0));
         /* fixme: Initialize zone to given width and height  and fill it with zeroes*/
     }
 
+    /**
+     * @brief add_tank on given coordinates, coordinates must be empty
+     * @param t
+     */
     void add_tank(Tank& t) {
         if (zone[t.x][t.y] != 0) {
         }
@@ -57,15 +62,18 @@ public:
     }
 
     Coord free_coord() const {
-        // return not zone[x][y];
         int x, y;
         do {
             x = rand()%width;
             y = rand()%height;
         } while (zone[x][y] != 0);
 
-        return pair<int, int>(x, y);
+        return Coord(x, y);
     }
+
+    // bool is_free(int x, int y) const {
+    //     return not zone[x][y];
+    // }
 };
 
 class NCursesWorld  : World {
@@ -95,8 +103,6 @@ public:
     }
 
     void draw_tank(Tank& t) {
-        int x = t.coord.first;
-        int y = t.coord.second;
         wattrset(nc_world, COLOR_PAIR(t.color));
         /* Compensate for border padding */
         mvwaddch(nc_world, t.y + 1, t.x + 1, ACS_BLOCK);
