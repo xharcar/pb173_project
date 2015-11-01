@@ -11,6 +11,13 @@ add_executable(world
     src/world.h
     src/world.cpp
 )
+
+add_executable(worldclient
+    src/config.h
+    src/worldclient.h
+    src/worldclient.cpp
+)
+
 add_executable(tank
     src/config.h
     src/tank.h

@@ -7,6 +7,7 @@
 #include <csignal>
 #include <sys/file.h>
 #include <ctime>
+#include <boost/range/join.hpp>>
 
 using std::vector;
 using std::unordered_map;
@@ -165,6 +166,19 @@ public:
         closelog();
     }
 
+    void static quit(int signal) {
+
+    }
+
+    void static quit_safe(int signal) {
+        for (Tank& t : green_tanks) {
+            if (kill(t.pid, SIGTERM) == -1) {
+                perror("");
+                /* fixme: What should we do if signal fails to be sent */
+            }
+        }
+    }
+
     void outputMap() {
         if (mkfifo(pipe.c_str(), 0666)  == -1) {
             /* Failed to open the pipe */
@@ -175,6 +189,7 @@ public:
         if (fd == -1) {
 
         }
+        stringstream
         string map = width + ',' + height;
         for (tank : tanks) {
             map << ',' <<
@@ -186,9 +201,7 @@ public:
         // unlink()
     }
 
-    void static quit(int signal) {
 
-    }
 };
 
 #define READ 0
