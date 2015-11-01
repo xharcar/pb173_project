@@ -2,12 +2,13 @@
 
 #include "config.h"
 #include <ncurses.h>
+#include <iostream>
 #include <vector>
 #include <unordered_map>
 #include <csignal>
 #include <sys/file.h>
 #include <ctime>
-#include <boost/range/join.hpp>>
+#include <boost/range/join.hpp>
 
 using std::vector;
 using std::unordered_map;
@@ -18,6 +19,37 @@ using std::string;
 using Coord = pair<int, int>;
 
 enum Color { RED = 1, GREEN = 2 };
+
+class Utils {
+    bool mDaemonize;
+    int mRoundTime;
+    int mMapHeight;
+    int mMapWidth;
+    std::string mGreenPath;
+    std::string mRedPath;
+    int mGreenTanks;
+    int mRedTanks;
+    bool mExit;
+
+public:
+    Utils(int argc, char *argv[]);
+    ~Utils();
+    void printHelp();
+    void printError();
+
+    bool getDaemonize() {return this->mDaemonize; }
+    int getRoundTime() {return this->mRoundTime; }
+    int getMapHeight() {return this->mMapHeight; }
+    int getMapWidth() {return this->mMapWidth; }
+    std::string getGreenPath() {return this->mGreenPath; }
+    std::string getRedPath() {return this->mRedPath; }
+    int getGreenTanks() {return this->mGreenTanks; }
+    int getRedTanks() {return this->mRedTanks; }
+    bool getExit() {return this->mExit; }
+
+
+
+};
 
 class Tank {
     pid_t pid;
