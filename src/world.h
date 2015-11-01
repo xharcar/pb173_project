@@ -34,6 +34,11 @@ public:
     Tank(Coord coord, Color color) : Tank(coord.first, coord.second, color) { }
 
     void spawn_process() {
+        FILE * read_pipe = popen(TANK_BIN"--sleep-max 5 --sleep-min 1", "r");
+        if ( read_pipe == NULL) {
+
+        }
+        /*--------------------------------------------------*/
         if (pid != 0) {
             /* Process for this tank has already been spawned */
             return;
@@ -185,3 +190,46 @@ public:
 
     }
 };
+
+#define READ 0
+#define WRITE 1
+
+pid_t popen2(const char *command, int *infp, int *outfp)
+{
+    int p_stdin[2], p_stdout[2];
+    pid_t pid;
+
+    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0) {
+        return -1;
+    }
+
+    pid = fork();
+
+    if (pid < 0) {
+        return pid;
+    } else if (pid == 0) {
+        /* 0 = READ, 1 = WRITE*/
+        close(p_stdin[1]);
+        dup2(p_stdin[0], 0);
+        close(p_stdout[0]);
+        dup2(p_stdout[1], 1);
+
+        /* Executing in shell */
+        /* fixme: Try to leave out the shell */
+        execl("/bin/sh", "sh", "-c", command, NULL);
+        perror("execl");
+        exit(1);
+    }
+
+    if (infp == NULL)
+        close(p_stdin[1]);
+    else
+        *infp = p_stdin[WRITE];
+
+    if (outfp == NULL)
+        close(p_stdout[READ]);
+    else
+        *outfp = p_stdout[READ];
+
+    return pid;
+}
