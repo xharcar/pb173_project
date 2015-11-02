@@ -9,12 +9,10 @@
 #include <sys/file.h>
 #include <ctime>
 #include <boost/range/join.hpp>
-<<<<<<< HEAD
 #include <cerrno>
 #include <iostream>
+#include <string>
 
-=======
->>>>>>> origin/C++impl
 
 using std::vector;
 using std::unordered_map;
@@ -27,10 +25,9 @@ using Coord = pair<int, int>;
 
 enum Color { RED = 1, GREEN = 2 };
 
-<<<<<<< HEAD
 string rtankpath;
 string gtankpath;
-=======
+
 class Utils {
     bool mDaemonize;
     int mRoundTime;
@@ -61,16 +58,18 @@ public:
 
 
 };
->>>>>>> origin/C++impl
+
 
 class Tank {
     pid_t pid;
+    FILE* read_pipe;
+    bool hit;
 public:
     const int x;
     const int y;
     const Color color;
 public:
-    Tank(int x, int y, Color color) : x(x), y(y), color(color), pid(0) {
+    Tank(int x, int y, Color color) : x(x), y(y), color(color), pid(0),hit(false) {
         // error handling for colors unnecessary
 	// (calling with wrong color would happen how exactly?)
     }
@@ -84,9 +83,21 @@ public:
     pid_t getPID(){
 	    return this.pid;
     }
-
+    /**
+     * @brief read pipe getter
+     * @return pointer to read pipe
+     */
+    FILE* getRPipe(){
+	    return this.read_pipe;
+    }
+    bool getHit(){
+    	return this.hit;
+    }
+    void setHit(bool shot){
+    	this.hit = shot;
+    }
     void spawn_process(string tankpath) {
-        FILE * read_pipe = popen(tankpath, "r");
+        read_pipe = popen(tankpath, "r");
         if ( read_pipe == NULL) {
 
         }
@@ -155,16 +166,41 @@ public:
     }
 
     // TODO :
-    // 1)send signal to tanks
-    // 2)read actions
+    // 1)send signal to tanks - done
+    // 2)read actions - done
     // 3)FIRE EVERYTHING
     // 4)movement (tanks cannot dodge by moving, so fire > move)
     // 5)respawn
     // 6)goto 1 (can be done in world.c)
     void play_round(){
-    	
-    
-    }
+    	vector<string>red_actions;
+	vector<string>green_actions;
+	char buf[4] = "\0";
+	for(Tank t : red_tanks){
+		kill(t.getPID(),SIGUSR2);
+	}
+	for(Tank t : green_tanks){
+		kill(t.getPID(),SIGUSR2);
+	}
+	for(Tank t : red_tanks){
+		read(t.getRPipe(),buf,3);
+		red_actions.push_back(string(buf));
+		memset(buf,0,4);
+	}
+	for(Tank t : green_tanks){
+		read(t.getRPipe(),buf,3);
+		red_actions.push_back(string(buf));
+		memset(buf,0,4);
+	}
+	for(string s : red_actions){
+		// check first char: 
+		// if 'f', check second and set hit for all tanks in line of fire
+		// if 'm', continue
+	}
+	// for all tanks : if not hit and first char of command is move
+	// determine move direction and move
+	// if hit, increment opposite team kills and delete
+	// then respawn casualties
 };
 
 class NCursesWorld  : public World {
@@ -237,22 +273,22 @@ public:
 
     void static quit_safe(int signal) {
         for (Tank& t : green_tanks) {
-            if (kill(t.pid, SIGTERM) == -1) {
-		cerr << "SIGTERM on tank with PID " << t.pid
+            if (kill(t.getPID(), SIGTERM) == -1) {
+		cerr << "SIGTERM on tank with PID " << t.getPID()
 		       	<< " failed with errno " << errno << ".";
 		if(errno == ESRCH){ // pretty much only option
 			cerr << "Waiting." << std::endl;
-			waitpid(t.pid,NULL,0);
+			waitpid(t.getPID(),NULL,0);
             	}
             }
    	 }
 	for (Tank& t : red_tanks) {
-            if (kill(t.pid, SIGTERM) == -1) {
-		cerr << "SIGTERM on tank with PID " << t.pid
+            if (kill(t.getPID(), SIGTERM) == -1) {
+		cerr << "SIGTERM on tank with PID " << t.getPID()
 		       	<< " failed with errno " << errno << ".";
 		if(errno == ESRCH){
 			cerr << "Waiting." << std::endl;
-			waitpid(t.pid,NULL,0);
+			waitpid(t.getPID(),NULL,0);
             	}
             }
    	 }
@@ -276,7 +312,7 @@ public:
 		}
         }
 	const char* mtw = (ss.str()).c_str();
-        write(fd, (void*)mtw, strlen(mtw)*)
+        write(fd, (void*)mtw, strlen(mtw));
 
         // close()
         // unlink()
