@@ -25,8 +25,8 @@ void parse_args(int argc, char *argv[], Options * opts);
 void print_help(char * progname);
 
 class  WorldClient {
-    pid_t world_pid;
 protected:
+    pid_t world_pid;
     FILE * pipe_stream;
     int height;
     int width;
@@ -75,7 +75,7 @@ public:
 
 class NCursesClient  : public WorldClient {
     WINDOW * nc_world;
-    WINDOW * nc_stats;
+    // WINDOW * nc_stats;
 public:
     NCursesClient(char * pipe) : WorldClient(pipe) {
         initscr();
@@ -85,17 +85,21 @@ public:
         init_pair(Color::GREEN, COLOR_GREEN, COLOR_GREEN);
         /* Hide the cursor in ncurses */
         curs_set(0);
+        /* Disables line buffering */
+        cbreak();
+        noecho();
 
         /* Add padding for borders */
         nc_world = newwin(height + 2, width + 2, 0, 0);
-        nc_stats = newwin(10, 20, 1, width + 2 + 3);
+        // nc_stats = newwin(10, 20, 1, width + 2 + 3);
         box(nc_world, 0, 0);
         wrefresh(nc_world);
+        keys();
     }
 
     ~NCursesClient() {
         delwin(nc_world);
-        delwin(nc_stats);
+        // delwin(nc_stats);
         endwin();
     }
 
@@ -119,8 +123,24 @@ public:
                 x = 0;
                 y++;
             }
+            keys();
         }
         wrefresh(nc_world);
+    }
+
+    void keys() {
+        char c = (char)getch();
+        switch (c) {
+            case 'x':
+                kill(world_pid, SIGINT);
+                break;
+            case 'r':
+                kill(world_pid, SIGUSR1);
+                break;
+            case 'q':
+                exit(0);
+                break;
+        }
     }
 
     void draw_tank(int x, int y, Color color) {

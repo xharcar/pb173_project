@@ -4,7 +4,8 @@ int main(int argc, char *argv[])
 {
     Options opts;
     parse_args(argc, argv, &opts);
-    NCursesClient(opts.pipe);
+    NCursesClient nc_client(opts.pipe);
+    nc_client.print_tanks();
     return 0;
 }
 
