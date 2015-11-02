@@ -2,11 +2,12 @@
 
 int main(int argc, char *argv[])
 {
-    char * pipe = parse_args(argc, argv);
+    Options opts;
+    parse_args(argc, argv, &opts);
     return 0;
 }
 
-char * parse_args(int argc, char *argv[])
+void parse_args(int argc, char *argv[], Options * opts)
 {
     struct option longopts[] = {
         { "pipe", required_argument, NULL, 'p' },
@@ -14,11 +15,10 @@ char * parse_args(int argc, char *argv[])
         { 0, 0, 0, 0 }
     };
     int c;
-    char * pipe = nullptr;
     while ( (c = getopt_long(argc, argv, "p:h", longopts, NULL) ) != -1) {
         switch (c) {
         case 'p':
-            pipe = optarg;
+            opts->pipe = optarg;
             break;
         case 'h':
             print_help(argv[0]);
@@ -30,7 +30,6 @@ char * parse_args(int argc, char *argv[])
             exit(-1);
         }
     }
-    return pipe;
 }
 
 void print_help(char * progname)
