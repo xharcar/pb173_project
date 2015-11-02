@@ -4,10 +4,15 @@
 #include <ncurses.h>
 #include <csignal>
 #include <iostream>
+#include <fstream>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 using std::signal;
 using std::cout;
+using std::cerr;
 using std::endl;
+using std::ifstream;
 
 typedef struct {
     char * pipe;
@@ -22,10 +27,50 @@ void print_help(char * progname);
 class  WorldClient {
     pid_t world_pid;
 protected:
+    FILE * pipe_stream;
     int height;
     int width;
 public:
-    WorldClient(char * pipe) { }
+    WorldClient(char * pipe) {
+        get_pid();
+        open_pipe(pipe);
+    }
+
+    void get_pid() {
+        ifstream pid_file;
+        pid_file.open("/var/run/world.pid");
+        if (pid_file) {
+            cerr << "world.pid file does not exist. World process is not running." << endl;
+            exit(-1);
+        } else if ( pid_file >> world_pid ) {
+            /* Successfully read the number  */
+        } else {
+            /* Failed to read the number */
+            cerr << "Failed to read the pid from the world.pid file." << endl;
+            exit(-1);
+        }
+    }
+
+    void open_pipe(char * pipe) {
+        int fd;
+        if ( (fd = open(pipe, O_RDONLY) ) < 0 ) {
+            cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << endl;
+            exit(-1);
+        }
+        pipe_stream = fdopen(fd, "r");
+        if (!pipe_stream) {
+            cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << endl;
+            exit(-1);
+        }
+        clearerr(pipe_stream);
+        int dimensions = fscanf(pipe_stream, "%d, %d", &width, &height);
+        if ( dimensions == EOF && ferror(pipe_stream) ) {
+            cerr << strerror(errno) << "Error occured while parsing the pipe stream." << endl;
+        } else if (dimensions != 2 ) {
+            cerr << "Error: Worng format of the data in the pipe." << endl;
+            exit(-1);
+        }
+    }
 };
 
 class NCursesClient  : public WorldClient {
@@ -54,6 +99,30 @@ public:
         endwin();
     }
 
+    void print_tanks() {
+        char sector;
+        int x = 0, y = 0;
+        while ( fscanf(pipe_stream, ",%c", &sector) != EOF) {
+            switch (sector) {
+            case 'r':
+                draw_tank(x, y, Color::RED);
+                break;
+            case 'g':
+                draw_tank(x, y, Color::GREEN);
+                break;
+            case '0':
+                undraw_tank(x, y);
+                break;
+            }
+            x++;
+            if (x >= width) {
+                x = 0;
+                y++;
+            }
+        }
+        wrefresh(nc_world);
+    }
+
     void draw_tank(int x, int y, Color color) {
         wattrset(nc_world, COLOR_PAIR(color));
         /* Compensate for border padding */
@@ -72,10 +141,12 @@ public:
         wrefresh(nc_world);
     }
 
+    /*
     void refresh_stats(int green_kills, int red_kills) {
         werase(nc_stats);
         wprintw(nc_stats, "Green tanks killed %d\n", green_kills);
         wprintw(nc_stats, "Red tanks killed %d\n", red_kills);
         wrefresh(nc_stats);
     }
+    */
 };

@@ -9,6 +9,11 @@ int main(int argc, char *argv[])
 
 void parse_args(int argc, char *argv[], Options * opts)
 {
+    if (argc < 2) {
+        cout << "Wrong argument" << endl;
+        print_help(argv[0]);
+        exit(-1);
+    }
     struct option longopts[] = {
         { "pipe", required_argument, NULL, 'p' },
         { "help", no_argument,       NULL, 'h' },
