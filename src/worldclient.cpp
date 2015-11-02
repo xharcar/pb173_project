@@ -5,6 +5,8 @@ int main(int argc, char *argv[])
     Options opts;
     parse_args(argc, argv, &opts);
     NCursesClient nc_client(opts.pipe);
+    /* Refreshing map, react on key presses */
+    /* Does not end if EOF is reached */
     while (1) {
         nc_client.print_tanks();
     }
@@ -47,7 +49,7 @@ void print_help(char * progname)
     cout << endl;
 }
 
-void WorldClient::get_pid() {
+void WorldClient::get_world_pid() {
     ifstream pid_file;
     pid_file.open("/var/run/world.pid");
     if (pid_file) {
@@ -123,9 +125,11 @@ void NCursesClient::print_tanks() {
             x = 0;
             y++;
         }
-        keys();
+        if (y >= height) {
+            wrefresh(nc_world);
+            keys();
+        }
     }
-    wrefresh(nc_world);
 }
 
 void NCursesClient::keys() {

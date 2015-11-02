@@ -32,11 +32,17 @@ protected:
     int width;
 public:
     WorldClient(char * pipe) {
-        get_pid();
+        get_world_pid();
         open_pipe(pipe);
     }
 
-    void get_pid();
+    /*
+     * Read pid of the world process from the file /var/run/world.pid
+     */
+    void get_world_pid();
+    /*
+     * Opens pipe for trasfering map from world process
+     */
     void open_pipe(char * pipe);
 };
 
@@ -44,6 +50,9 @@ class NCursesClient  : public WorldClient {
     WINDOW * nc_world;
     // WINDOW * nc_stats;
 public:
+    /*
+     * Initializes ncurses
+     */
     NCursesClient(char * pipe);
 
     ~NCursesClient() {
@@ -52,6 +61,9 @@ public:
         endwin();
     }
 
+    /*
+     * Prints the whole map to the screen
+     */
     void print_tanks();
 
     void keys();
