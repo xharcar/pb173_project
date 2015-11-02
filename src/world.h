@@ -7,17 +7,24 @@
 #include <csignal>
 #include <sys/file.h>
 #include <ctime>
-#include <boost/range/join.hpp>>
+#include <boost/range/join.hpp>
+#include <cerrno>
+#include <iostream>
+
 
 using std::vector;
 using std::unordered_map;
 using std::pair;
 using std::signal;
 using std::string;
+using std::cerr;
 
 using Coord = pair<int, int>;
 
 enum Color { RED = 1, GREEN = 2 };
+
+string rtankpath;
+string gtankpath;
 
 class Tank {
     pid_t pid;
@@ -26,37 +33,46 @@ public:
     const int y;
     const Color color;
 public:
-    Tank(int x, int y, Color color) : pid(0), x(x), y(y), color(color) {
-        if (color != Color::RED && color != Color::GREEN) {
-            /* Worng input color, Log -> handle failiure */
-        }
+    Tank(int x, int y, Color color) : x(x), y(y), color(color), pid(0) {
+        // error handling for colors unnecessary
+	// (calling with wrong color would happen how exactly?)
     }
 
     Tank(Coord coord, Color color) : Tank(coord.first, coord.second, color) { }
 
-    void spawn_process() {
-        FILE * read_pipe = popen(TANK_BIN"--sleep-max 5 --sleep-min 1", "r");
+    /**
+     * @brief PID getter (for sending signals,...)
+     * @return PID of tank process
+     */
+    pid_t getPID(){
+	    return this.pid;
+    }
+
+    void spawn_process(string tankpath) {
+        FILE * read_pipe = popen(tankpath, "r");
         if ( read_pipe == NULL) {
 
         }
         /*--------------------------------------------------*/
         if (pid != 0) {
-            /* Process for this tank has already been spawned */
+            /* Process for this tank has already been spawned successfully */
             return;
         }
-        pid = fork();
-        if (pid == -1) {
-            /* Log unsuccessful fork() and exit? */
-        } else if (pid == 0) {
-            execl(TANK_BIN, TANK_BIN, "--sleep-max 5", "--sleep-min 1");
+        id = fork();
+        if (id == -1) {
+            this.pid = -1;
+
+        } else if (id == 0) {
+            execl(tankpath, tankpath,(char*)NULL);
             /* Should not be reached, log failure -> exit/handle failiure, insert assert */
-        }
+        } else{
+		this.pid = id;
+		// sets PID of spawned tank for handling
+	}
     }
 };
 
 class World {
-    /* fixme: Missing tank collection */
-    // vector<Tank> tanks;
     vector<Tank> green_tanks;
     vector<Tank> red_tanks;
 protected:
@@ -66,36 +82,52 @@ protected:
 public:
     World(const int height, const int width) : height(height), width(width) {
         srand(std::time(0));
-        /* fixme: Initialize zone to given width and height  and fill it with zeroes*/
+        for(int i=0;i<width;i++){
+		zone.push_back(vector<Color,height>);
+	}
+	for(int i=0;i<width;i++){
+		for(int j=0;j<height;j++){
+			zone[i][j] = 0;
+		}
+	}
     }
 
     /**
-     * @brief add_tank on given coordinates, coordinates must be empty
-     * @param t
+     * @brief Spawns a tank at given coordinates, which must be empty
+     * @param t info about tank to spawn
      */
     void add_tank(Tank& t) {
         zone[t.x][t.y] = t.color;
         if (t.color == Color::RED) {
             red_tanks.push_back(t);
+	    t.spawn_process(rtankpath);
         } else {
             green_tanks.push_back(t);
+	    t.spawn_process(gtankpath);
         }
-        t.spawn_process();
     }
 
-    Coord free_coord() const {
-        int x, y;
-        do {
-            x = rand()%width;
-            y = rand()%height;
-        } while (zone[x][y] != 0);
-
-        return Coord(x, y);
+    /**
+     * @brief Checks if given map coordinate is free
+     * @param x x coordinate
+     * @param y y coordinate
+     * @return true if coordinate is free, else false
+     */
+    bool is_free(int x, int y) const {
+         return (zone[x][y] == 0);
     }
 
-    // bool is_free(int x, int y) const {
-    //     return not zone[x][y];
-    // }
+    // TODO :
+    // 1)send signal to tanks
+    // 2)read actions
+    // 3)FIRE EVERYTHING
+    // 4)movement (tanks cannot dodge by moving, so fire > move)
+    // 5)respawn
+    // 6)goto 1 (can be done in world.c)
+    void play_round(){
+    	
+    
+    }
 };
 
 class NCursesWorld  : public World {
@@ -155,8 +187,8 @@ class DaemonWorld : World {
 public:
     DaemonWorld(int height, int width, string pipe) : World(height, width), pipe(pipe) {
         openlog("Internet of Tanks: World", LOG_PID, LOG_USER);
-        signal(SIGQUIT, quit);
-        signal(SIGINT, quit);
+        signal(SIGQUIT, quit_safe);
+        signal(SIGINT, quit_safe);
         /* send SIGTERM to all tanks, print game stats, close resources (pipes) */
         signal(SIGTERM, quit_safe);
         signal(SIGUSR1, restart);
@@ -166,17 +198,27 @@ public:
         closelog();
     }
 
-    void static quit(int signal) {
-
-    }
-
     void static quit_safe(int signal) {
         for (Tank& t : green_tanks) {
             if (kill(t.pid, SIGTERM) == -1) {
-                perror("");
-                /* fixme: What should we do if signal fails to be sent */
+		cerr << "SIGTERM on tank with PID " << t.pid
+		       	<< " failed with errno " << errno << ".";
+		if(errno == ESRCH){ // pretty much only option
+			cerr << "Waiting." << std::endl;
+			waitpid(t.pid,NULL,0);
+            	}
             }
-        }
+   	 }
+	for (Tank& t : red_tanks) {
+            if (kill(t.pid, SIGTERM) == -1) {
+		cerr << "SIGTERM on tank with PID " << t.pid
+		       	<< " failed with errno " << errno << ".";
+		if(errno == ESRCH){
+			cerr << "Waiting." << std::endl;
+			waitpid(t.pid,NULL,0);
+            	}
+            }
+   	 }
     }
 
     void outputMap() {
@@ -187,23 +229,25 @@ public:
         }
         int fd = open(pipe.c_str(), 0666);
         if (fd == -1) {
-
+		cerr << "Opening of pipe for map output failed." << endl;
         }
-        stringstream
-        string map = width + ',' + height;
-        for (tank : tanks) {
-            map << ',' <<
+        stringstream ss;
+	ss << width << "," << height;
+        for (int i=0;i<height;i++){
+		for(int j=0;j<width;j++){
+			ss << "," << zone[i][j];
+		}
         }
-        write(fd, (void*))
+	const char* mtw = (ss.str()).c_str();
+        write(fd, (void*)mtw, strlen(mtw)*)
 
-        // write()
         // close()
         // unlink()
     }
 
 
 };
-
+/*
 #define READ 0
 #define WRITE 1
 
@@ -221,14 +265,14 @@ pid_t popen2(const char *command, int *infp, int *outfp)
     if (pid < 0) {
         return pid;
     } else if (pid == 0) {
-        /* 0 = READ, 1 = WRITE*/
+        // 0 = READ, 1 = WRITE
         close(p_stdin[1]);
         dup2(p_stdin[0], 0);
         close(p_stdout[0]);
         dup2(p_stdout[1], 1);
 
-        /* Executing in shell */
-        /* fixme: Try to leave out the shell */
+        //  Executing in shell
+        //  fixme: Try to leave out the shell 
         execl("/bin/sh", "sh", "-c", command, NULL);
         perror("execl");
         exit(1);
@@ -246,3 +290,4 @@ pid_t popen2(const char *command, int *infp, int *outfp)
 
     return pid;
 }
+*/

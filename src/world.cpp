@@ -1,6 +1,12 @@
 #include "world.h"
 
-int main()
+// defaults in case arguments are not used to initialize
+// tank binary paths, defined as std::string 's in world.h
+rtankpath = "../bin/tank";
+gtankpath2 = rtankpath;
+
+
+int main(int argc, char* argv[])
 {
     int pid_file = open("/var/run/world.pid", O_CREAT | O_RDWR, 0666);
     int rc = flock(pid_file, LOCK_EX | LOCK_NB);
