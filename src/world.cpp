@@ -141,7 +141,6 @@ int main(int argc, char *argv[])
 
     while (tanks_number > 0) {
         pid_t stopped_tank = wait(NULL);
-        tan
     }
 
 }

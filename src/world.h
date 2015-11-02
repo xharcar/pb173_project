@@ -21,12 +21,16 @@ using std::signal;
 using std::string;
 using std::cerr;
 
+
 using Coord = pair<int, int>;
 
 enum Color { RED = 1, GREEN = 2 };
 
+int red_kills;
+int green_kills;
 string rtankpath;
 string gtankpath;
+Utils globals;
 
 class Utils {
     bool mDaemonize;
@@ -106,7 +110,7 @@ public:
             /* Process for this tank has already been spawned successfully */
             return;
         }
-        id = fork();
+        pid_t id = fork();
         if (id == -1) {
             this.pid = -1;
 
@@ -144,7 +148,7 @@ public:
      * @brief Spawns a tank at given coordinates, which must be empty
      * @param t info about tank to spawn
      */
-    void add_tank(Tank& t) {
+    void add_tank(Tank t) {
         zone[t.x][t.y] = t.color;
         if (t.color == Color::RED) {
             red_tanks.push_back(t);
@@ -172,7 +176,7 @@ public:
     // 4)movement (tanks cannot dodge by moving, so fire > move)
     // 5)respawn
     // 6)goto 1 (can be done in world.c)
-    void play_round(){
+    void play_round() {
     	vector<string>red_actions;
 	vector<string>green_actions;
 	char buf[4] = "\0";
@@ -192,68 +196,165 @@ public:
 		red_actions.push_back(string(buf));
 		memset(buf,0,4);
 	}
-	for(string s : red_actions){
-		// check first char: 
-		// if 'f', check second and set hit for all tanks in line of fire
-		// if 'm', continue
+	// Probably should be a separate function
+	for(int i = 0;i<red_tanks.size();i++){
+		switch(red_actions[i][0]){
+			case 'm' : continue;
+				   break;
+			case 'f' : {
+				switch(red_actions[i][1]){
+					case 'u':{
+						for(Tank t: green_tanks){ // regular fire
+							if(t.y>red_tanks[i].y) setHit(true);
+						}
+						for(Tank t: red_tanks){ // friendly fire
+							if(t.y>red_tanks[i].y) setHit(true);
+						}
+					}break;
+					case 'd':{
+						for(Tank t: green_tanks){
+							if(t.y<red_tanks[i].y) setHit(true);
+						}
+						for(Tank t: red_tanks){
+							if(t.y<red_tanks[i].y) setHit(true);
+						}
+					}break;
+					case 'l':{
+						for(Tank t: green_tanks){ 
+							if(t.x<red_tanks[i].x) setHit(true);
+						}
+						for(Tank t: red_tanks){ 
+							if(t.x<red_tanks[i].x) setHit(true);
+						}
+					}break;
+					case 'r':{
+						for(Tank t: green_tanks){ 
+							if(t.x>red_tanks[i].x) setHit(true);
+						}
+						for(Tank t: red_tanks){ 
+							if(t.x>red_tanks[i].x) setHit(true);
+						}
+					}break;
+				}
+			}
+		}
 	}
-	// for all tanks : if not hit and first char of command is move
-	// determine move direction and move
-	// if hit, increment opposite team kills and delete
-	// then respawn casualties
+	for(int i = 0;i<green_tanks.size();i++){
+		switch(green_actions[i][0]){
+			case 'm' : continue;
+				   break;
+			case 'f' : {
+				switch(green_actions[i][1]){
+					case 'u':{
+						for(Tank t: green_tanks){ //regular fire
+							if(t.y>red_tanks[i].y) setHit(true);
+						}
+						for(Tank t: red_tanks){ //friendly fire
+							if(t.y>red_tanks[i].y) setHit(true);
+						}
+					}break;
+					case 'd':{
+						for(Tank t: green_tanks){
+							if(t.y<red_tanks[i].y) setHit(true);
+						}
+						for(Tank t: red_tanks){
+							if(t.y<red_tanks[i].y) setHit(true);
+						}
+					}break;
+					case 'l':{
+						for(Tank t: green_tanks){ 
+							if(t.x<red_tanks[i].x) setHit(true);
+						}
+						for(Tank t: red_tanks){ 
+							if(t.x<red_tanks[i].x) setHit(true);
+						}
+					}break;
+					case 'r':{
+						for(Tank t: green_tanks){ 
+							if(t.x>red_tanks[i].x) setHit(true);
+						}
+						for(Tank t: red_tanks){ 
+							if(t.x>red_tanks[i].x) setHit(true);
+						}
+					}break;
+				}
+			}
+		}
+	}
+	for(int i=0;i<red_tanks.size();++i){
+		if(red_tanks[i].getHit) {
+			green_kills++;
+			continue;
+		}
+		if(red_actions[i][0] != 'm') continue;
+		// hit tanks cannot move (~= are on fire but haven't exploded yet)
+		else{
+
+			switch(red_actions[i][1]){
+				// TODO: map border checking
+				case 'u' : red_tanks[i].y++;
+					   break;
+				case 'd' : red_tanks[i].y--;
+					   break;
+				case 'l' : red_tanks[i].x--;
+					   break;
+				case 'r' : red_tanks[i].x++;
+					   break;
+			}
+		}
+	}
+	for(int i=0;i<green_tanks.size();++i){
+		if(green_tanks[i].getHit) {
+			red_kills++;
+			continue;
+		}
+		if(green_actions[i][0] != 'm' || green_tanks[i].getHit()) continue;
+		else{
+
+			switch(green_actions[i][1]){
+				// TODO: map border checking
+				case 'u' : green_tanks[i].y++;
+					   break;
+				case 'd' : green_tanks[i].y--;
+					   break;
+				case 'l' : green_tanks[i].x--;
+					   break;
+				case 'r' : green_tanks[i].x++;
+					   break;
+			}
+		}
+	}
+	for(Tank t : green_tanks){
+		if(t.getHit()){
+			kill(t.getPID(),SIGTERM);
+			green_tanks.erase(t);
+		}
+	}
+	for(Tank t : red_tanks){
+		if(t.getHit()){
+			kill(t.getPID(),SIGTERM);
+			red_tanks.erase(t);
+		}
+	}
+	while(green_tanks.size()<globals.getGreenTanks()){
+		int x = std::rand()%this.width;
+		int y = std::rand()%this.height;
+		if(is_free(x,y)){
+			Tank t = new Tank(x,y,RED);
+			add_tank(t);
+		}
+	}
+	while(red_tanks.size()<globals.getRedTanks()){
+		int x = std::rand()%this.width;
+		int y = std::rand()%this.height;
+		if(is_free(x,y)){
+			Tank t = new Tank(x,y,RED);
+			add_tank(t);
+		}
+	}
+    }
 };
 
-class NCursesWorld  : public World {
-    WINDOW * nc_world;
-    WINDOW * nc_stats;
-public:
-    NCursesWorld(int height, int width) : World(height, width) {
-        initscr();
-        start_color();
-        /* Create color associations in ncurses */
-        init_pair(Color::RED, COLOR_RED, COLOR_RED);
-        init_pair(Color::GREEN, COLOR_GREEN, COLOR_GREEN);
-        /* Hide the cursor in ncurses */
-        curs_set(0);
-
-        /* Add padding for borders */
-        nc_world = newwin(height + 2, width + 2, 0, 0);
-        nc_stats = newwin(10, 20, 1, width + 2 + 3);
-        box(nc_world, 0, 0);
-        wrefresh(nc_world);
-    }
-
-    ~NCursesWorld() {
-        delwin(nc_world);
-        delwin(nc_stats);
-        endwin();
-    }
-
-    void draw_tank(Tank& t) {
-        wattrset(nc_world, COLOR_PAIR(t.color));
-        /* Compensate for border padding */
-        mvwaddch(nc_world, t.y + 1, t.x + 1, ACS_BLOCK);
-        /* type cast enum class color */
-        wattroff(nc_world, COLOR_PAIR(t.color));
-        wrefresh(nc_world);
-    }
-
-    void undraw_tank(Tank& t) {
-        /* COLOR_PAIR(0) sets the default color */
-        wattrset(nc_world, COLOR_PAIR(0));
-        /* Compensate for border padding */
-        mvwaddch(nc_world, t.y + 1, t.x + 1, ' ');
-        wattroff(nc_world, COLOR_PAIR(0));
-        wrefresh(nc_world);
-    }
-
-    void refresh_stats(int green_kills, int red_kills) {
-        werase(nc_stats);
-        wprintw(nc_stats, "Green tanks killed %d\n", green_kills);
-        wprintw(nc_stats, "Red tanks killed %d\n", red_kills);
-        wrefresh(nc_stats);
-    }
-};
 
 class DaemonWorld : World {
     string pipe;
@@ -314,8 +415,6 @@ public:
 	const char* mtw = (ss.str()).c_str();
         write(fd, (void*)mtw, strlen(mtw));
 
-        // close()
-        // unlink()
     }
 
 
