@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config.h"
 #include <ncurses.h>
 #include <iostream>
 #include <vector>
