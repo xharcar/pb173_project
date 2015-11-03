@@ -1,4 +1,4 @@
-#include "worldclient.h"
+#include "worldclient.h" 
 
 int main(int argc, char *argv[])
 {
@@ -96,6 +96,7 @@ NCursesClient::NCursesClient(char * pipe) : WorldClient(pipe) {
     /* Disables line buffering */
     cbreak();
     noecho();
+    nodelay(nc_world, TRUE);
 
     /* Add padding for borders */
     nc_world = newwin(height + 2, width + 2, 0, 0);

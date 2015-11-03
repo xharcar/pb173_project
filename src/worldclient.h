@@ -6,6 +6,8 @@
 #include <fstream>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <string.h>
+#include <getopt.h>
 
 using std::signal;
 using std::cout;
