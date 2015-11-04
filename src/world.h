@@ -1,25 +1,23 @@
 #pragma once
 
-#include <ncurses.h>
+#include <cstdlib>
+#include <cstdio>
+#include <unistd.h>
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 #include <csignal>
 #include <sys/file.h>
 #include <ctime>
-#include <boost/range/join.hpp>
 #include <cerrno>
 #include <iostream>
 #include <string>
 
 
 using std::vector;
-using std::unordered_map;
 using std::pair;
 using std::signal;
 using std::string;
 using std::cerr;
-
 
 using Coord = pair<int, int>;
 
@@ -57,11 +55,7 @@ public:
     int getGreenTanks() {return this->mGreenTanks; }
     int getRedTanks() {return this->mRedTanks; }
     bool getExit() {return this->mExit; }
-
-
-
 };
-
 
 class Tank {
     pid_t pid;
@@ -72,7 +66,7 @@ public:
     const int y;
     const Color color;
 public:
-    Tank(int x, int y, Color color) : x(x), y(y), color(color), pid(0),hit(false) {
+    Tank(int x, int y, Color color) : x(x), y(y), color(color), pid(0), hit(false) {
         // error handling for colors unnecessary
 	// (calling with wrong color would happen how exactly?)
     }
@@ -84,20 +78,20 @@ public:
      * @return PID of tank process
      */
     pid_t getPID(){
-	    return this.pid;
+	    return pid;
     }
     /**
      * @brief read pipe getter
      * @return pointer to read pipe
      */
     FILE* getRPipe(){
-	    return this.read_pipe;
+	    return read_pipe;
     }
     bool getHit(){
-    	return this.hit;
+    	return hit;
     }
     void setHit(bool shot){
-    	this.hit = shot;
+    	hit = shot;
     }
     void spawn_process(string tankpath) {
         read_pipe = popen(tankpath, "r");
@@ -354,7 +348,6 @@ public:
     }
 };
 
-
 class DaemonWorld : World {
     string pipe;
 public:
@@ -382,6 +375,7 @@ public:
             	}
             }
    	 }
+
 	for (Tank& t : red_tanks) {
             if (kill(t.getPID(), SIGTERM) == -1) {
 		cerr << "SIGTERM on tank with PID " << t.getPID()
@@ -415,50 +409,5 @@ public:
         write(fd, (void*)mtw, strlen(mtw));
 
     }
-
-
 };
-/*
-#define READ 0
-#define WRITE 1
 
-pid_t popen2(const char *command, int *infp, int *outfp)
-{
-    int p_stdin[2], p_stdout[2];
-    pid_t pid;
-
-    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0) {
-        return -1;
-    }
-
-    pid = fork();
-
-    if (pid < 0) {
-        return pid;
-    } else if (pid == 0) {
-        // 0 = READ, 1 = WRITE
-        close(p_stdin[1]);
-        dup2(p_stdin[0], 0);
-        close(p_stdout[0]);
-        dup2(p_stdout[1], 1);
-
-        //  Executing in shell
-        //  fixme: Try to leave out the shell 
-        execl("/bin/sh", "sh", "-c", command, NULL);
-        perror("execl");
-        exit(1);
-    }
-
-    if (infp == NULL)
-        close(p_stdin[1]);
-    else
-        *infp = p_stdin[WRITE];
-
-    if (outfp == NULL)
-        close(p_stdout[READ]);
-    else
-        *outfp = p_stdout[READ];
-
-    return pid;
-}
-*/
