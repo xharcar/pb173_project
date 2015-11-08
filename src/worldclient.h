@@ -9,17 +9,14 @@
 #include <string.h>
 #include <getopt.h>
 
-using std::signal;
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::ifstream;
-
 typedef struct {
     char * pipe;
 } Options;
 
-enum Color { RED = 1, GREEN = 2 };
+enum Color {
+    RED = 1,
+    GREEN = 2,
+};
 
 void parse_args(int argc, char *argv[], Options * opts);
 

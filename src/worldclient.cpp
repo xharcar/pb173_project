@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 void parse_args(int argc, char *argv[], Options * opts)
 {
     if (argc < 2) {
-        cout << "Wrong argument" << endl;
+        std::cout << "Wrong argument" << std::endl;
         print_help(argv[0]);
         exit(-1);
     }
@@ -36,7 +36,7 @@ void parse_args(int argc, char *argv[], Options * opts)
             exit(0);
             break;
         default:
-            cout << "Wrong argument" << endl;
+            std::cout << "Wrong argument" << std::endl;
             print_help(argv[0]);
             exit(-1);
         }
@@ -45,21 +45,21 @@ void parse_args(int argc, char *argv[], Options * opts)
 
 void print_help(char * progname)
 {
-    cout << "Usage: " << progname << " [-p <path to named pipe> | -h]" << endl;
-    cout << endl;
+    std::cout << "Usage: " << progname << " [-p <path to named pipe> | -h]" << std::endl;
+    std::cout << std::endl;
 }
 
 void WorldClient::get_world_pid() {
-    ifstream pid_file;
+    std::ifstream pid_file;
     pid_file.open("/var/run/world.pid");
     if (pid_file) {
-        cerr << "world.pid file does not exist. World process is not running." << endl;
+        std::cerr << "world.pid file does not exist. World process is not running." << std::endl;
         exit(-1);
     } else if ( pid_file >> world_pid ) {
         /* Successfully read the number  */
     } else {
         /* Failed to read the number */
-        cerr << "Failed to read the pid from the world.pid file." << endl;
+        std::cerr << "Failed to read the pid from the world.pid file." << std::endl;
         exit(-1);
     }
 }
@@ -67,20 +67,20 @@ void WorldClient::get_world_pid() {
 void WorldClient::open_pipe(char * pipe) {
     int fd;
     if ( (fd = open(pipe, O_RDONLY) ) < 0 ) {
-        cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << endl;
+        std::cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << std::endl;
         exit(-1);
     }
     pipe_stream = fdopen(fd, "r");
     if (!pipe_stream) {
-        cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << endl;
+        std::cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << std::endl;
         exit(-1);
     }
     clearerr(pipe_stream);
     int dimensions = fscanf(pipe_stream, "%d, %d", &width, &height);
     if ( dimensions == EOF && ferror(pipe_stream) ) {
-        cerr << strerror(errno) << "Error occured while parsing the pipe stream." << endl;
+        std::cerr << strerror(errno) << "Error occured while parsing the pipe stream." << std::endl;
     } else if (dimensions != 2 ) {
-        cerr << "Error: Worng format of the data in the pipe." << endl;
+        std::cerr << "Error: Worng format of the data in the pipe." << std::endl;
         exit(-1);
     }
 }
