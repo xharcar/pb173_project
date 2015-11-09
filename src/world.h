@@ -1,44 +1,55 @@
 #pragma once
 
-#include <cstdlib>
-#include <cstdio>
-#include <unistd.h>
-#include <iostream>
-#include <vector>
-#include <csignal>
-#include <sys/file.h>
-#include <ctime>
-#include <cerrno>
-#include <iostream>
-#include <string>
+// C++ includes
+#include <utility> // pair
+#include <string> // strings
+#include <vector> // map is a 2D vector
+#include <cstdlib> // rand(),malloc()
+#include <iostream> // i/o
+#include <sstream> // stringstream
+#include <ctime> // time(0)
+
+// Legacy C/Linux includes
+#include <errno.h> // errno
+#include <unistd.h> // usleep
+#include <pthread.h> // threads
+#include <syslog.h> // logging
+#include <getopt.h> // options
+#include <sys/file.h> // FIFO, flock
+#include <sys/types.h> // mkfifo
+#include <sys/stat.h> // mkfifo
+#include <fcntl.h> // flock
+#include <signal.h>
 
 
-using std::vector;
-using std::pair;
-using std::signal;
-using std::string;
-using std::cerr;
+// Utility type definitions
+typedef std::pair<int, int> Coord;
+typedef unsigned int uint;
+enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
+typedef struct{
+    int pfd[2];
+    char binpath[256];
+}tankutils;
 
-using Coord = pair<int, int>;
 
-enum Color { RED = 1, GREEN = 2 };
-
-int red_kills;
-int green_kills;
-string rtankpath;
-string gtankpath;
-Utils globals;
-
-class Utils {
+/**
+ * @brief Utility class for holding important data
+ */
+class Utils
+{
     bool mDaemonize;
-    int mRoundTime;
-    int mMapHeight;
-    int mMapWidth;
+    uint mRoundTime;
+    uint mMapHeight;
+    uint mMapWidth;
     std::string mGreenPath;
     std::string mRedPath;
-    int mGreenTanks;
-    int mRedTanks;
+    std::string fifoPath;
+    uint mGreenTanks;
+    uint mRedTanks;
     bool mExit;
+    uint red_kills;
+    uint green_kills;
+    uint rounds_played;
 
 public:
     Utils(int argc, char *argv[]);
@@ -46,111 +57,192 @@ public:
     void printHelp();
     void printError();
 
-    bool getDaemonize() {return this->mDaemonize; }
-    int getRoundTime() {return this->mRoundTime; }
-    int getMapHeight() {return this->mMapHeight; }
-    int getMapWidth() {return this->mMapWidth; }
-    std::string getGreenPath() {return this->mGreenPath; }
-    std::string getRedPath() {return this->mRedPath; }
-    int getGreenTanks() {return this->mGreenTanks; }
-    int getRedTanks() {return this->mRedTanks; }
-    bool getExit() {return this->mExit; }
+    bool getDaemonize()
+    {
+        return this->mDaemonize;
+    }
+    uint getRoundTime()
+    {
+        return this->mRoundTime;
+    }
+    uint getMapHeight()
+    {
+        return this->mMapHeight;
+    }
+    uint getMapWidth()
+    {
+        return this->mMapWidth;
+    }
+    std::string getGreenPath()
+    {
+        return this->mGreenPath;
+    }
+    std::string getRedPath()
+    {
+        return this->mRedPath;
+    }
+    uint getGreenTanks()
+    {
+        return this->mGreenTanks;
+    }
+    uint getRedTanks()
+    {
+        return this->mRedTanks;
+    }
+    bool getExit()
+    {
+        return this->mExit;
+    }
+    void incRedKills(){
+        this->red_kills++;
+    }
+    void incGreenKills(){
+        this->green_kills++;
+    }
+    uint getRedKills(){
+        return this->red_kills;
+    }
+    uint getGreenKills(){
+        return this->green_kills;
+    }
+    uint getRoundsPlayed(){
+        return this->rounds_played;
+    }
+    void incRoundsPlayed(){
+        this->rounds_played++;
+    }
+    std::string getFifoPath(){
+        return this->fifoPath;
+    }
 };
 
-class Tank {
-    pid_t pid;
-    FILE* read_pipe;
+/**
+ * @brief Represents a tank in-game
+ */
+class Tank
+{
+private:
+    pthread_t tid;
+    int pfd [2];
     bool hit;
+    uint x;
+    uint y;
+    Color color;
 public:
-    const int x;
-    const int y;
-    const Color color;
-public:
-    Tank(int x, int y, Color color) : x(x), y(y), color(color), pid(0), hit(false) {
-        // error handling for colors unnecessary
-	// (calling with wrong color would happen how exactly?)
-    }
-
-    Tank(Coord coord, Color color) : Tank(coord.first, coord.second, color) { }
 
     /**
-     * @brief PID getter (for sending signals,...)
-     * @return PID of tank process
+     * @brief Tank constructor, sets TID to 0(to indicate not yet initialized properly)
+     *  and hit flag to false(when a tank rolls up onto a battlefield, it usually is in fighting condition)
+     * @param x x coordinate of tank
+     * @param y y coordinate of tank
      */
-    pid_t getPID(){
-	    return pid;
-    }
+    Tank(uint x, uint y, Color color) : tid(0), hit(false), x(x), y(y), color(color){}
+
     /**
-     * @brief read pipe getter
-     * @return pointer to read pipe
+     * @brief TID getter (for sending signals,...)
+     * @return TID of tank thread
      */
-    FILE* getRPipe(){
-	    return read_pipe;
-    }
-    bool getHit(){
-    	return hit;
-    }
-    void setHit(bool shot){
-    	hit = shot;
-    }
-    void spawn_process(string tankpath) {
-        read_pipe = popen(tankpath, "r");
-        if ( read_pipe == NULL) {
+    pthread_t getTID();
 
-        }
-        /*--------------------------------------------------*/
-        if (pid != 0) {
-            /* Process for this tank has already been spawned successfully */
-            return;
-        }
-        pid_t id = fork();
-        if (id == -1) {
-            this.pid = -1;
+    /**
+     * @brief TID setter
+     * @param x TID to be set
+     */
+    void setTID(pthread_t x);
 
-        } else if (id == 0) {
-            execl(tankpath, tankpath,(char*)NULL);
-            /* Should not be reached, log failure -> exit/handle failiure, insert assert */
-        } else{
-		this.pid = id;
-		// sets PID of spawned tank for handling
-	}
+    /**
+     * @brief hit flag getter
+     * @return true if tank has been hit, else false
+     */
+    bool getHit();
+
+    /**
+     * @brief hit flag setter (used only when tank has been hit)
+     * @param shot indicates whether tank has been hit(~true)
+     */
+    void setHit(bool shot);
+
+    /**
+     * @brief X coordinate getter
+     * @return tank x coordinate
+     */
+    uint getX();
+
+    /**
+     * @brief Y coordinate getter
+     * @return tank y coordinate
+     */
+    uint getY();
+
+    /**
+     * @brief X coordinate setter
+     */
+    void setX(int newx);
+
+    /**
+     * @brief Y coordinate setter
+     */
+    void setY(int newy);
+
+    /**
+     * @brief color getter
+     */
+    Color getColor();
+
+    /**
+     * @brief pipe read end getter for commands
+     */
+    int getPipe(){
+        return this->pfd[0];
     }
+
+    int* getpfd(){
+        return this->pfd;
+    }
+
+    /**
+     * @brief spawns a new tank thread, initialized TID of tank
+     * @param tankpath path to tank binary to be executed
+     */
+    void spawn_thread(std::string tankpath);
+
+    /**
+     * @brief handles newly created tank thread
+     * @param pipeptr pointer pipe from which world reads tank commands
+     */
+    void* handle_thread(void* pipeptr);
+
 };
 
-class World {
-    vector<Tank> green_tanks;
-    vector<Tank> red_tanks;
+/**
+ * @brief Represents an in-game basic world
+ */
+class World
+{
 protected:
-    vector< vector<Color> > zone;
-    const int height;
-    const int width;
+    std::vector<Tank> green_tanks;
+    std::vector<Tank> red_tanks;
+    std::vector< std::vector<Color> > zone;
+    uint height;
+    uint width;
 public:
-    World(const int height, const int width) : height(height), width(width) {
-        srand(std::time(0));
-        for(int i=0;i<width;i++){
-		zone.push_back(vector<Color,height>);
-	}
-	for(int i=0;i<width;i++){
-		for(int j=0;j<height;j++){
-			zone[i][j] = 0;
-		}
-	}
+    /**
+     * @brief World constructor, also gets a pseudorandom seed
+     *  and sets the whole world to empty (no tanks on battlefield)
+     * @param height height of the world (Y-axis)
+     * @param width width of the world (X-axis)
+     */
+    World(uint height, uint width) : height(height), width(width)
+    {
+        std::vector<std::vector<Color> > zone(height,std::vector<Color>(width,EMPTY));
     }
 
     /**
      * @brief Spawns a tank at given coordinates, which must be empty
      * @param t info about tank to spawn
+     * @param u Utils instance with tank binary path
      */
-    void add_tank(Tank t) {
-        zone[t.x][t.y] = t.color;
-        if (t.color == Color::RED) {
-            red_tanks.push_back(t);
-	    t.spawn_process(rtankpath);
-        } else {
-            green_tanks.push_back(t);
-	    t.spawn_process(gtankpath);
-        }
-    }
+    void add_tank(Tank t, Utils u);
 
     /**
      * @brief Checks if given map coordinate is free
@@ -158,256 +250,242 @@ public:
      * @param y y coordinate
      * @return true if coordinate is free, else false
      */
-    bool is_free(int x, int y) const {
-         return (zone[x][y] == 0);
-    }
+    bool is_free(int x, int y);
 
-    // TODO :
-    // 1)send signal to tanks - done
-    // 2)read actions - done
-    // 3)FIRE EVERYTHING
-    // 4)movement (tanks cannot dodge by moving, so fire > move)
-    // 5)respawn
-    // 6)goto 1 (can be done in world.c)
-    void play_round() {
-    	vector<string>red_actions;
-	vector<string>green_actions;
-	char buf[4] = "\0";
-	for(Tank t : red_tanks){
-		kill(t.getPID(),SIGUSR2);
-	}
-	for(Tank t : green_tanks){
-		kill(t.getPID(),SIGUSR2);
-	}
-	for(Tank t : red_tanks){
-		read(t.getRPipe(),buf,3);
-		red_actions.push_back(string(buf));
-		memset(buf,0,4);
-	}
-	for(Tank t : green_tanks){
-		read(t.getRPipe(),buf,3);
-		red_actions.push_back(string(buf));
-		memset(buf,0,4);
-	}
-	// Probably should be a separate function
-	for(int i = 0;i<red_tanks.size();i++){
-		switch(red_actions[i][0]){
-			case 'm' : continue;
-				   break;
-			case 'f' : {
-				switch(red_actions[i][1]){
-					case 'u':{
-						for(Tank t: green_tanks){ // regular fire
-							if(t.y>red_tanks[i].y) setHit(true);
-						}
-						for(Tank t: red_tanks){ // friendly fire
-							if(t.y>red_tanks[i].y) setHit(true);
-						}
-					}break;
-					case 'd':{
-						for(Tank t: green_tanks){
-							if(t.y<red_tanks[i].y) setHit(true);
-						}
-						for(Tank t: red_tanks){
-							if(t.y<red_tanks[i].y) setHit(true);
-						}
-					}break;
-					case 'l':{
-						for(Tank t: green_tanks){ 
-							if(t.x<red_tanks[i].x) setHit(true);
-						}
-						for(Tank t: red_tanks){ 
-							if(t.x<red_tanks[i].x) setHit(true);
-						}
-					}break;
-					case 'r':{
-						for(Tank t: green_tanks){ 
-							if(t.x>red_tanks[i].x) setHit(true);
-						}
-						for(Tank t: red_tanks){ 
-							if(t.x>red_tanks[i].x) setHit(true);
-						}
-					}break;
-				}
-			}
-		}
-	}
-	for(int i = 0;i<green_tanks.size();i++){
-		switch(green_actions[i][0]){
-			case 'm' : continue;
-				   break;
-			case 'f' : {
-				switch(green_actions[i][1]){
-					case 'u':{
-						for(Tank t: green_tanks){ //regular fire
-							if(t.y>red_tanks[i].y) setHit(true);
-						}
-						for(Tank t: red_tanks){ //friendly fire
-							if(t.y>red_tanks[i].y) setHit(true);
-						}
-					}break;
-					case 'd':{
-						for(Tank t: green_tanks){
-							if(t.y<red_tanks[i].y) setHit(true);
-						}
-						for(Tank t: red_tanks){
-							if(t.y<red_tanks[i].y) setHit(true);
-						}
-					}break;
-					case 'l':{
-						for(Tank t: green_tanks){ 
-							if(t.x<red_tanks[i].x) setHit(true);
-						}
-						for(Tank t: red_tanks){ 
-							if(t.x<red_tanks[i].x) setHit(true);
-						}
-					}break;
-					case 'r':{
-						for(Tank t: green_tanks){ 
-							if(t.x>red_tanks[i].x) setHit(true);
-						}
-						for(Tank t: red_tanks){ 
-							if(t.x>red_tanks[i].x) setHit(true);
-						}
-					}break;
-				}
-			}
-		}
-	}
-	for(int i=0;i<red_tanks.size();++i){
-		if(red_tanks[i].getHit) {
-			green_kills++;
-			continue;
-		}
-		if(red_actions[i][0] != 'm') continue;
-		// hit tanks cannot move (~= are on fire but haven't exploded yet)
-		else{
+    /**
+     * @brief gives a random set of free coordinates for a tank to spawn at
+     * @return coordinates to spawn new tank at
+     */
+    Coord free_coord();
 
-			switch(red_actions[i][1]){
-				// TODO: map border checking
-				case 'u' : red_tanks[i].y++;
-					   break;
-				case 'd' : red_tanks[i].y--;
-					   break;
-				case 'l' : red_tanks[i].x--;
-					   break;
-				case 'r' : red_tanks[i].x++;
-					   break;
-			}
-		}
-	}
-	for(int i=0;i<green_tanks.size();++i){
-		if(green_tanks[i].getHit) {
-			red_kills++;
-			continue;
-		}
-		if(green_actions[i][0] != 'm' || green_tanks[i].getHit()) continue;
-		else{
+    /**
+     * @brief represents a round of gameplay;
+     *  first, all actions sent are read;
+     *  second, firing is processed: every fire command is executed;
+     *  next, depending on tank positioning, hit flags are set
+     *  (this emulates all guns firing at the same time);
+     *  then, whatever hasn't got hit and has been ordered to move, moves;
+     *  finally, all hits are accounted for(tanks deleted off the map)
+     *  and respawns occur
+     * @param u Utils class instance holding necessary data
+     */
+    void play_round(Utils u);
 
-			switch(green_actions[i][1]){
-				// TODO: map border checking
-				case 'u' : green_tanks[i].y++;
-					   break;
-				case 'd' : green_tanks[i].y--;
-					   break;
-				case 'l' : green_tanks[i].x--;
-					   break;
-				case 'r' : green_tanks[i].x++;
-					   break;
-			}
-		}
-	}
-	for(Tank t : green_tanks){
-		if(t.getHit()){
-			kill(t.getPID(),SIGTERM);
-			green_tanks.erase(t);
-		}
-	}
-	for(Tank t : red_tanks){
-		if(t.getHit()){
-			kill(t.getPID(),SIGTERM);
-			red_tanks.erase(t);
-		}
-	}
-	while(green_tanks.size()<globals.getGreenTanks()){
-		int x = std::rand()%this.width;
-		int y = std::rand()%this.height;
-		if(is_free(x,y)){
-			Tank t = new Tank(x,y,RED);
-			add_tank(t);
-		}
-	}
-	while(red_tanks.size()<globals.getRedTanks()){
-		int x = std::rand()%this.width;
-		int y = std::rand()%this.height;
-		if(is_free(x,y)){
-			Tank t = new Tank(x,y,RED);
-			add_tank(t);
-		}
-	}
-    }
+    /**
+     * @brief refreshes battlefield status at end of round for
+     *          correct output
+     */
+    void refresh_zone();
+
+    /**
+     * @brief sends all tanks SIGUSR2 as a request for commands
+     */
+    void req_com();
+
+    /**
+     * @brief reads commands from tanks
+     * @param red red tank commands vector
+     * @param green tank commands vector
+     */
+    void read_com(std::vector<std::string> red,
+                  std::vector<std::string> green);
+
+    /**
+     * @brief fires the main guns of all give tanks
+     * @param tanks tanks possibly ordered to fire
+     * @param actions orders to tanks, non-fire (=move) orders ignored for now
+     */
+    void fire(std::vector<Tank> tanks,
+              std::vector<std::string> actions);
+
+    /**
+     * @brief moves tanks if they weren't hit and have received a move order
+     * @param tanks tanks possibly ordered to move
+     * @param actions orders to said tanks, fire orders now ignored
+     */
+    void movetanks(std::vector<Tank> tanks,
+                   std::vector<std::string> actions);
+
+    /**
+     * @brief checks for tanks running into each other,
+     *          healthy tanks running into hit ones do not crash
+     * @param tanks1 set of tanks possibly crashing into others
+     * @param tanks2 set of tanks tanks from tanks1 can run into
+     * note: allied tanks can crash into each other
+     */
+    void crash_tanks(std::vector<Tank> tanks1,
+                     std::vector<Tank> tanks2);
+
+    /**
+     * @brief adds kills according to tanks hit; crashes count
+     * since as long as a tank is destroyed, the other side benefits from it,
+     * the reason why the tank is out of action is irrelevant
+     * @param u Utils class instance into which kill counts are written
+     */
+    void add_kills(Utils u);
+
+    /**
+     * @brief removes hit tanks from the board
+     */
+    void remove_hit_tanks();
+
+    /**
+     * @brief respawns tanks at end of round
+     * @param u Utils class instance holding necessary info
+     *  (how many tanks each side fields)
+     */
+    void respawn_tanks(Utils u);
+
+    /**
+     * @brief cleans up world
+     * @param signal signal which is reacted upon
+     */
+    void quit_safe(int signal);
+
+    /**
+     * @brief prints map info to cout
+     */
+    void output_map();
+
 };
 
-class DaemonWorld : World {
-    string pipe;
+/**
+ * @brief Represents a daemonized world
+ */
+class DaemonWorld : public World
+{
+private:
+    std::string pipe;
+    int pipefd;
 public:
-    DaemonWorld(int height, int width, string pipe) : World(height, width), pipe(pipe) {
-        openlog("Internet of Tanks: World", LOG_PID, LOG_USER);
-        signal(SIGQUIT, quit_safe);
-        signal(SIGINT, quit_safe);
-        /* send SIGTERM to all tanks, print game stats, close resources (pipes) */
-        signal(SIGTERM, quit_safe);
-        signal(SIGUSR1, restart);
+    /**
+     * @brief Constructor
+     * @param height world height (Y dimension)
+     * @param width world width (X dimension)
+     * @param pipe pipe to write events to
+     */
+    DaemonWorld(int height, int width, std::string pipe) : World(height, width), pipe(pipe)
+    {
+         openlog("Internet of Tanks: World", LOG_PID, LOG_USER);
+         //pipefd = mkfifo(pipe.c_str(),0444);
     }
 
-    ~DaemonWorld() {
+    ~DaemonWorld()
+    {
         closelog();
     }
+    /**
+     * @brief Spawns a tank at given coordinates, which must be empty
+     * @param t info about tank to spawn
+     * @param u Utils instance with tank binary path
+     * @override World::add_tank
+     */
+    void add_tank(Tank t, Utils u);
 
-    void static quit_safe(int signal) {
-        for (Tank& t : green_tanks) {
-            if (kill(t.getPID(), SIGTERM) == -1) {
-		cerr << "SIGTERM on tank with PID " << t.getPID()
-		       	<< " failed with errno " << errno << ".";
-		if(errno == ESRCH){ // pretty much only option
-			cerr << "Waiting." << std::endl;
-			waitpid(t.getPID(),NULL,0);
-            	}
-            }
-   	 }
+    /**
+     * @brief Checks if given map coordinate is free
+     * @param x x coordinate
+     * @param y y coordinate
+     * @return true if coordinate is free, else false
+     */
+    bool is_free(int x, int y);
 
-	for (Tank& t : red_tanks) {
-            if (kill(t.getPID(), SIGTERM) == -1) {
-		cerr << "SIGTERM on tank with PID " << t.getPID()
-		       	<< " failed with errno " << errno << ".";
-		if(errno == ESRCH){
-			cerr << "Waiting." << std::endl;
-			waitpid(t.getPID(),NULL,0);
-            	}
-            }
-   	 }
-    }
+    /**
+     * @brief gives a random set of free coordinates for a tank to spawn at
+     * @return coordinates to spawn new tank at
+     */
+    Coord free_coord();
 
-    void outputMap() {
-        if (mkfifo(pipe.c_str(), 0666)  == -1) {
-            /* Failed to open the pipe */
-            /* Log -> exit/retry */
-            // perror("Failed to open the pipe");
-        }
-        int fd = open(pipe.c_str(), 0666);
-        if (fd == -1) {
-		cerr << "Opening of pipe for map output failed." << endl;
-        }
-        stringstream ss;
-	ss << width << "," << height;
-        for (int i=0;i<height;i++){
-		for(int j=0;j<width;j++){
-			ss << "," << zone[i][j];
-		}
-        }
-	const char* mtw = (ss.str()).c_str();
-        write(fd, (void*)mtw, strlen(mtw));
+    /**
+     * @brief represents a round of gameplay;
+     *  first, all actions sent are read;
+     *  second, firing is processed: every fire command is executed;
+     *  next, depending on tank positioning, hit flags are set
+     *  (this emulates all guns firing at the same time);
+     *  then, whatever hasn't got hit and has been ordered to move, moves;
+     *  finally, all hits are accounted for(tanks deleted off the map)
+     *  and respawns occur
+     * @param u Utils class instance holding necessary data
+     */
+    void play_round(Utils u);
 
-    }
+    /**
+     * @brief refreshes battlefield status at end of round for
+     *          correct output
+     */
+    void refresh_zone();
+
+    /**
+     * @brief sends all tanks SIGUSR2 as a request for commands
+     */
+    void req_com();
+
+    /**
+     * @brief reads commands from tanks
+     * @param red red tank commands vector
+     * @param green tank commands vector
+     */
+    void read_com(std::vector<std::string> red,
+                  std::vector<std::string> green);
+
+    /**
+     * @brief fires the main guns of all give tanks
+     * @param tanks tanks possibly ordered to fire
+     * @param actions orders to tanks, non-fire (=move) orders ignored for now
+     */
+    void fire(std::vector<Tank> tanks,
+              std::vector<std::string> actions);
+
+    /**
+     * @brief moves tanks if they weren't hit and have received a move order
+     * @param tanks tanks possibly ordered to move
+     * @param actions orders to said tanks, fire orders now ignored
+     */
+    void movetanks(std::vector<Tank> tanks,
+                   std::vector<std::string> actions);
+
+    /**
+     * @brief checks for tanks running into each other,
+     *          healthy tanks running into hit ones do not crash
+     * @param tanks1 set of tanks possibly crashing into others
+     * @param tanks2 set of tanks tanks from tanks1 can run into
+     * note: allied tanks can crash into each other
+     */
+    void crash_tanks(std::vector<Tank> tanks1,
+                     std::vector<Tank> tanks2);
+
+    /**
+     * @brief adds kills according to tanks hit; crashes count
+     * since as long as a tank is destroyed, the other side benefits from it,
+     * the reason why the tank is out of action is irrelevant
+     * @param u Utils class instance into which kill counts are written
+     */
+    void add_kills(Utils u);
+
+    /**
+     * @brief removes hit tanks from the board
+     */
+    void remove_hit_tanks();
+
+    /**
+     * @brief respawns tanks at end of round
+     * @param u Utils class instance holding necessary info
+     *  (how many tanks each side fields)
+     */
+    void respawn_tanks(Utils u);
+
+    /**
+     * @brief cleans up world
+     * @param signal signal which is reacted upon
+     * @override World::quit_safe
+     */
+    void quit_safe(int signal);
+
+    /**
+     * @brief prints map info to cout
+     * @override World::output_map
+     */
+    void output_map();
+
 };
 
