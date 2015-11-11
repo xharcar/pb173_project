@@ -9,30 +9,31 @@ int tank_send = 0;
 
 // UTILS
 
-Utils::Utils(int argc, char *argv[]) :
-    mDaemonize(false),
-    mGreenPath(""),
-    mRedPath(""),
-    mExit(false),
-    red_kills(0),
-    green_kills(0),
-    rounds_played(0)
+Utils::Utils(int argc, char* argv[])
+    : mDaemonize(false)
+    , mGreenPath("")
+    , mRedPath("")
+    , mExit(false)
+    , red_kills(0)
+    , green_kills(0)
+    , rounds_played(0)
 {
     struct option longopts[] =
     {
-        { "daemonize",     no_argument, NULL, 'd' },
-        { "green-tanks",   required_argument, NULL, 'c' },
-        { "red-tanks",     required_argument, NULL, 'v' },
-        { "green-tank", required_argument, NULL, 'g' },
-        { "red-tank", required_argument, NULL, 'r' },
-        { "round-time", required_argument, NULL, 't' },
-        { "area-size",     required_argument, NULL, 'a' },
-        { "pipe",    required_argument, NULL, 'p'},
-        { "help",          no_argument,       NULL, 'h' },
+        { "daemonize",   no_argument,       NULL, 'd' },
+        { "green-tanks", required_argument, NULL, 'c' },
+        { "red-tanks",   required_argument, NULL, 'v' },
+        { "green-tank",  required_argument, NULL, 'g' },
+        { "red-tank",    required_argument, NULL, 'r' },
+        { "round-time",  required_argument, NULL, 't' },
+        { "area-size",   required_argument, NULL, 'a' },
+        { "pipe",        required_argument, NULL, 'p' },
+        { "help",        no_argument,       NULL, 'h' },
         { 0, 0, 0, 0 }
     };
+
     int c;
-    while ((c = getopt_long(argc, argv, "dc:v:g:r:t:a:p:h", longopts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "d:c:v:g:r:t:a:p:h", longopts, NULL)) != -1)
     {
         switch (c)
         {
@@ -75,8 +76,6 @@ Utils::Utils(int argc, char *argv[]) :
         exit(-1);
     }
 }
-
-Utils::~Utils() {}
 
 void Utils::printHelp()
 {

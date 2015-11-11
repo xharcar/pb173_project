@@ -53,7 +53,6 @@ class Utils
 
 public:
     Utils(int argc, char *argv[]);
-    ~Utils();
     void printHelp();
     void printError();
 
