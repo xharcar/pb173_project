@@ -206,9 +206,6 @@ int main(int argc, char *argv[])
         tank->waitForSignal();
     }
 
-
-
-
     return 0;
 }
 
