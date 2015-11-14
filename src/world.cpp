@@ -5,6 +5,12 @@
 int tank_exit = 0;
 int tank_send = 0;
 
+// extra var to pass ARGV through for restart
+char** argv_extra;
+// world to be constructed after program start;
+// can be used in main_sig_handler for correct exit
+World *w;
+
 // METHOD IMPLEMENTATIONS
 
 // UTILS
@@ -804,25 +810,47 @@ void DaemonWorld::output_map()
 }
 
 // END OF DAEMONWORLD OVERRIDES
+
+// MAIN SIGNAL HANDLER
+void main_sig_handler(int sig){
+    switch(sig){
+        case SIGINT:
+        case SIGQUIT:
+        case SIGTERM:{
+            w->quit_safe(sig);
+            delete (w);
+        }break;
+        case SIGUSR1:{
+            execl("../world","../world,",argv_extra,(char*)NULL);
+        }
+    return;
+    }
+}
+
+
 // /===========================================================/
 // MAIN
 
 int main(int argc, char *argv[])
 {
-    // TODO : sigactions
+    argv_extra = argv;
+    struct sigaction action;
+    action.sa_flags=0;
+    action.sa_handler = main_sig_handler;
+    sigaction(SIGINT,&action,NULL);
+    sigaction(SIGQUIT,&action,NULL);
+    sigaction(SIGTERM,&action,NULL);
+    sigaction(SIGUSR1,&action,NULL);
     Utils mUtils(argc, argv);
-    World *w;
-    /*
-        int pid_file = open("/var/run/world.pid", O_CREAT | O_RDWR, 0666);
-        if(flock(pid_file, LOCK_EX | LOCK_NB)) {
-            // Another instance is running, end
-            if(errno == EWOULDBLOCK){
-                std::cerr << "World already running" << std::endl;
-                delete(mUtils);
-                return 1;
+    int pid_file = open("/var/run/world.pid", O_CREAT | O_RDWR, 0666);
+    if(flock(pid_file, LOCK_EX | LOCK_NB)) {
+        // Another instance is running, end
+        if(errno == EWOULDBLOCK){
+            std::cerr << "World already running" << std::endl;
+            delete(&mUtils);
+            return 1;
             }
-        }
-    */
+    }
     if(mUtils.getDaemonize())
     {
         static_cast<DaemonWorld*> (w);
