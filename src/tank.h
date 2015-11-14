@@ -24,8 +24,15 @@ public:
 class Tank {
 public:
     enum Command {
-        MOVE_UP = 0, MOVE_DOWN = 1, MOVE_LEFT = 2, MOVE_RIGHT = 3, FIRE_UP = 4, FIRE_DOWN = 5, FIRE_LEFT = 6, FIRE_RIGHT = 7
-    } ;
+        MOVE_UP = 0,
+        MOVE_DOWN = 1,
+        MOVE_LEFT = 2,
+        MOVE_RIGHT = 3,
+        FIRE_UP = 4,
+        FIRE_DOWN = 5,
+        FIRE_LEFT = 6,
+        FIRE_RIGHT = 7
+    };
 
     Tank(Utils *utils);
     ~Tank();

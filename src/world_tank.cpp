@@ -64,4 +64,8 @@ void Tank::read_com()
     }
 }
 
+void Tank::request_command()
+{
+    pthread_kill(this->getTID(), SIGUSR2);
+}
 

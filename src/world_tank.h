@@ -101,6 +101,11 @@ public:
      * @brief communicates with spawned tank
      */
     void read_action();
+
+    /**
+     * @brief request a command through a signal to tank
+     */
+    void request_command();
 };
 
 void tank_sig_handler(int sig){

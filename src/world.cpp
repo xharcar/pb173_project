@@ -155,13 +155,9 @@ Coord World::free_coord()
 void World::req_com()
 {
     std::cout << "Requesting tank orders" << std::endl;
-    for(std::size_t i=0;i<red_tanks.size();++i)
+    for (Tank t : boost::join(red_tanks, green_tanks))
     {
-        pthread_kill(red_tanks[i].getTID(),SIGUSR2);
-    }
-    for(std::size_t i=0;i<green_tanks.size();++i)
-    {
-        pthread_kill(green_tanks[i].getTID(),SIGUSR2);
+        t.request_command();
     }
 }
 
@@ -442,13 +438,9 @@ Coord DaemonWorld::free_coord()
 void DaemonWorld::req_com()
 {
     syslog(LOG_INFO,"Requesting tank orders\n");
-    for(int i=0;i<red_tanks.size();++i)
+    for (Tank t : boost::join(red_tanks, green_tanks))
     {
-        pthread_kill(red_tanks[i].getTID(),SIGUSR2);
-    }
-    for(int i=0;i<green_tanks.size();++i)
-    {
-        pthread_kill(green_tanks[i].getTID(),SIGUSR2);
+        t.request_command();
     }
 }
 
