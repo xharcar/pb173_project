@@ -2,14 +2,12 @@
 
 // C++ includes
 #include <utility> // pair
-#include <string> // strings
 #include <vector> // map is a 2D vector
 #include <cstdlib> // rand(),malloc()
 #include <iostream> // i/o
 #include <sstream> // stringstream
 #include <ctime> // time(0)
 #include <boost/range/join.hpp>
-
 
 // Legacy C/Linux includes
 #include <errno.h> // errno
@@ -18,7 +16,6 @@
 #include <syslog.h> // logging
 #include <getopt.h> // options
 #include <sys/file.h> // FIFO, flock
-#include <sys/types.h> // mkfifo
 #include <sys/stat.h> // mkfifo
 #include <fcntl.h> // flock
 #include <signal.h>
@@ -29,7 +26,6 @@
 // Utility type definitions
 typedef std::pair<int, int> Coord;
 typedef unsigned int uint;
-enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
 typedef struct{
     int pfd[2];
     char binpath[256];
@@ -130,6 +126,9 @@ protected:
     std::vector< std::vector<Color> > zone;
     uint height;
     uint width;
+    pthread_cond_t tank_cond_com;
+    pthread_mutex_t tank_mutex_com;
+    std::vector<int> tank_messages;
 public:
     /**
      * @brief World constructor, also gets a pseudorandom seed
@@ -140,6 +139,7 @@ public:
     World(uint height, uint width) : height(height), width(width)
     {
         std::vector<std::vector<Color> > zone(height,std::vector<Color>(width,EMPTY));
+        pthread_mutex_init(&this->tank_mutex_com, NULL);
     }
 
     /**

@@ -1,10 +1,6 @@
 #include "world.h"
 
 
-// tank vars
-int tank_exit = 0;
-int tank_send = 0;
-
 // extra var to pass ARGV through for restart
 char** argv_extra;
 // world to be constructed after program start;
