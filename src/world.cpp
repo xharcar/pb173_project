@@ -150,7 +150,6 @@ Coord World::free_coord()
 
 void World::req_com()
 {
-    std::cout << "Requesting tank orders" << std::endl;
     for (Tank t : boost::join(red_tanks, green_tanks))
     {
         t.request_command();
@@ -317,6 +316,14 @@ void World::respawn_tanks(Utils u)
     }
 }
 
+void World::read_com()
+{
+    for (Tank t : boost::join(green_tanks, red_tanks))
+    {
+        t.read_command();
+    }
+}
+
 void World::refresh_zone()
 {
     std::cout << "Refreshing map" << std::endl;
@@ -339,8 +346,9 @@ void World::play_round(Utils u)
     std::vector<std::string> green_actions;
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
+    std::cout << "Requesting tank orders" << std::endl;
     req_com();
-    read_com(red_actions,green_actions);
+    read_com();
     fire(red_tanks,red_actions);
     fire(green_tanks,green_actions);
     movetanks(red_tanks,red_actions);
@@ -429,38 +437,6 @@ Coord DaemonWorld::free_coord()
     rv.first = x;
     rv.second = y;
     return rv;
-}
-
-void DaemonWorld::req_com()
-{
-    syslog(LOG_INFO,"Requesting tank orders\n");
-    for (Tank t : boost::join(red_tanks, green_tanks))
-    {
-        t.request_command();
-    }
-}
-
-void DaemonWorld::read_com(std::vector<std::string> red,
-                     std::vector<std::string> green)
-{
-    syslog(LOG_INFO,"Reading tank commands\n");
-    for(int i=0;i<red_tanks.size();++i)
-    {
-        char buf[4] = "\0";
-        read(red_tanks[i].getPipe(),buf,3);
-        red.push_back(std::string(buf));
-    }
-    for(int i=0;i<green_tanks.size();++i)
-    {
-        char buf[4] = "\0";
-        read(green_tanks[i].getPipe(),buf,3);
-        green.push_back(std::string(buf));
-    }
-    for (Tank t : boost::join(green_tanks, red_tanks))
-    {
-        char buf[4] = "\0";
-        read(t.getPipe(), buf, 3);
-    }
 }
 
 void DaemonWorld::fire(std::vector<Tank> tanks,
@@ -640,7 +616,8 @@ void DaemonWorld::play_round(Utils u)
     u.incRoundsPlayed();
     syslog(LOG_INFO,"Round %d\n",u.getRoundsPlayed());
     req_com();
-    read_com(red_actions,green_actions);
+    syslog(LOG_INFO,"Reading tank commands\n");
+    read_com();
     fire(red_tanks,red_actions);
     fire(green_tanks,green_actions);
     movetanks(red_tanks,red_actions);

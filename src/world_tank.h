@@ -12,6 +12,7 @@ private:
     uint x;
     uint y;
     Color color;
+    std::string action;
 public:
 
     /**
@@ -102,9 +103,16 @@ public:
     void read_action();
 
     /**
-     * @brief request a command through a signal to tank
+     * @brief request a command through a SIGUSR2 signal to tank
      */
+    void req_com();
+
     void request_command();
+
+    /**
+     * @brief read command from a pipe
+     */
+    void read_command();
 };
 
 void tank_sig_handler(int sig);

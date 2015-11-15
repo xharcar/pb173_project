@@ -49,26 +49,16 @@ void Tank::setTID(pthread_t x){
     this->tid = x;
 }
 
-void Tank::read_com()
-{
-    std::cout << "Reading tank commands" << std::endl;
-    for(std::size_t i=0;i<red_tanks.size();++i)
-    {
-        char buf[4] = "\0";
-        read(red_tanks[i].getPipe(),buf,3);
-        red.push_back(std::string(buf));
-    }
-    for(std::size_t i=0;i<green_tanks.size();++i)
-    {
-        char buf[4] = "\0";
-        read(green_tanks[i].getPipe(),buf,3);
-        green.push_back(std::string(buf));
-    }
-}
-
 void Tank::request_command()
 {
     pthread_kill(this->getTID(), SIGUSR2);
+}
+
+void Tank::read_command()
+{
+    char buf[4] = "\0";
+    read(this->getPipe(), buf, 3);
+    this->action = std::string(buf);
 }
 
 void tank_sig_handler(int sig){

@@ -3,7 +3,6 @@
 // C++ includes
 #include <utility> // pair
 #include <vector> // map is a 2D vector
-#include <cstdlib> // rand(),malloc()
 #include <iostream> // i/o
 #include <sstream> // stringstream
 #include <ctime> // time(0)
@@ -11,14 +10,11 @@
 
 // Legacy C/Linux includes
 #include <errno.h> // errno
-#include <unistd.h> // usleep
-#include <pthread.h> // threads
 #include <syslog.h> // logging
 #include <getopt.h> // options
 #include <sys/file.h> // FIFO, flock
 #include <sys/stat.h> // mkfifo
 #include <fcntl.h> // flock
-#include <signal.h>
 
 #include "world_tank.h"
 
@@ -161,7 +157,6 @@ public:
      * @brief gives a random set of free coordinates for a tank to spawn at
      * @return coordinates to spawn new tank at
      */
-    Coord free_coord();
 
     /**
      * @brief represents a round of gameplay;
@@ -189,11 +184,8 @@ public:
 
     /**
      * @brief reads commands from tanks
-     * @param red red tank commands vector
-     * @param green tank commands vector
      */
-    void read_com(std::vector<std::string> red,
-                  std::vector<std::string> green);
+    void read_com();
 
     /**
      * @brief fires the main guns of all give tanks
@@ -318,19 +310,6 @@ public:
      *          correct output
      */
     void refresh_zone();
-
-    /**
-     * @brief sends all tanks SIGUSR2 as a request for commands
-     */
-    void req_com();
-
-    /**
-     * @brief reads commands from tanks
-     * @param red red tank commands vector
-     * @param green tank commands vector
-     */
-    void read_com(std::vector<std::string> red,
-                  std::vector<std::string> green);
 
     /**
      * @brief fires the main guns of all give tanks
