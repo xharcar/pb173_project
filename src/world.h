@@ -2,7 +2,6 @@
 
 // C++ includes
 #include <utility> // pair
-#include <vector> // map is a 2D vector
 #include <iostream> // i/o
 #include <sstream> // stringstream
 #include <ctime> // time(0)

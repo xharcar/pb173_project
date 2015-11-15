@@ -1,5 +1,7 @@
-#include <string>
+#include <ctime> // time(0)
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #include <unistd.h>
 #include <sys/types.h> // mkfifo
