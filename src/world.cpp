@@ -412,33 +412,6 @@ void DaemonWorld::add_tank(Tank t, Utils u)
     }
 }
 
-bool DaemonWorld::is_free(int x, int y)
-{
-    if(this->zone[x][y] == EMPTY)
-    {
-        return true;
-    }
-    return false;
-}
-
-Coord DaemonWorld::free_coord()
-{
-    Coord rv;
-    std::srand(std::time(0));
-    int x = std::rand() % this->width;
-    int y = std::rand() % this->height;
-    while(this->is_free(x,y))
-    {
-        // only loops if first try failed,ends as soon as
-        // a free field is found
-        x = std::rand() % this->width;
-        y = std::rand() % this->height;
-    }
-    rv.first = x;
-    rv.second = y;
-    return rv;
-}
-
 void DaemonWorld::fire(std::vector<Tank> tanks,
                  std::vector<std::string> actions)
 {
@@ -562,7 +535,6 @@ void DaemonWorld::add_kills(Utils u)
 void DaemonWorld::remove_hit_tanks()
 {
     syslog(LOG_INFO,"Removing hit tanks\n");
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
         if(t->getHit()){
             pthread_kill(t->getTID(),SIGTERM);

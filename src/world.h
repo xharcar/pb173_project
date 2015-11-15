@@ -157,6 +157,7 @@ public:
      * @brief gives a random set of free coordinates for a tank to spawn at
      * @return coordinates to spawn new tank at
      */
+    Coord free_coord();
 
     /**
      * @brief represents a round of gameplay;
@@ -277,20 +278,6 @@ public:
      * @override World::add_tank
      */
     void add_tank(Tank t, Utils u);
-
-    /**
-     * @brief Checks if given map coordinate is free
-     * @param x x coordinate
-     * @param y y coordinate
-     * @return true if coordinate is free, else false
-     */
-    bool is_free(int x, int y);
-
-    /**
-     * @brief gives a random set of free coordinates for a tank to spawn at
-     * @return coordinates to spawn new tank at
-     */
-    Coord free_coord();
 
     /**
      * @brief represents a round of gameplay;
