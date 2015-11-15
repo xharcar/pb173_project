@@ -105,7 +105,7 @@ void Utils::printError()
 // END OF UTILS
 
 // WORLD
-void World::add_tank(Tank t, Utils u)
+void World::add_tank(TankClient t, Utils u)
 {
     if(t.getColor() == Color::RED)
     {
@@ -150,16 +150,23 @@ Coord World::free_coord()
 
 void World::req_com()
 {
-    for (Tank t : boost::join(red_tanks, green_tanks))
+    for (TankClient t : boost::join(red_tanks, green_tanks))
     {
         t.request_command();
     }
 }
 
-void World::fire(std::vector<Tank> tanks,
-                 std::vector<std::string> actions)
+void World::fire()
 {
-    std::cout << "FIRE EVERYTHING!" << std::endl;
+    for(Tank t : boost::join(green_tanks, red_tanks))
+    {
+        t.get_action;
+        if (t.get_action.size() == 0)
+        {
+            break;
+        }
+    }
+
     for(unsigned i=0; i<actions.size(); ++i)
     {
         if(actions[i][0] == 'f')
@@ -219,10 +226,8 @@ void World::fire(std::vector<Tank> tanks,
     }
 }
 
-void World::movetanks(std::vector<Tank> tanks,
-                      std::vector<std::string> actions)
+void World::movetanks()
 {
-    std::cout << "Moving tanks" << std::endl;
     for(unsigned i=0; i<actions.size(); ++i)
     {
         if(actions[i][0]=='m' && !tanks[i].getHit())
@@ -246,8 +251,8 @@ void World::movetanks(std::vector<Tank> tanks,
     }
 }
 
-void World::crash_tanks(std::vector<Tank> tanks1,
-                        std::vector<Tank> tanks2)
+void World::crash_tanks(std::vector<TankClient> tanks1,
+                        std::vector<TankClient> tanks2)
 {
     std::cout << "Checking for tank crashes" << std::endl;
     for(int i=0;i<tanks1.size();++i){
@@ -306,19 +311,19 @@ void World::respawn_tanks(Utils u)
     std::cout << "Respawning tanks" << std::endl;
     while(red_tanks.size() < u.getRedTanks()){
         Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, RED);
+        TankClient t = TankClient(c.first, c.second, RED);
         add_tank(t,u);
     }
     while(green_tanks.size() < u.getGreenTanks()){
         Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, GREEN);
+        TankClient t = TankClient(c.first, c.second, GREEN);
         add_tank(t,u);
     }
 }
 
 void World::read_com()
 {
-    for (Tank t : boost::join(green_tanks, red_tanks))
+    for (TankClient t : boost::join(green_tanks, red_tanks))
     {
         t.read_command();
     }
@@ -349,10 +354,12 @@ void World::play_round(Utils u)
     std::cout << "Requesting tank orders" << std::endl;
     req_com();
     read_com();
-    fire(red_tanks,red_actions);
-    fire(green_tanks,green_actions);
-    movetanks(red_tanks,red_actions);
-    movetanks(green_tanks,green_actions);
+    std::cout << "FIRE EVERYTHING!" << std::endl;
+    fire();
+    fire();
+    std::cout << "Moving tanks" << std::endl;
+    movetanks();
+    movetanks();
     crash_tanks(red_tanks,red_tanks);
     crash_tanks(red_tanks,green_tanks);
     crash_tanks(green_tanks,green_tanks);
@@ -396,7 +403,7 @@ void World::quit_safe(int sig)
 // END OF WORLD
 
 // DAEMONWORLD OVERRIDES
-void DaemonWorld::add_tank(Tank t, Utils u)
+void DaemonWorld::add_tank(TankClient t, Utils u)
 {
     if(t.getColor()==RED)
     {
@@ -412,98 +419,8 @@ void DaemonWorld::add_tank(Tank t, Utils u)
     }
 }
 
-void DaemonWorld::fire(std::vector<Tank> tanks,
-                 std::vector<std::string> actions)
-{
-   syslog(LOG_INFO, "FIRE EVERYTHING!\n");
-    for(unsigned i=0; i<actions.size(); ++i)
-    {
-        if(actions[i][0] == 'f')
-        {
-            switch(actions[i][1])
-            {
-            case 'u':
-            {
-                for(int j=0;j<green_tanks.size();++j)
-                {
-                    if(green_tanks[j].getY() < tanks[i].getY()) green_tanks[j].setHit(true);
-                }
-                for(int j=0;j<red_tanks.size();++j)
-                {
-                    if(red_tanks[j].getY() < tanks[i].getY()) red_tanks[j].setHit(true);
-                }
-            }
-            break;
-            case 'd':
-            {
-                for(int j=0;j<green_tanks.size();++j)
-                {
-                    if(green_tanks[j].getY() > tanks[i].getY()) green_tanks[j].setHit(true);
-                }
-                for(int j=0;j<red_tanks.size();++j)
-                {
-                    if(red_tanks[j].getY() > tanks[i].getY()) red_tanks[j].setHit(true);
-                }
-            }
-            break;
-            case 'l':
-            {
-                for(int j=0;j<green_tanks.size();++j)
-                {
-                    if(green_tanks[j].getX() < tanks[i].getX()) green_tanks[j].setHit(true);
-                }
-                for(int j=0;j<red_tanks.size();++j)
-                {
-                    if(red_tanks[j].getX() < tanks[i].getX()) red_tanks[j].setHit(true);
-                }
-            }
-            break;
-            case 'r':
-            {
-                for(int j=0;j<green_tanks.size();++j)
-                {
-                    if(green_tanks[j].getX() > tanks[i].getX()) green_tanks[j].setHit(true);
-                }
-                for(int j=0;j<red_tanks.size();++j)
-                {
-                    if(red_tanks[j].getX() > tanks[i].getX()) red_tanks[j].setHit(true);
-                }
-            }
-            break;
-            }
-        }
-    }
-}
-
-void DaemonWorld::movetanks(std::vector<Tank> tanks,
-                      std::vector<std::string> actions)
-{
-    syslog(LOG_INFO,"Moving tanks");
-    for(unsigned i=0; i<actions.size(); ++i)
-    {
-        if(actions[i][0]=='m' && !tanks[i].getHit())
-        {
-            switch (actions[i][1])
-            {
-            case 'u' :
-                tanks[i].setY(tanks[i].getY()-1);
-                break;
-            case 'd' :
-                tanks[i].setY(tanks[i].getY()+1);
-                break;
-            case 'l' :
-                tanks[i].setX(tanks[i].getX()-1);
-                break;
-            case 'r' :
-                tanks[i].setX(tanks[i].getX()+1);
-                break;
-            }
-        }
-    }
-}
-
-void DaemonWorld::crash_tanks(std::vector<Tank> tanks1,
-                        std::vector<Tank> tanks2)
+void DaemonWorld::crash_tanks(std::vector<TankClient> tanks1,
+                        std::vector<TankClient> tanks2)
 {
     syslog(LOG_INFO,"Checking for tank crashes");
     for(int i=0;i<tanks1.size();++i){
@@ -554,12 +471,12 @@ void DaemonWorld::respawn_tanks(Utils u)
     syslog(LOG_INFO,"Respawning tanks\n");
     while(red_tanks.size() < u.getRedTanks()){
         Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, RED);
+        TankClient t = TankClient(c.first, c.second, RED);
         add_tank(t,u);
     }
     while(green_tanks.size() < u.getGreenTanks()){
         Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, GREEN);
+        TankClient t = TankClient(c.first, c.second, GREEN);
         add_tank(t,u);
     }
 }
@@ -590,10 +507,12 @@ void DaemonWorld::play_round(Utils u)
     req_com();
     syslog(LOG_INFO,"Reading tank commands\n");
     read_com();
-    fire(red_tanks,red_actions);
-    fire(green_tanks,green_actions);
-    movetanks(red_tanks,red_actions);
-    movetanks(green_tanks,green_actions);
+    syslog(LOG_INFO, "FIRE EVERYTHING!\n");
+    fire();
+    fire();
+    syslog(LOG_INFO,"Moving tanks");
+    movetanks();
+    movetanks();
     crash_tanks(red_tanks,red_tanks);
     crash_tanks(red_tanks,green_tanks);
     crash_tanks(green_tanks,green_tanks);
@@ -691,13 +610,13 @@ int main(int argc, char *argv[])
     for (uint i = 0; i < mUtils.getGreenTanks(); i++)
     {
         Coord c = w->free_coord();
-        Tank t = Tank(c.first, c.second, GREEN);
+        TankClient t = TankClient(c.first, c.second, GREEN);
         w->add_tank(t,mUtils);
     }
     for (uint i = 0; i < mUtils.getRedTanks(); i++)
     {
         Coord c = w->free_coord();
-        Tank t = Tank(c.first, c.second, RED);
+        TankClient t = TankClient(c.first, c.second, RED);
         w->add_tank(t,mUtils);
     }
 

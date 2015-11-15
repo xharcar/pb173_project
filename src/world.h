@@ -4,7 +4,6 @@
 #include <utility> // pair
 #include <iostream> // i/o
 #include <sstream> // stringstream
-#include <ctime> // time(0)
 #include <boost/range/join.hpp>
 
 // Legacy C/Linux includes
@@ -15,7 +14,7 @@
 #include <sys/stat.h> // mkfifo
 #include <fcntl.h> // flock
 
-#include "world_tank.h"
+#include "tankclient.h"
 
 
 // Utility type definitions
@@ -116,8 +115,8 @@ public:
 class World
 {
 protected:
-    std::vector<Tank> green_tanks;
-    std::vector<Tank> red_tanks;
+    std::vector<TankClient> green_tanks;
+    std::vector<TankClient> red_tanks;
     std::vector< std::vector<Color> > zone;
     uint height;
     uint width;
@@ -142,7 +141,7 @@ public:
      * @param t info about tank to spawn
      * @param u Utils instance with tank binary path
      */
-    void add_tank(Tank t, Utils u);
+    void add_tank(TankClient t, Utils u);
 
     /**
      * @brief Checks if given map coordinate is free
@@ -192,16 +191,14 @@ public:
      * @param tanks tanks possibly ordered to fire
      * @param actions orders to tanks, non-fire (=move) orders ignored for now
      */
-    void fire(std::vector<Tank> tanks,
-              std::vector<std::string> actions);
+    void fire();
 
     /**
      * @brief moves tanks if they weren't hit and have received a move order
      * @param tanks tanks possibly ordered to move
      * @param actions orders to said tanks, fire orders now ignored
      */
-    void movetanks(std::vector<Tank> tanks,
-                   std::vector<std::string> actions);
+    void movetanks();
 
     /**
      * @brief checks for tanks running into each other,
@@ -210,8 +207,8 @@ public:
      * @param tanks2 set of tanks tanks from tanks1 can run into
      * note: allied tanks can crash into each other
      */
-    void crash_tanks(std::vector<Tank> tanks1,
-                     std::vector<Tank> tanks2);
+    void crash_tanks(std::vector<TankClient> tanks1,
+                     std::vector<TankClient> tanks2);
 
     /**
      * @brief adds kills according to tanks hit; crashes count
@@ -276,7 +273,7 @@ public:
      * @param u Utils instance with tank binary path
      * @override World::add_tank
      */
-    void add_tank(Tank t, Utils u);
+    void add_tank(TankClient t, Utils u);
 
     /**
      * @brief represents a round of gameplay;
@@ -298,30 +295,14 @@ public:
     void refresh_zone();
 
     /**
-     * @brief fires the main guns of all give tanks
-     * @param tanks tanks possibly ordered to fire
-     * @param actions orders to tanks, non-fire (=move) orders ignored for now
-     */
-    void fire(std::vector<Tank> tanks,
-              std::vector<std::string> actions);
-
-    /**
-     * @brief moves tanks if they weren't hit and have received a move order
-     * @param tanks tanks possibly ordered to move
-     * @param actions orders to said tanks, fire orders now ignored
-     */
-    void movetanks(std::vector<Tank> tanks,
-                   std::vector<std::string> actions);
-
-    /**
      * @brief checks for tanks running into each other,
      *          healthy tanks running into hit ones do not crash
      * @param tanks1 set of tanks possibly crashing into others
      * @param tanks2 set of tanks tanks from tanks1 can run into
      * note: allied tanks can crash into each other
      */
-    void crash_tanks(std::vector<Tank> tanks1,
-                     std::vector<Tank> tanks2);
+    void crash_tanks(std::vector<TankClient> tanks1,
+                     std::vector<TankClient> tanks2);
 
     /**
      * @brief adds kills according to tanks hit; crashes count
