@@ -69,6 +69,27 @@ void TankClient::hit_tank(Color c)
     }
 }
 
+void TankClient::moveleft()
+{
+    this->x--;
+}
+
+void TankClient::moveright()
+{
+    this->x++;
+}
+
+void TankClient::moveup()
+{
+    this->y++;
+}
+
+void TankClient::movedown()
+{
+    this->y--;
+}
+
+
 void tank_sig_handler(int sig){
     switch (sig) {
     case SIGUSR2:

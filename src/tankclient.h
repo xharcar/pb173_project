@@ -125,6 +125,11 @@ public:
      * @param c color of the shooting tank
      */
     void hit_tank(Color c);
+
+    void moveleft();
+    void moveright();
+    void moveup();
+    void movedown();
 };
 
 void tank_sig_handler(int sig);

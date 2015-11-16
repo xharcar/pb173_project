@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ctime> // time(0)
 #include <cstdlib>
 #include <string>

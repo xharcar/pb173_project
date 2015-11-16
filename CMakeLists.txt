@@ -12,6 +12,8 @@ add_executable(world
     src/tankclient.cpp
     src/world.h
     src/world.cpp
+    src/daemonworld.h
+    src/daemonworld.cpp
 )
 
 add_executable(worldclient
