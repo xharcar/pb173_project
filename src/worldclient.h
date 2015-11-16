@@ -9,16 +9,16 @@
 #include <string.h>
 #include <getopt.h>
 
-typedef struct {
+struct Options {
     char * pipe;
-} Options;
+};
 
 enum Color {
     RED = 1,
     GREEN = 2,
 };
 
-void parse_args(int argc, char *argv[], Options * opts);
+void parse_args(int argc, char *argv[], Options& opts);
 
 void print_help(char * progname);
 
@@ -35,11 +35,12 @@ public:
     }
 
     /*
-     * Read pid of the world process from the file /var/run/world.pid
+     * @brief Read pid of the world process from the file /var/run/world.pid
      */
     void get_world_pid();
-    /*
-     * Opens pipe for trasfering map from world process
+
+    /**
+     * @brief Opens pipe for trasfering map from world process
      */
     void open_pipe(char * pipe);
 };
@@ -59,15 +60,24 @@ public:
         endwin();
     }
 
-    /*
-     * Prints the whole map to the screen
+    /**
+     * @brief Prints the whole map to the screen
      */
     void print_tanks();
 
+    /**
+     * @brief handle input commands from the keyboards
+     */
     void keys();
 
+    /**
+     * @brief draw tank on the screen
+     */
     void draw_tank(int x, int y, Color color);
     
+    /**
+     * @brief remove tank ftom the screen
+     */
     void undraw_tank(int x, int y);
 
     /*

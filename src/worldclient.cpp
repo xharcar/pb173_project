@@ -3,7 +3,7 @@
 int main(int argc, char *argv[])
 {
     Options opts;
-    parse_args(argc, argv, &opts);
+    parse_args(argc, argv, opts);
     NCursesClient nc_client(opts.pipe);
     /* Refreshing map, react on key presses */
     /* Does not end if EOF is reached */
@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void parse_args(int argc, char *argv[], Options * opts)
+void parse_args(int argc, char *argv[], Options& opts)
 {
     if (argc < 2) {
         std::cout << "Wrong argument" << std::endl;
@@ -29,7 +29,7 @@ void parse_args(int argc, char *argv[], Options * opts)
     while ( (c = getopt_long(argc, argv, "p:h", longopts, NULL) ) != -1) {
         switch (c) {
         case 'p':
-            opts->pipe = optarg;
+            opts.pipe = optarg;
             break;
         case 'h':
             print_help(argv[0]);

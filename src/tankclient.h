@@ -104,17 +104,12 @@ public:
     void* handle_thread(void* pipeptr);
 
     /**
-     * @brief communicates with spawned tank
-     */
-    void read_action();
-
-    /**
      * @brief request a command through a SIGUSR2 signal to tank
      */
     void request_command();
 
     /**
-     * @brief read command from a pipe
+     * @brief communicates with spawned tank
      */
     void read_command();
 
