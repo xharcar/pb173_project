@@ -168,45 +168,38 @@ void World::fire()
 }
 
 void World::fire_direction(TankClient& t) {
-    auto& foe_tanks = t.getColor() == Color::RED ? red_tanks : green_tanks;
-    switch(t.get_action()[1])
+    auto& foe_tanks = t.getColor() == Color::GREEN ? red_tanks : green_tanks;
+    for (TankClient& target : foe_tanks)
     {
-    case 'u':
-        for (TankClient& target : foe_tanks)
+        switch(t.get_action()[1])
         {
+        case 'u':
             if (target.getY() < t.getY() && target.getX() == t.getX())
             {
                 target.hit_tank(t.getColor());
             }
-        }
-        break;
-    case 'd':
-        for (TankClient& target : foe_tanks)
-        {
+            break;
+        case 'd':
             if (target.getY() > t.getY() && target.getX() == t.getX())
             {
                 target.hit_tank(t.getColor());
             }
-        }
-        break;
-    case 'l':
-        for (TankClient& target : foe_tanks)
-        {
+            break;
+        case 'l':
             if (target.getY() == t.getY() && target.getX() < t.getX())
             {
                 target.hit_tank(t.getColor());
             }
-        }
-        break;
-    case 'r':
-        for (TankClient& target : foe_tanks)
-        {
+            break;
+        case 'r':
             if (target.getY() == t.getY() && target.getX() < t.getX())
             {
                 target.hit_tank(t.getColor());
             }
+            break;
+        default:
+            assert(false);
         }
-        break;
     }
 }
 

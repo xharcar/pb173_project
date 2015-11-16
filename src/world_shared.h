@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <ctime> // time(0)
 #include <cstdlib>
 #include <string>
