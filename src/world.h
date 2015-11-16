@@ -2,6 +2,7 @@
 
 // C++ includes
 #include <utility> // pair
+#include <cstring> // strtok
 #include <iostream> // i/o
 #include <sstream> // stringstream
 #include <boost/range/join.hpp>
@@ -20,10 +21,12 @@
 // Utility type definitions
 typedef std::pair<int, int> Coord;
 typedef unsigned int uint;
-typedef struct{
-    int pfd[2];
-    char binpath[256];
-}tankutils;
+// mutex for writing commands
+pthread_mutex_t mtx;
+// conditional variable to control writing messages
+pthread_cond_t cvar;
+// messages coming from tanks, to be processed
+std::vector<std::string> tank_messages;
 
 
 /**

@@ -8,12 +8,14 @@ char** argv_extra;
 // can be used in main_sig_handler for correct exit
 World *w;
 
+
 // METHOD IMPLEMENTATIONS
 
 // UTILS
 
 Utils::Utils(int argc, char* argv[])
     : mDaemonize(false)
+
     , mGreenPath("")
     , mRedPath("")
     , mExit(false)
@@ -103,6 +105,7 @@ void Utils::printError()
     std::cerr << "Wrong arguments or something" << std::endl;
 }
 
+Utils::~Utils(){}
 // END OF UTILS
 
 // WORLD
@@ -149,13 +152,6 @@ Coord World::free_coord()
     return rv;
 }
 
-void World::req_com()
-{
-    for (TankClient t : boost::join(red_tanks, green_tanks))
-    {
-        t.request_command();
-    }
-}
 
 void World::fire()
 {
@@ -302,14 +298,6 @@ void World::respawn_tanks(Utils u)
     }
 }
 
-void World::read_com()
-{
-    for (TankClient t : boost::join(green_tanks, red_tanks))
-    {
-        t.read_command();
-    }
-}
-
 void World::refresh_zone()
 {
     std::cout << "Refreshing map" << std::endl;
@@ -326,15 +314,38 @@ void World::refresh_zone()
     }
 }
 
+void World::process_commands(Utils u,std::vector<std::string> ra, std::vector<std::string> ga){
+    for(auto m=tank_messages.begin();m!=tank_messages.end();++m){
+        char* pch = strtok((char*)m->c_str()," ");
+        pthread_t a = (pthread_t)atoi(pch);
+        pch = strtok(NULL," ");
+        for(int i=0;i<u.getRedTanks();i++){
+            if(red_tanks[i].getTID()==a){
+                ra[i].assign(pch);
+                break;
+            }
+        }
+        for(int i=0;i<u.getGreenTanks();i++){
+            if(green_tanks[i].getTID()==a){
+                ga[i].assign(pch);
+                break;
+            }
+        }
+    }
+
+}
+
 void World::play_round(Utils u)
 {
     std::vector<std::string> red_actions;
     std::vector<std::string> green_actions;
+    red_actions.resize(u.getRedTanks());
+    green_actions.resize(u.getGreenTanks());
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
-    std::cout << "Requesting tank orders" << std::endl;
-    req_com();
-    read_com();
+    pthread_cond_signal(&cvar);
+    usleep((useconds_t)u.getRoundTime()*1000);
+    process_commands(u,red_actions,green_actions);
     std::cout << "FIRE EVERYTHING!" << std::endl;
     fire();
     std::cout << "Moving tanks" << std::endl;
@@ -349,7 +360,6 @@ void World::play_round(Utils u)
     refresh_zone();
     std::cout << "Round " << u.getRoundsPlayed() << std::endl;
     output_map();
-    usleep((useconds_t)u.getRoundTime()*1000);
     // waits for round time to pass : round time given in ms,
     // sleep time in us, hence *1000
 }
@@ -403,6 +413,8 @@ void main_sig_handler(int sig){
 
 int main(int argc, char *argv[])
 {
+    pthread_mutex_init(&mtx,NULL);
+    pthread_cond_init(&cvar,NULL);
     argv_extra = argv;
     struct sigaction action;
     action.sa_flags=0;
@@ -420,6 +432,10 @@ int main(int argc, char *argv[])
             delete(&mUtils);
             return 1;
             }
+    }
+    if((mUtils.getMapHeight()*mUtils.getMapWidth()) < (mUtils.getGreenTanks()+ mUtils.getRedTanks())){
+        std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
+        return 2;
     }
     if(mUtils.getDaemonize())
     {

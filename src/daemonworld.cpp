@@ -2,7 +2,7 @@
 
 void DaemonWorld::add_tank(TankClient t, Utils u)
 {
-    if(t.getColor()==RED)
+    if(t.getColor()==Color::RED)
     {
         syslog(LOG_INFO,"Adding red tank\n");
         red_tanks.push_back(t);
@@ -80,12 +80,14 @@ void DaemonWorld::play_round(Utils u)
 {
     std::vector<std::string> red_actions;
     std::vector<std::string> green_actions;
+    red_actions.resize(u.getRedTanks());
+    green_actions.resize(u.getGreenTanks());
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
     syslog(LOG_INFO,"Round %d\n",u.getRoundsPlayed());
-    req_com();
-    syslog(LOG_INFO,"Reading tank commands\n");
-    read_com();
+    pthread_cond_signal(&cvar);
+    usleep((useconds_t)u.getRoundTime()*1000);
+    process_commands(u,red_actions,green_actions);
     syslog(LOG_INFO, "FIRE EVERYTHING!\n");
     fire();
     syslog(LOG_INFO,"Moving tanks");
@@ -99,7 +101,6 @@ void DaemonWorld::play_round(Utils u)
     respawn_tanks(u);
     refresh_zone();
     output_map();
-    usleep((useconds_t)u.getRoundTime()*1000);
     // waits for round time to pass : round time given in ms,
     // sleep time in us, hence *1000
 }
