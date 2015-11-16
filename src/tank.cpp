@@ -186,7 +186,7 @@ void signal_handler(int sig)
     }
 }
 
-int main(int argc, char *argv[])
+void run_tank()
 {
     struct sigaction action;
     sigemptyset(&action.sa_mask);
@@ -205,10 +205,5 @@ int main(int argc, char *argv[])
     {
         tank->waitForSignal();
     }
-
-
-
-
-    return 0;
 }
 

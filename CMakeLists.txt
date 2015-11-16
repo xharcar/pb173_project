@@ -7,8 +7,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pedantic -Wall -Wextra -ggdb
 # add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 add_executable(world
+    src/world_shared.h
+    src/tankclient.h
+    src/tankclient.cpp
     src/world.h
     src/world.cpp
+    src/daemonworld.h
+    src/daemonworld.cpp
 )
 
 add_executable(worldclient

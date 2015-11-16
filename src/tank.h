@@ -19,17 +19,20 @@ public:
     int getMapHeight() {return this->mMapHeight; }
     int getMapWidth() {return this->mMapWidth; }
     bool getExit() {return this->mExit; }
-
-
-
 };
 
 class Tank {
 public:
     enum Command {
-        MOVE_UP = 0, MOVE_DOWN = 1, MOVE_LEFT = 2, MOVE_RIGHT = 3, FIRE_UP = 4, FIRE_DOWN = 5, FIRE_LEFT = 6, FIRE_RIGHT = 7
-    } ;
-
+        MOVE_UP = 0,
+        MOVE_DOWN = 1,
+        MOVE_LEFT = 2,
+        MOVE_RIGHT = 3,
+        FIRE_UP = 4,
+        FIRE_DOWN = 5,
+        FIRE_LEFT = 6,
+        FIRE_RIGHT = 7
+    };
 
     Tank(Utils *utils);
     ~Tank();
@@ -46,7 +49,6 @@ public:
     const char fireDown[2] = {'f', 'd'};
     const char fireLeft[2] = {'f', 'l'};
     const char fireRight[2] = {'f', 'r'};
-
 
 private:
     Utils *mUtils;
