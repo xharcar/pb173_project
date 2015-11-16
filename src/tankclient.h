@@ -119,6 +119,12 @@ public:
      * @brief read command from a pipe
      */
     void read_command();
+
+    /**
+     * @brief set tank to be hit if fired upon by foe
+     * @param c color of the shooting tank
+     */
+    void hit_tank(Color c);
 };
 
 void tank_sig_handler(int sig);

@@ -61,6 +61,14 @@ void TankClient::read_command()
     this->action = std::string(buf);
 }
 
+void TankClient::hit_tank(Color c)
+{
+    if (c != this->color)
+    {
+        this->hit = true;
+    }
+}
+
 void tank_sig_handler(int sig){
     switch (sig) {
     case SIGUSR2:

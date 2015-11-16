@@ -158,31 +158,34 @@ void World::req_com()
 
 void World::fire()
 {
-    for(Tank t : boost::join(green_tanks, red_tanks))
+    for(TankClient t : boost::join(green_tanks, red_tanks))
     {
-        t.get_action;
-        if (t.get_action.size() == 0)
+        if (t.get_action().size() == 0)
         {
             break;
+        } else if (t.get_action()[0] == 'f')
+        {
+            switch(t.get_action()[1])
+            {
+            case 'u':
+                for (TankClient target : boost::join(green_tanks, red_tanks))
+                {
+                    if (target.getY() < t.getY() && target.getX() == t.getX())
+                    {
+                        target.hit_tank(t.getColor);
+                    }
+                }
+                break;
+            }
         }
     }
 
     for(unsigned i=0; i<actions.size(); ++i)
     {
-        if(actions[i][0] == 'f')
+        if(t.get_action()[0] == 'f')
         {
             switch(actions[i][1])
             {
-            case 'u':
-            {
-                for(std::size_t j=0;j<green_tanks.size();++j)
-                {
-                    if(green_tanks[j].getY() < tanks[i].getY()) green_tanks[j].setHit(true);
-                }
-                for(std::size_t j=0;j<red_tanks.size();++j)
-                {
-                    if(red_tanks[j].getY() < tanks[i].getY()) red_tanks[j].setHit(true);
-                }
             }
             break;
             case 'd':
@@ -529,7 +532,6 @@ void DaemonWorld::play_round(Utils u)
 
 void DaemonWorld::quit_safe(int sig)
 {
-    sig = sig;
     syslog(LOG_INFO,"Quitting safely\n");
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
         pthread_kill(t->getTID(),SIGTERM);
