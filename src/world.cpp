@@ -1,4 +1,5 @@
 #include "world.h"
+#include "daemonworld.h"
 
 
 // extra var to pass ARGV through for restart
@@ -225,6 +226,8 @@ void World::movetanks()
             case 'r' :
                 t.moveright();
                 break;
+            default:
+                assert(false);
             }
         }
     }

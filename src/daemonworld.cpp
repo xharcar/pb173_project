@@ -1,3 +1,4 @@
+#include "daemonworld.h"
 
 void DaemonWorld::add_tank(TankClient t, Utils u)
 {
@@ -12,24 +13,6 @@ void DaemonWorld::add_tank(TankClient t, Utils u)
         syslog(LOG_INFO,"Adding green tank\n");
         green_tanks.push_back(t);
         spawn_thread(t,u.getGreenPath());
-    }
-}
-
-void DaemonWorld::crash_tanks(std::vector<TankClient> tanks1,
-                        std::vector<TankClient> tanks2)
-{
-    syslog(LOG_INFO,"Checking for tank crashes");
-    for(int i=0;i<tanks1.size();++i){
-        for(int j=0;j<tanks2.size();++j){
-            if(tanks1[i].getTID() != tanks2[j].getTID() &&
-               // prevents a tank crashing into itself
-               tanks1[i].getX() == tanks2[j].getX() &&
-               tanks1[i].getY() == tanks2[j].getY() &&
-               !tanks1[i].getHit() && !tanks2[j].getHit()){
-                    tanks1[i].setHit(true);
-                    tanks2[j].setHit(true);
-            }
-        }
     }
 }
 
@@ -105,10 +88,9 @@ void DaemonWorld::play_round(Utils u)
     read_com();
     syslog(LOG_INFO, "FIRE EVERYTHING!\n");
     fire();
-    fire();
     syslog(LOG_INFO,"Moving tanks");
     movetanks();
-    movetanks();
+    syslog(LOG_INFO,"Checking for tank crashes");
     crash_tanks(red_tanks,red_tanks);
     crash_tanks(red_tanks,green_tanks);
     crash_tanks(green_tanks,green_tanks);

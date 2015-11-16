@@ -15,7 +15,6 @@
 #include <fcntl.h> // flock
 
 #include "tankclient.h"
-#include "daemonworld.h"
 
 
 // Utility type definitions
