@@ -111,8 +111,6 @@ public:
     /**
      * @brief request a command through a SIGUSR2 signal to tank
      */
-    void req_com();
-
     void request_command();
 
     /**
@@ -126,10 +124,23 @@ public:
      */
     void hit_tank(Color c);
 
+    /**
+     * @brief change tank coordinates
+     */
     void moveleft();
     void moveright();
     void moveup();
     void movedown();
+
+    /**
+     * @brief sends SIFTERM to the thread handle of tank
+     */
+    void kill_thread();
+
+    /**
+     * @brief waits for tank thread to end
+     */
+    void quit();
 };
 
 void tank_sig_handler(int sig);

@@ -89,6 +89,15 @@ void TankClient::movedown()
     this->y--;
 }
 
+void TankClient::kill_thread()
+{
+    pthread_kill(getTID(), SIGTERM);
+}
+
+void TankClient::quit()
+{
+    pthread_join(getTID(), NULL);
+}
 
 void tank_sig_handler(int sig){
     switch (sig) {
