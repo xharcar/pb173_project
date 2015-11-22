@@ -425,13 +425,9 @@ int main(int argc, char *argv[])
     sigaction(SIGUSR1,&action,NULL);
     Utils mUtils(argc, argv);
     int pid_file = open("/var/run/world.pid", O_CREAT | O_RDWR, 0666);
-    if(flock(pid_file, LOCK_EX | LOCK_NB)) {
-        // Another instance is running, end
-        if(errno == EWOULDBLOCK){
-            std::cerr << "World already running" << std::endl;
-            delete(&mUtils);
-            return 1;
-            }
+    if(flock(pid_file, LOCK_EX) == -1) {
+        std::cerr << "Error getting a lock on PID file" << std::endl;
+        return 1;
     }
     if((mUtils.getMapHeight()*mUtils.getMapWidth()) < (mUtils.getGreenTanks()+ mUtils.getRedTanks())){
         std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
