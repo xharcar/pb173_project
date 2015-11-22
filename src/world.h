@@ -2,6 +2,7 @@
 
 // C++ includes
 #include <utility> // pair
+#include <cstring> // strtok
 #include <iostream> // i/o
 #include <sstream> // stringstream
 #include <boost/range/join.hpp>
@@ -20,6 +21,13 @@
 // Utility type definitions
 typedef std::pair<int, int> Coord;
 typedef unsigned int uint;
+// mutex for writing commands
+pthread_mutex_t mtx;
+// conditional variable to control writing messages
+pthread_cond_t cvar;
+// messages coming from tanks, to be processed
+std::vector<std::string> tank_messages;
+
 
 /**
  * @brief Utility class for holding important data
@@ -117,6 +125,7 @@ protected:
     uint width;
     pthread_cond_t tank_cond_com;
     pthread_mutex_t tank_mutex_com;
+    std::vector<int> tank_messages;
 public:
     /**
      * @brief World constructor, also gets a pseudorandom seed

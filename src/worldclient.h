@@ -22,12 +22,13 @@ void parse_args(int argc, char *argv[], Options& opts);
 
 void print_help(char * progname);
 
-class  WorldClient {
+class WorldClient {
 protected:
     pid_t world_pid;
     FILE * pipe_stream;
     int height;
     int width;
+
 public:
     WorldClient(char * pipe) {
         get_world_pid();
@@ -48,6 +49,7 @@ public:
 class NCursesClient  : public WorldClient {
     WINDOW * nc_world;
     // WINDOW * nc_stats;
+
 public:
     /*
      * Initializes ncurses
