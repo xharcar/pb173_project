@@ -401,6 +401,20 @@ void main_sig_handler(int sig){
 // /===========================================================/
 // MAIN
 
+void pid() {
+    int pid_file = open("/var/run/world.pid", O_CREAT | O_RDWR, 0666);
+    if(flock(pid_file, LOCK_EX | LOCK_NB)) {
+        // Another instance is running, end
+        if(errno == EWOULDBLOCK){
+            std::cerr << "World already running" << std::endl;
+            delete(&mUtils);
+            return 1;
+            }
+    }
+    int wd = inotify_init();
+    inotify_add_watch(wd, "/var/run/world.pid", );
+}
+
 int main(int argc, char *argv[])
 {
     argv_extra = argv;

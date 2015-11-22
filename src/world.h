@@ -20,11 +20,6 @@
 // Utility type definitions
 typedef std::pair<int, int> Coord;
 typedef unsigned int uint;
-typedef struct{
-    int pfd[2];
-    char binpath[256];
-}tankutils;
-
 
 /**
  * @brief Utility class for holding important data
@@ -122,7 +117,6 @@ protected:
     uint width;
     pthread_cond_t tank_cond_com;
     pthread_mutex_t tank_mutex_com;
-    std::vector<int> tank_messages;
 public:
     /**
      * @brief World constructor, also gets a pseudorandom seed

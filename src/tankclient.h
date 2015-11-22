@@ -1,6 +1,7 @@
 #pragma once
 
 #include "world_shared.h"
+#include "tank.h"
 
 /**
  * @brief Represents a tank in-game
@@ -95,7 +96,7 @@ public:
      * @brief spawns a new tank thread, initialized TID of tank
      * @param tankpath path to tank binary to be executed
      */
-    void spawn_thread(std::string tankpath);
+    void spawn_thread();
 
     /**
      * @brief handles newly created tank thread
@@ -140,12 +141,3 @@ public:
 
 void tank_sig_handler(int sig);
 
-/**
- * @brief runs a tank
- * @param tankpipe pipe to send orders to world through
- */
-int run_tank(int* tankpipe);
-
-void* handle_thread(void* tankpipe);
-
-void spawn_thread(TankClient t, std::string tankpath);

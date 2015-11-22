@@ -168,7 +168,6 @@ bool Tank::sendCommand(Command command)
     }
     return true;
 }
-
 void signal_handler(int sig)
 {
     switch(sig)
@@ -186,7 +185,7 @@ void signal_handler(int sig)
     }
 }
 
-void run_tank()
+void run_tank(TankOptions opt)
 {
     struct sigaction action;
     sigemptyset(&action.sa_mask);

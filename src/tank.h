@@ -5,6 +5,10 @@
 #include <time.h>
 #include <iostream>
 
+struct TankOptions {
+
+}
+
 class Utils {
     int mMapHeight;
     int mMapWidth;

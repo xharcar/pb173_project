@@ -132,17 +132,14 @@ int run_tank(int* tankpipe){
     return 0;
 }
 
-void* handle_thread(void* tankpipe){
-    run_tank((int*)tankpipe);
-    return NULL;
-}
-
-void spawn_thread(TankClient t, std::string tankpath)
+void TankClient::spawn_thread()
 {
+    /*
     tankpath.clear();
     pipe(t.getpfd());
     pthread_t x = t.getTID();
-    pthread_create(&x,NULL,&handle_thread,(void*)t.getpfd());
     t.setTID(x);
+    */
+    pthread_create(&x, NULL, &run_tank, (void*)t.getpfd());
 }
 
