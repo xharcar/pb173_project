@@ -407,21 +407,7 @@ void main_sig_handler(int sig){
     }
 }
 
-
-// /===========================================================/
-// MAIN
-
-RunningInstance::RunningInstance( std::string pid_filepath )
-    : pid_filepath( pid_filepath )
-{
-}
-
-RunningInstance::~RunningInstance()
-{
-    close( pid_fd );
-}
-
-void RunningInstance::world_running( char* pid_filepath )
+void world_running( char* pid_filepath )
 {
     int pid_fd = open( pid_filepath, O_CREAT | O_RDWR, 0666 );
     if ( flock( pid_fd, LOCK_EX | LOCK_NB ) ) {
@@ -436,9 +422,10 @@ void RunningInstance::world_running( char* pid_filepath )
             assert(false);
         }
     }
+    return pid_fd;
 }
 
-void RunningInstance::watch_pid( char* pid_filepath )
+void watch_pid( char* pid_filepath )
 {
     int inotify_instance = inotify_init();
     if ( inotify_instance == -1 ) {
@@ -500,5 +487,6 @@ int main(int argc, char *argv[])
         w->play_round(mUtils);
     }
 
+    close(fd)
     return 0;
 }
