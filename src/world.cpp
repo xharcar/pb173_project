@@ -407,17 +407,18 @@ void main_sig_handler(int sig){
     }
 }
 
-void world_running( char* pid_filepath )
+int world_running( char* pid_filepath )
 {
+    // Possibly handle other errors when calling open()
     int pid_fd = open( pid_filepath, O_CREAT | O_RDWR, 0666 );
-    if ( flock( pid_fd, LOCK_EX | LOCK_NB ) ) {
+    while ( flock( pid_fd, LOCK_EX | LOCK_NB ) ) {
         switch ( errno ) {
         // Another instance is running
         case EWOULDBLOCK:
             std::cerr << "Another instance of world is already running." << std::endl;
             std::cerr << "Waiting for its end." << std::endl;
             watch_pid( pid_filepath );
-            break;
+            continue;
         default:
             assert(false);
         }
@@ -429,13 +430,15 @@ void watch_pid( char* pid_filepath )
 {
     int inotify_instance = inotify_init();
     if ( inotify_instance == -1 ) {
-        std::cerr < "Failed to create inotify instance" < std::endl;
+        std::cerr << "Failed to create inotify instance" << std::endl;
         assert(false);
     }
-    int watch_fd = inotify_add_watch( inotify_instance, pid_filepath, IN_CLOSE);
+    if (inotify_add_watch( inotify_instance, pid_filepath, IN_CLOSE)) {
+        std::cerr << "Failed to add file in to inotify instance" << std::endl;
+        std::abort();
+    }
     // struct inotify_event event;
     // read(inotify_instance, &event, sizeof(struct inotify_event) + NAME_MAX + 1);
-    // pselect(inotify_instance, NULL, NULL, NULL, NULL, sigmask?);
 
     // Blocking call waiting for the end of a different world
     select(inotify_instance, NULL, NULL, NULL, NULL);
