@@ -5,7 +5,7 @@
 extern volatile int wasSigUsr2 = 0;
 extern volatile int wasExitSig = 0;
 
-TankOptions::TankOptions(int argc, char *argv[]) :
+Utils::Utils(int argc, char *argv[]) :
     mExit(false)
 
 {
@@ -37,14 +37,19 @@ TankOptions::TankOptions(int argc, char *argv[]) :
             exit(-1);
         }
 }
+Utils::~Utils()
+{
 
-void TankOptions::print_error()
+}
+
+
+void Utils::printError()
 {
     fprintf(stderr, "Wrong arguments, use -h for help\n");
     exit(-1);
 }
 
-void TankOptions::print_help()
+void Utils::printHelp()
 {
     printf("=====================================================\n");
     printf("|         PB173 Internet Of Tanks presents:         |\n");
@@ -62,7 +67,7 @@ void TankOptions::print_help()
     ;
 }
 
-Tank::Tank(TankOptions *utils) :
+Tank::Tank(Utils *utils) :
     mUtils(utils),
     lastCommandSuccess(true),
     wasLastMove(false) //temporary
@@ -192,7 +197,7 @@ void run_tank(TankOptions opt)
     sigaction(SIGUSR2, &action, NULL);
 
 
-    TankOptions* utils = new TankOptions(argc, argv);
+    Utils* utils = new Utils(argc, argv);
     Tank * tank = new Tank(utils);
 
     while(true)
