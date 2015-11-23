@@ -14,6 +14,7 @@
 #include <sys/file.h> // FIFO, flock
 #include <sys/stat.h> // mkfifo
 #include <fcntl.h> // flock
+#include <sys/inotify.h>
 
 #include "tankclient.h"
 
@@ -28,6 +29,17 @@ pthread_cond_t cvar;
 // messages coming from tanks, to be processed
 std::vector<std::string> tank_messages;
 
+/**
+ * @brief checks whether an instance of world is already running
+ * @param pid_filepath location of pid file to check
+ */
+void world_running( char* pid_filepath );
+
+/**
+ * @brief blocking call which waits for the end of other world instances
+ * @param pid_filepath location of pid file to check
+ */
+void watch_pid( char* pid_filepath );
 
 /**
  * @brief Utility class for holding important data

@@ -411,18 +411,47 @@ void main_sig_handler(int sig){
 // /===========================================================/
 // MAIN
 
-void pid() {
-    int pid_file = open("/var/run/world.pid", O_CREAT | O_RDWR, 0666);
-    if(flock(pid_file, LOCK_EX | LOCK_NB)) {
-        // Another instance is running, end
-        if(errno == EWOULDBLOCK){
-            std::cerr << "World already running" << std::endl;
-            delete(&mUtils);
-            return 1;
-            }
+/*
+    if ( pid_file < 0 ) {
+        switch ( errno ) {
+        case EEXIST:
+            break;
+        default:
+        }
     }
-    int wd = inotify_init();
-    inotify_add_watch(wd, "/var/run/world.pid", );
+*/
+
+void world_running( char* pid_filepath )
+{
+    int pid_file = open( pid_filepath, O_CREAT | O_RDWR, 0666 );
+    if ( flock( pid_file, LOCK_EX | LOCK_NB ) ) {
+        switch ( errno ) {
+        // Another instance is running
+        case EWOULDBLOCK:
+            std::cerr << "Another instance of world is already running." << std::endl;
+            std::cerr << "Waiting for its end." << std::endl;
+            watch_pid( pid_filepath );
+            break;
+        default:
+            assert(false);
+        }
+    }
+}
+
+void watch_pid( char* pid_filepath )
+{
+    int inotify_instance = inotify_init();
+    if ( inotify_instance == -1 ) {
+        std::cerr < "Failed to create inotify instance" < std::endl;
+        assert(false);
+    }
+    int watch_fd = inotify_add_watch( inotify_instance, pid_filepath, IN_CLOSE);
+    // struct inotify_event event;
+    // read(inotify_instance, &event, sizeof(struct inotify_event) + NAME_MAX + 1);
+    // pselect(inotify_instance, NULL, NULL, NULL, NULL, sigmask?);
+
+    // Blocking call waiting for the end of a different world
+    select(inotify_instance, NULL, NULL, NULL, NULL);
 }
 
 int main(int argc, char *argv[])
@@ -438,15 +467,9 @@ int main(int argc, char *argv[])
     sigaction(SIGTERM,&action,NULL);
     sigaction(SIGUSR1,&action,NULL);
     Utils mUtils(argc, argv);
-    int pid_file = open("/var/run/world.pid", O_CREAT | O_RDWR, 0666);
-    if(flock(pid_file, LOCK_EX | LOCK_NB)) {
-        // Another instance is running, end
-        if(errno == EWOULDBLOCK){
-            std::cerr << "World already running" << std::endl;
-            delete(&mUtils);
-            return 1;
-            }
-    }
+
+    world_running("/var/run/world.pid");
+
     if((mUtils.getMapHeight()*mUtils.getMapWidth()) < (mUtils.getGreenTanks()+ mUtils.getRedTanks())){
         std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
         return 2;
