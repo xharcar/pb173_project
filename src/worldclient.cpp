@@ -70,17 +70,9 @@ void WorldClient::open_pipe(char * pipe) {
         std::cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << std::endl;
         exit(-1);
     }
-    pipe_stream = fdopen(fd, "r");
-    if (!pipe_stream) {
+    this->pipe_stream = fdopen( fd, "r" );
+    if ( !this->pipe_stream ) {
         std::cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << std::endl;
-        exit(-1);
-    }
-    clearerr(pipe_stream);
-    int dimensions = fscanf(pipe_stream, "%d, %d", &width, &height);
-    if ( dimensions == EOF && ferror(pipe_stream) ) {
-        std::cerr << strerror(errno) << "Error occured while parsing the pipe stream." << std::endl;
-    } else if (dimensions != 2 ) {
-        std::cerr << "Error: Worng format of the data in the pipe." << std::endl;
         exit(-1);
     }
 }
@@ -106,11 +98,23 @@ NCursesClient::NCursesClient(char * pipe) : WorldClient(pipe) {
     keys();
 }
 
+void NCursesClient::parse_dimensions() {
+    clearerr( this->pipe_stream );
+    int dimensions = fscanf( pipe_stream, "%d, %d", &width, &height );
+    if ( dimensions == EOF && ferror(pipe_stream) ) {
+        std::cerr << strerror(errno) << "Error occured while parsing the pipe stream." << std::endl;
+    }
+    else if ( dimensions != 2 ) {
+        std::cerr << "Error: Worng format of the data in the pipe." << std::endl;
+        exit(-1);
+    }
+}
+
 void NCursesClient::print_tanks() {
     char sector;
     int x = 0, y = 0;
-    while ( fscanf(pipe_stream, ",%c", &sector) != EOF) {
-        switch (sector) {
+    while ( fscanf(pipe_stream, ",%c", &sector) != EOF ) {
+        switch ( sector ) {
         case 'r':
             draw_tank(x, y, Color::RED);
             break;
@@ -120,15 +124,19 @@ void NCursesClient::print_tanks() {
         case '0':
             undraw_tank(x, y);
             break;
+        default:
+            std::cerr << "Wrong map format in the pipe" << std::endl;
+            assert(false);
         }
         x++;
-        if (x >= width) {
+        if (x >= this->width) {
             x = 0;
             y++;
         }
-        if (y >= height) {
+        if (y >= this->height) {
             wrefresh(nc_world);
             keys();
+            parse_dimensions();
         }
     }
 }

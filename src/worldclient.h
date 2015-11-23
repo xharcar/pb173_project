@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <ncurses.h>
 #include <csignal>
 #include <iostream>
