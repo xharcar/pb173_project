@@ -140,6 +140,7 @@ void TankClient::spawn_thread()
     pthread_t x = t.getTID();
     t.setTID(x);
     */
-    pthread_create(&x, NULL, &run_tank, (void*)t.getpfd());
+    TankOptions opts;
+    pthread_create(&tid, NULL, run_tank, (void*) opts);
 }
 
