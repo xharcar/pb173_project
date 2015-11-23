@@ -411,20 +411,20 @@ void main_sig_handler(int sig){
 // /===========================================================/
 // MAIN
 
-/*
-    if ( pid_file < 0 ) {
-        switch ( errno ) {
-        case EEXIST:
-            break;
-        default:
-        }
-    }
-*/
-
-void world_running( char* pid_filepath )
+RunningInstance::RunningInstance( std::string pid_filepath )
+    : pid_filepath( pid_filepath )
 {
-    int pid_file = open( pid_filepath, O_CREAT | O_RDWR, 0666 );
-    if ( flock( pid_file, LOCK_EX | LOCK_NB ) ) {
+}
+
+RunningInstance::~RunningInstance()
+{
+    close( pid_fd );
+}
+
+void RunningInstance::world_running( char* pid_filepath )
+{
+    int pid_fd = open( pid_filepath, O_CREAT | O_RDWR, 0666 );
+    if ( flock( pid_fd, LOCK_EX | LOCK_NB ) ) {
         switch ( errno ) {
         // Another instance is running
         case EWOULDBLOCK:
@@ -438,7 +438,7 @@ void world_running( char* pid_filepath )
     }
 }
 
-void watch_pid( char* pid_filepath )
+void RunningInstance::watch_pid( char* pid_filepath )
 {
     int inotify_instance = inotify_init();
     if ( inotify_instance == -1 ) {
@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
     sigaction(SIGUSR1,&action,NULL);
     Utils mUtils(argc, argv);
 
-    world_running("/var/run/world.pid");
+    int pid_fd = world_running("/var/run/world.pid");
 
     if((mUtils.getMapHeight()*mUtils.getMapWidth()) < (mUtils.getGreenTanks()+ mUtils.getRedTanks())){
         std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
@@ -499,5 +499,6 @@ int main(int argc, char *argv[])
     {
         w->play_round(mUtils);
     }
+
     return 0;
 }
