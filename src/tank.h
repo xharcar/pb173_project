@@ -6,23 +6,18 @@
 #include <iostream>
 
 struct TankOptions {
-
-}
-
-class Utils {
     int mMapHeight;
     int mMapWidth;
     bool mExit;
 
 public:
-    Utils(int argc, char *argv[]);
-    ~Utils();
-    void printHelp();
-    void printError();
+    TankOptions(int argc, char *argv[]);
+    void print_help();
+    void print_error();
 
-    int getMapHeight() {return this->mMapHeight; }
-    int getMapWidth() {return this->mMapWidth; }
-    bool getExit() {return this->mExit; }
+    int get_map_height() { return this->mMapHeight; }
+    int get_map_width() { return this->mMapWidth; }
+    bool get_exit() { return this->mExit; }
 };
 
 class Tank {
@@ -38,7 +33,7 @@ public:
         FIRE_RIGHT = 7
     };
 
-    Tank(Utils *utils);
+    Tank(TankOptions *utils);
     ~Tank();
     void waitForSignal();
     void nextMove();
@@ -55,7 +50,7 @@ public:
     const char fireRight[2] = {'f', 'r'};
 
 private:
-    Utils *mUtils;
+    TankOptions *mUtils;
     Command lastCommand;
     bool wasLastMove;
     bool lastCommandSuccess;
