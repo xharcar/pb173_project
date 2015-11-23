@@ -1,6 +1,6 @@
 #include "daemonworld.h"
 
-void DaemonWorld::add_tank(TankClient t, Utils u)
+void DaemonWorld::add_tank(Tank t, WorldOptions u)
 {
     if(t.getColor()==Color::RED)
     {
@@ -16,7 +16,7 @@ void DaemonWorld::add_tank(TankClient t, Utils u)
     }
 }
 
-void DaemonWorld::add_kills(Utils u)
+void DaemonWorld::add_kills(WorldOptions u)
 {
     syslog(LOG_INFO,"Adding kills, old counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
     for(int i=0;i<red_tanks.size();++i){
@@ -45,17 +45,17 @@ void DaemonWorld::remove_hit_tanks()
     }
 }
 
-void DaemonWorld::respawn_tanks(Utils u)
+void DaemonWorld::respawn_tanks(WorldOptions u)
 {
     syslog(LOG_INFO,"Respawning tanks\n");
     while(red_tanks.size() < u.getRedTanks()){
         Coord c = World::free_coord();
-        TankClient t = TankClient(c.first, c.second, RED);
+        Tank t = Tank(c.first, c.second, RED);
         add_tank(t,u);
     }
     while(green_tanks.size() < u.getGreenTanks()){
         Coord c = World::free_coord();
-        TankClient t = TankClient(c.first, c.second, GREEN);
+        Tank t = Tank(c.first, c.second, GREEN);
         add_tank(t,u);
     }
 }
@@ -76,7 +76,7 @@ void DaemonWorld::refresh_zone()
     }
 }
 
-void DaemonWorld::play_round(Utils u)
+void DaemonWorld::play_round(WorldOptions u)
 {
     std::vector<std::string> red_actions;
     std::vector<std::string> green_actions;

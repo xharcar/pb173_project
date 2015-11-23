@@ -33,7 +33,7 @@ public:
      * @param u Utils instance with tank binary path
      * @override World::add_tank
      */
-    void add_tank(TankClient t, Utils u);
+    void add_tank(Tank t, WorldOptions u);
 
     /**
      * @brief represents a round of gameplay;
@@ -46,7 +46,7 @@ public:
      *  and respawns occur
      * @param u Utils class instance holding necessary data
      */
-    void play_round(Utils u);
+    void play_round(WorldOptions u);
 
     /**
      * @brief refreshes battlefield status at end of round for
@@ -60,7 +60,7 @@ public:
      * the reason why the tank is out of action is irrelevant
      * @param u Utils class instance into which kill counts are written
      */
-    void add_kills(Utils u);
+    void add_kills(WorldOptions u);
 
     /**
      * @brief removes hit tanks from the board
@@ -72,7 +72,7 @@ public:
      * @param u Utils class instance holding necessary info
      *  (how many tanks each side fields)
      */
-    void respawn_tanks(Utils u);
+    void respawn_tanks(WorldOptions u);
 
     /**
      * @brief cleans up world

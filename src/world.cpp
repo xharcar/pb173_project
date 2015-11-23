@@ -13,12 +13,10 @@ World *w;
 
 // UTILS
 
-Utils::Utils(int argc, char* argv[])
+WorldOptions::WorldOptions(int argc, char* argv[])
     : mDaemonize(false)
-
     , mGreenPath("")
     , mRedPath("")
-    , mExit(false)
     , red_kills(0)
     , green_kills(0)
     , rounds_played(0)
@@ -68,21 +66,21 @@ Utils::Utils(int argc, char* argv[])
             this->fifoPath.append(optarg);
             break;
         case 'h':
-            this->printHelp();
+            this->print_help();
             exit(0);
         default:
-            this->printError();
+            this->print_error();
             exit(-1);
         }
     }
     if(mMapHeight<=0 || mMapWidth<=0 || mRoundTime <=0)
     {
-        this->printHelp();
+        this->print_help();
         exit(-1);
     }
 }
 
-void Utils::printHelp()
+void WorldOptions::print_help()
 {
     std::cout <<"=====================================================" << std::endl
               <<"|         PB173 Internet Of Tanks presents:  WORLD  |" << std::endl
@@ -100,28 +98,25 @@ void Utils::printHelp()
               <<"=====================================================" << std::endl;
 }
 
-void Utils::printError()
+void WorldOptions::print_error()
 {
     std::cerr << "Wrong arguments or something" << std::endl;
 }
 
-Utils::~Utils(){}
-// END OF UTILS
-
 // WORLD
-void World::add_tank(TankClient t, Utils u)
+void World::add_tank(Tank t, WorldOptions u)
 {
     if(t.getColor() == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
         red_tanks.push_back(t);
-        spawn_thread(t, u.getRedPath());
+        // spawn_thread(t, u.getRedPath());
     }
     else
     {
         std::cout << "Adding green tank" << std::endl;
         green_tanks.push_back(t);
-        spawn_thread(t, u.getGreenPath());
+        // spawn_thread(t, u.getGreenPath());
     }
 }
 
@@ -155,7 +150,7 @@ Coord World::free_coord()
 
 void World::fire()
 {
-    for(TankClient& t : boost::join(green_tanks, red_tanks))
+    for(Tank& t : boost::join(green_tanks, red_tanks))
     {
         if (t.get_action().size() != 0 && t.get_action()[0] == 'f')
         {
@@ -164,9 +159,9 @@ void World::fire()
     }
 }
 
-void World::fire_direction(TankClient& t) {
+void World::fire_direction(Tank& t) {
     auto& foe_tanks = t.getColor() == Color::GREEN ? red_tanks : green_tanks;
-    for (TankClient& target : foe_tanks)
+    for (Tank& target : foe_tanks)
     {
         switch(t.get_action()[1])
         {
@@ -202,7 +197,7 @@ void World::fire_direction(TankClient& t) {
 
 void World::movetanks()
 {
-    for(TankClient& t : boost::join(green_tanks, red_tanks))
+    for(Tank& t : boost::join(green_tanks, red_tanks))
     {
         if (t.get_action().size() != 0
             && t.get_action()[0] == 'm'
@@ -229,8 +224,8 @@ void World::movetanks()
     }
 }
 
-void World::crash_tanks(std::vector<TankClient> tanks1,
-                        std::vector<TankClient> tanks2)
+void World::crash_tanks(std::vector<Tank> tanks1,
+                        std::vector<Tank> tanks2)
 {
     for(std::size_t i=0;i<tanks1.size();++i){
         for(std::size_t j=0;j<tanks2.size();++j){
@@ -246,7 +241,7 @@ void World::crash_tanks(std::vector<TankClient> tanks1,
     }
 }
 
-void World::add_kills(Utils u)
+void World::add_kills(WorldOptions u)
 {
     std::cout << "Adding kills, old counts: " << std::endl
     << "Red: " << u.getRedKills() << std::endl
@@ -283,17 +278,17 @@ void World::remove_hit_tanks()
     }
 }
 
-void World::respawn_tanks(Utils u)
+void World::respawn_tanks(WorldOptions u)
 {
     std::cout << "Respawning tanks" << std::endl;
     while(red_tanks.size() < u.getRedTanks()){
         Coord c = World::free_coord();
-        TankClient t = TankClient(c.first, c.second, RED);
+        Tank t = Tank(c.first, c.second, RED);
         add_tank(t,u);
     }
     while(green_tanks.size() < u.getGreenTanks()){
         Coord c = World::free_coord();
-        TankClient t = TankClient(c.first, c.second, GREEN);
+        Tank t = Tank(c.first, c.second, GREEN);
         add_tank(t,u);
     }
 }
@@ -314,7 +309,7 @@ void World::refresh_zone()
     }
 }
 
-void World::process_commands(Utils u,std::vector<std::string> ra, std::vector<std::string> ga){
+void World::process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga){
     for(auto m=tank_messages.begin();m!=tank_messages.end();++m){
         char* pch = strtok((char*)m->c_str()," ");
         pthread_t a = (pthread_t)atoi(pch);
@@ -335,7 +330,7 @@ void World::process_commands(Utils u,std::vector<std::string> ra, std::vector<st
 
 }
 
-void World::play_round(Utils u)
+void World::play_round(WorldOptions u)
 {
     std::vector<std::string> red_actions;
     std::vector<std::string> green_actions;
@@ -374,7 +369,7 @@ void World::output_map()
     }
 }
 
-void World::quit_safe(int sig)
+void World::quit_safe()
 {
     std::cout << "Quitting safely" << std::endl;
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
@@ -397,7 +392,7 @@ void main_sig_handler(int sig){
         case SIGINT:
         case SIGQUIT:
         case SIGTERM:{
-            w->quit_safe(sig);
+            w->quit_safe();
             delete (w);
         }break;
         case SIGUSR1:{
@@ -456,7 +451,7 @@ int main(int argc, char *argv[])
     sigaction(SIGQUIT,&action,NULL);
     sigaction(SIGTERM,&action,NULL);
     sigaction(SIGUSR1,&action,NULL);
-    Utils mUtils(argc, argv);
+    WorldOptions mUtils(argc, argv);
 
     int pid_fd = world_running("/var/run/world.pid");
 
@@ -475,13 +470,13 @@ int main(int argc, char *argv[])
     for (uint i = 0; i < mUtils.getGreenTanks(); i++)
     {
         Coord c = w->free_coord();
-        TankClient t = TankClient(c.first, c.second, GREEN);
+        Tank t = Tank(c.first, c.second, GREEN);
         w->add_tank(t,mUtils);
     }
     for (uint i = 0; i < mUtils.getRedTanks(); i++)
     {
         Coord c = w->free_coord();
-        TankClient t = TankClient(c.first, c.second, RED);
+        Tank t = Tank(c.first, c.second, RED);
         w->add_tank(t,mUtils);
     }
 
@@ -490,6 +485,6 @@ int main(int argc, char *argv[])
         w->play_round(mUtils);
     }
 
-    close(fd)
+    close(pid_fd);
     return 0;
 }

@@ -16,7 +16,7 @@
 #include <fcntl.h> // flock
 #include <sys/inotify.h>
 
-#include "tankclient.h"
+#include "tank.h"
 
 
 // Utility type definitions
@@ -44,7 +44,7 @@ void watch_pid( char* pid_filepath );
 /**
  * @brief Utility class for holding important data
  */
-class Utils
+class WorldOptions
 {
     bool mDaemonize;
     uint mRoundTime;
@@ -55,73 +55,54 @@ class Utils
     std::string fifoPath;
     uint mGreenTanks;
     uint mRedTanks;
-    bool mExit;
     uint red_kills;
     uint green_kills;
     uint rounds_played;
 
 public:
-    Utils(int argc, char *argv[]);
-    void printHelp();
-    void printError();
+    WorldOptions(int argc, char *argv[]);
+    void print_help();
+    void print_error();
 
-    bool getDaemonize()
+    bool getDaemonize() { return this->mDaemonize; }
+
+    uint getRoundTime() { return this->mRoundTime; }
+
+    uint getMapHeight() { return this->mMapHeight; }
+
+    uint getMapWidth() { return this->mMapWidth; }
+
+    std::string getGreenPath() { return this->mGreenPath; }
+
+    std::string getRedPath() { return this->mRedPath; }
+
+    uint getGreenTanks() { return this->mGreenTanks; }
+
+    uint getRedTanks() { return this->mRedTanks; }
+
+    uint getRedKills() { return this->red_kills; }
+
+    uint getGreenKills() { return this->green_kills; }
+
+    uint getRoundsPlayed() { return this->rounds_played; }
+
+    std::string getFifoPath() { return this->fifoPath; }
+
+    void incRedKills()
     {
-        return this->mDaemonize;
-    }
-    uint getRoundTime()
-    {
-        return this->mRoundTime;
-    }
-    uint getMapHeight()
-    {
-        return this->mMapHeight;
-    }
-    uint getMapWidth()
-    {
-        return this->mMapWidth;
-    }
-    std::string getGreenPath()
-    {
-        return this->mGreenPath;
-    }
-    std::string getRedPath()
-    {
-        return this->mRedPath;
-    }
-    uint getGreenTanks()
-    {
-        return this->mGreenTanks;
-    }
-    uint getRedTanks()
-    {
-        return this->mRedTanks;
-    }
-    bool getExit()
-    {
-        return this->mExit;
-    }
-    void incRedKills(){
         this->red_kills++;
     }
-    void incGreenKills(){
+
+    void incGreenKills()
+    {
         this->green_kills++;
     }
-    uint getRedKills(){
-        return this->red_kills;
-    }
-    uint getGreenKills(){
-        return this->green_kills;
-    }
-    uint getRoundsPlayed(){
-        return this->rounds_played;
-    }
-    void incRoundsPlayed(){
+
+    void incRoundsPlayed()
+    {
         this->rounds_played++;
     }
-    std::string getFifoPath(){
-        return this->fifoPath;
-    }
+
 };
 
 /**
@@ -130,8 +111,8 @@ public:
 class World
 {
 protected:
-    std::vector<TankClient> green_tanks;
-    std::vector<TankClient> red_tanks;
+    std::vector<Tank> green_tanks;
+    std::vector<Tank> red_tanks;
     std::vector< std::vector<Color> > zone;
     uint height;
     uint width;
@@ -156,7 +137,7 @@ public:
      * @param t info about tank to spawn
      * @param u Utils instance with tank binary path
      */
-    void add_tank(TankClient t, Utils u);
+    void add_tank(Tank t, WorldOptions u);
 
     /**
      * @brief Checks if given map coordinate is free
@@ -183,7 +164,7 @@ public:
      *  and respawns occur
      * @param u Utils class instance holding necessary data
      */
-    void play_round(Utils u);
+    void play_round(WorldOptions u);
 
     /**
      * @brief refreshes battlefield status at end of round for
@@ -209,7 +190,7 @@ public:
     /**
      * @brief tank t fires in a specifis direction based on his action attribute
      */
-    void fire_direction(TankClient& t);
+    void fire_direction(Tank& t);
 
     /**
      * @brief moves tanks if they weren't hit and have received a move order
@@ -225,8 +206,8 @@ public:
      * @param tanks2 set of tanks tanks from tanks1 can run into
      * note: allied tanks can crash into each other
      */
-    void crash_tanks(std::vector<TankClient> tanks1,
-                     std::vector<TankClient> tanks2);
+    void crash_tanks(std::vector<Tank> tanks1,
+                     std::vector<Tank> tanks2);
 
     /**
      * @brief adds kills according to tanks hit; crashes count
@@ -234,7 +215,7 @@ public:
      * the reason why the tank is out of action is irrelevant
      * @param u Utils class instance into which kill counts are written
      */
-    void add_kills(Utils u);
+    void add_kills(WorldOptions u);
 
     /**
      * @brief removes hit tanks from the board
@@ -246,17 +227,18 @@ public:
      * @param u Utils class instance holding necessary info
      *  (how many tanks each side fields)
      */
-    void respawn_tanks(Utils u);
+    void respawn_tanks(WorldOptions u);
 
     /**
      * @brief cleans up world
-     * @param signal signal which is reacted upon
      */
-    void quit_safe(int signal);
+    void quit_safe();
 
     /**
      * @brief prints map info to cout
      */
     void output_map();
+
+    void process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga);
 };
 
