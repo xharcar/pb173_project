@@ -309,8 +309,9 @@ void World::refresh_zone()
     }
 }
 
-void World::process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga){
-    for(auto m=tank_messages.begin();m!=tank_messages.end();++m){
+void World::process_commands( WorldOptions u, std::vector< std::string > ra, std::vector< std::string > ga )
+{
+    for ( auto m = tank_messages.begin(); m != tank_messages.end(); ++m ) {
         char* pch = strtok((char*)m->c_str()," ");
         pthread_t a = (pthread_t)atoi(pch);
         pch = strtok(NULL," ");
@@ -327,7 +328,6 @@ void World::process_commands(WorldOptions u,std::vector<std::string> ra, std::ve
             }
         }
     }
-
 }
 
 void World::play_round(WorldOptions u)
@@ -402,10 +402,10 @@ void main_sig_handler(int sig){
     }
 }
 
-int world_running( char* pid_filepath )
+int world_running( std::string pid_filepath )
 {
     // Possibly handle other errors when calling open()
-    int pid_fd = open( pid_filepath, O_CREAT | O_RDWR, 0666 );
+    int pid_fd = open( pid_filepath.c_str(), O_CREAT | O_RDWR, 0666 );
     while ( flock( pid_fd, LOCK_EX | LOCK_NB ) ) {
         switch ( errno ) {
         // Another instance is running
@@ -415,25 +415,23 @@ int world_running( char* pid_filepath )
             watch_pid( pid_filepath );
             continue;
         default:
-            assert(false);
+            assert( false );
         }
     }
     return pid_fd;
 }
 
-void watch_pid( char* pid_filepath )
+void watch_pid( std::string pid_filepath )
 {
     int inotify_instance = inotify_init();
     if ( inotify_instance == -1 ) {
         std::cerr << "Failed to create inotify instance" << std::endl;
         assert(false);
     }
-    if (inotify_add_watch( inotify_instance, pid_filepath, IN_CLOSE)) {
+    if (inotify_add_watch( inotify_instance, pid_filepath.c_str(), IN_CLOSE)) {
         std::cerr << "Failed to add file in to inotify instance" << std::endl;
         std::abort();
     }
-    // struct inotify_event event;
-    // read(inotify_instance, &event, sizeof(struct inotify_event) + NAME_MAX + 1);
 
     // Blocking call waiting for the end of a different world
     select(inotify_instance, NULL, NULL, NULL, NULL);
@@ -441,16 +439,15 @@ void watch_pid( char* pid_filepath )
 
 int main(int argc, char *argv[])
 {
+    signal(SIGINT, main_sig_handler);
+    signal(SIGQUIT, main_sig_handler);
+    signal(SIGTERM, main_sig_handler);
+    signal(SIGUSR1, main_sig_handler);
+
     pthread_mutex_init(&mtx,NULL);
     pthread_cond_init(&cvar,NULL);
     argv_extra = argv;
-    struct sigaction action;
-    action.sa_flags=0;
-    action.sa_handler = main_sig_handler;
-    sigaction(SIGINT,&action,NULL);
-    sigaction(SIGQUIT,&action,NULL);
-    sigaction(SIGTERM,&action,NULL);
-    sigaction(SIGUSR1,&action,NULL);
+
     WorldOptions mUtils(argc, argv);
 
     int pid_fd = world_running("/var/run/world.pid");

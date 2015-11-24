@@ -33,13 +33,13 @@ std::vector<std::string> tank_messages;
  * @brief checks whether an instance of world is already running
  * @param pid_filepath location of pid file to check
  */
-int world_running( char* pid_filepath );
+int world_running( std::string pid_filepath );
 
 /**
  * @brief blocking call which waits for the end of other world instances
  * @param pid_filepath location of pid file to check
  */
-void watch_pid( char* pid_filepath );
+void watch_pid( std::string pid_filepath );
 
 /**
  * @brief Utility class for holding important data
