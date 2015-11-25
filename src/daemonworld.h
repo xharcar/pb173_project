@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DAEMONWORLD_H
+#define DAEMONWORLD_H
 
 #include "world.h"
 
@@ -89,3 +90,4 @@ public:
 
 };
 
+#endif // DAEMONWORLD_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TANKCLIENT_H
+#define TANKCLIENT_H
 
 #include <unistd.h>
 #include <getopt.h>
@@ -59,3 +60,5 @@ private:
     int mWidthPos;
     int mHeightPos;
 };
+
+#endif // TANKCLIENT_H

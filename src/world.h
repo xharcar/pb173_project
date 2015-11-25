@@ -1,4 +1,5 @@
-#pragma once
+#ifndef WORLD_H
+#define WORLD_H
 
 // C++ includes
 #include <utility> // pair
@@ -242,3 +243,4 @@ public:
     void process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga);
 };
 
+#endif // WORLD_H

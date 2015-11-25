@@ -1,4 +1,5 @@
-#pragma once
+#ifndef WORLDCLIENT_H
+#define WORLDCLIENT_H
 
 #include <cassert>
 #include <ncurses.h>
@@ -92,3 +93,5 @@ public:
     }
     */
 };
+
+#endif // WORLDCLIENT_H

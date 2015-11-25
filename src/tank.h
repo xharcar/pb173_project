@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TANK_H
+#define TANK_H
 
 #include "world_shared.h"
 #include "tank.h"
@@ -141,3 +142,5 @@ public:
 
 void tank_sig_handler(int sig);
 
+
+#endif // TANK_H
