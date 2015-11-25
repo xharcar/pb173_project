@@ -26,8 +26,9 @@ public:
 
     ~DaemonWorld()
     {
-        closelog();
+        close();
     }
+
     /**
      * @brief Spawns a tank at given coordinates, which must be empty
      * @param t info about tank to spawn
@@ -87,6 +88,8 @@ public:
      * @override World::output_map
      */
     void output_map();
+
+    void close();
 
 };
 

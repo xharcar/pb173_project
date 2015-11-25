@@ -106,21 +106,12 @@ void DaemonWorld::play_round(WorldOptions u)
 }
 
 
-void DaemonWorld::quit_safe(int sig)
+void DaemonWorld::close()
 {
     syslog(LOG_INFO,"Quitting safely\n");
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        pthread_kill(t->getTID(),SIGTERM);
-        pthread_join(t->getTID(),NULL);
-    }
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        pthread_kill(t->getTID(),SIGTERM);
-        pthread_join(t->getTID(),NULL);
-    }
-    red_tanks.clear();
-    green_tanks.clear();
-    zone.clear();
     close(pipefd);
+    closelog();
+    World::close();
 }
 
 void DaemonWorld::output_map()

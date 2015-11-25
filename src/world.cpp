@@ -1,22 +1,18 @@
 #include "world.h"
 #include "daemonworld.h"
 
+volatile std::sig_atomic_t World::world_signal_status = 0;
 
 // extra var to pass ARGV through for restart
 char** argv_extra;
-// world to be constructed after program start;
-// can be used in main_sig_handler for correct exit
-World *w;
-
 
 // METHOD IMPLEMENTATIONS
 
-// UTILS
-
 WorldOptions::WorldOptions(int argc, char* argv[])
+    // Set default values here
     : mDaemonize(false)
-    , mGreenPath("")
-    , mRedPath("")
+    , mGreenPath("../bin/tank")
+    , mRedPath("../bin/tank")
     , red_kills(0)
     , green_kills(0)
     , rounds_played(0)
@@ -309,6 +305,7 @@ void World::refresh_zone()
     }
 }
 
+/*
 void World::process_commands( WorldOptions u, std::vector< std::string > ra, std::vector< std::string > ga )
 {
     for ( auto m = tank_messages.begin(); m != tank_messages.end(); ++m ) {
@@ -329,6 +326,7 @@ void World::process_commands( WorldOptions u, std::vector< std::string > ra, std
         }
     }
 }
+*/
 
 void World::play_round(WorldOptions u)
 {
@@ -369,7 +367,7 @@ void World::output_map()
     }
 }
 
-void World::quit_safe()
+void World::close()
 {
     std::cout << "Quitting safely" << std::endl;
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
@@ -386,19 +384,22 @@ void World::quit_safe()
 }
 // END OF WORLD
 
-// MAIN SIGNAL HANDLER
-void main_sig_handler(int sig){
-    switch(sig){
-        case SIGINT:
-        case SIGQUIT:
-        case SIGTERM:{
-            w->quit_safe();
-            delete (w);
-        }break;
-        case SIGUSR1:{
-            execl("../world","../world,",argv_extra,(char*)NULL);
-        }
-    return;
+void World::set_world_signal_status(int sig) {
+    World::world_signal_status = sig;
+}
+
+void World::handle_signal(int sig)
+{
+    switch(sig) {
+    case SIGINT:
+    case SIGQUIT:
+    case SIGTERM:
+        close();
+        break;
+    case SIGUSR1:
+        close();
+        execl("../world","../world,",argv_extra,(char*)NULL);
+        break;
     }
 }
 
@@ -437,12 +438,24 @@ void watch_pid( std::string pid_filepath )
     select(inotify_instance, NULL, NULL, NULL, NULL);
 }
 
+void set_up_signal_handling()
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = World::set_world_signal_status;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGQUIT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
+
+}
+
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, main_sig_handler);
-    signal(SIGQUIT, main_sig_handler);
-    signal(SIGTERM, main_sig_handler);
-    signal(SIGUSR1, main_sig_handler);
+    set_up_signal_handling();
+    int pid_fd = world_running("/var/run/world.pid");
 
     pthread_mutex_init(&mtx,NULL);
     pthread_cond_init(&cvar,NULL);
@@ -450,19 +463,10 @@ int main(int argc, char *argv[])
 
     WorldOptions mUtils(argc, argv);
 
-    int pid_fd = world_running("/var/run/world.pid");
 
     if((mUtils.getMapHeight()*mUtils.getMapWidth()) < (mUtils.getGreenTanks()+ mUtils.getRedTanks())){
         std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
         return 2;
-    }
-    if(mUtils.getDaemonize())
-    {
-        static_cast<DaemonWorld*> (w);
-        DaemonWorld* w = new DaemonWorld(mUtils.getMapHeight(),mUtils.getMapWidth(),mUtils.getFifoPath());
-    }else
-    {
-        w = new World(mUtils.getMapHeight(),mUtils.getMapWidth());
     }
     for (uint i = 0; i < mUtils.getGreenTanks(); i++)
     {

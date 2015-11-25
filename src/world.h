@@ -31,6 +31,12 @@ pthread_cond_t cvar;
 std::vector<std::string> tank_messages;
 
 /**
+ * @brief set_up_signal_handling uses sigaction function
+ * to set up set_up_signal_handling() as signal handler
+ */
+void set_up_signal_handling();
+
+/**
  * @brief checks whether an instance of world is already running
  * @param pid_filepath location of pid file to check
  */
@@ -120,6 +126,8 @@ protected:
     pthread_cond_t tank_cond_com;
     pthread_mutex_t tank_mutex_com;
     std::vector<int> tank_messages;
+    static volatile sig_atomic_t world_signal_status;
+
 public:
     /**
      * @brief World constructor, also gets a pseudorandom seed
@@ -131,6 +139,10 @@ public:
     {
         std::vector<std::vector<Color> > zone(height,std::vector<Color>(width,EMPTY));
         pthread_mutex_init(&this->tank_mutex_com, NULL);
+    }
+
+    ~World() {
+        close();
     }
 
     /**
@@ -233,7 +245,7 @@ public:
     /**
      * @brief cleans up world
      */
-    void quit_safe();
+    void close();
 
     /**
      * @brief prints map info to cout
@@ -241,6 +253,20 @@ public:
     void output_map();
 
     void process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga);
+
+    /**
+     * @brief set_world_signal_status handler to pass caught signal into a flag
+     * in an atomic way
+     * @param sig caught signal
+     */
+    static void set_world_signal_status(int sig);
+
+    /**
+     * @brief handle_signal is used to check flag World::world_signal_status
+     * for any caught signals and act upon them
+     * @param sig causing the interuption
+     */
+    void handle_signal(int sig);
 };
 
 #endif // WORLD_H
