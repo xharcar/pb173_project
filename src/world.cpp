@@ -239,18 +239,16 @@ void World::crash_tanks(std::vector<Tank> tanks1,
 
 void World::add_kills(WorldOptions u)
 {
-    std::cout << "Adding kills, old counts: " << std::endl
-    << "Red: " << u.getRedKills() << std::endl
-    << "Green: " << u.getGreenKills() << std::endl;
-    for(std::size_t i=0;i<red_tanks.size();++i){
-        if(red_tanks[i].getHit()) u.incGreenKills();
+    for (Tank& t : red_tanks) {
+        if (t.getHit()) {
+            u.incGreenKills();
+        }
     }
-    for(std::size_t i=0;i<green_tanks.size();++i){
-        if(green_tanks[i].getHit()) u.incRedKills();
+    for (Tank& t : green_tanks) {
+        if (t.getHit()) {
+            u.incRedKills();
+        }
     }
-    std::cout << "New kill counts: " << std::endl
-    << "Red: " << u.getRedKills() << std::endl
-    << "Green: " << u.getGreenKills() << std::endl;
 }
 
 void World::remove_hit_tanks()
@@ -276,7 +274,6 @@ void World::remove_hit_tanks()
 
 void World::respawn_tanks(WorldOptions u)
 {
-    std::cout << "Respawning tanks" << std::endl;
     while(red_tanks.size() < u.get_red_tanks()){
         Coord c = World::free_coord();
         Tank t = Tank(c.first, c.second, RED);
@@ -291,7 +288,6 @@ void World::respawn_tanks(WorldOptions u)
 
 void World::refresh_zone()
 {
-    std::cout << "Refreshing map" << std::endl;
     for(uint i=0;i<height;i++){
         for(uint j=0;j<width;i++){
             zone[i][j] = EMPTY;
@@ -347,9 +343,17 @@ void World::play_round(WorldOptions u)
     crash_tanks(red_tanks,red_tanks);
     crash_tanks(red_tanks,green_tanks);
     crash_tanks(green_tanks,green_tanks);
+    std::cout << "Adding kills, old counts: " << std::endl
+    << "Red: " << u.getRedKills() << std::endl
+    << "Green: " << u.getGreenKills() << std::endl;
     add_kills(u);
+    std::cout << "New kill counts: " << std::endl
+    << "Red: " << u.getRedKills() << std::endl
+    << "Green: " << u.getGreenKills() << std::endl;
     remove_hit_tanks();
+    std::cout << "Respawning tanks" << std::endl;
     respawn_tanks(u);
+    std::cout << "Refreshing map" << std::endl;
     refresh_zone();
     std::cout << "Round " << u.getRoundsPlayed() << std::endl;
     output_map();
@@ -359,12 +363,14 @@ void World::play_round(WorldOptions u)
 
 void World::output_map()
 {
+    std::stringstream ss;
+    ss << width << ',' << height;
     for(uint i=0;i<height;i++){
         for(uint j=0;j<width;j++){
-            std::cout << "|" << zone[i][j];
+            ss << ',' << zone[i][j];
         }
-        std::cout << "|" << std::endl;
     }
+    write(pipefd,ss.str().c_str(),(height*width*2)+4);
 }
 
 void World::close()

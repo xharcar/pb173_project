@@ -112,7 +112,7 @@ public:
     void hit_tank(Color c);
 
     /**
-     * @brief change tank coordinates
+     * @brief change tank's coordinates
      */
     void moveleft();
     void moveright();
@@ -131,6 +131,5 @@ public:
 };
 
 void tank_sig_handler(int sig);
-
 
 #endif // TANK_H

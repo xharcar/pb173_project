@@ -16,22 +16,6 @@ void DaemonWorld::add_tank(Tank t, WorldOptions u)
     }
 }
 
-void DaemonWorld::add_kills(WorldOptions u)
-{
-    syslog(LOG_INFO,"Adding kills, old counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
-    for (Tank& t : red_tanks) {
-        if (t.getHit()) {
-            u.incGreenKills();
-        }
-    }
-    for (Tank& t : green_tanks) {
-        if (t.getHit()) {
-            u.incRedKills();
-        }
-    }
-    syslog(LOG_INFO,"New kill counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
-}
-
 void DaemonWorld::remove_hit_tanks()
 {
     syslog(LOG_INFO,"Removing hit tanks\n");
@@ -46,37 +30,6 @@ void DaemonWorld::remove_hit_tanks()
             pthread_kill(t->getTID(),SIGTERM);
             green_tanks.erase(t);
         }
-    }
-}
-
-void DaemonWorld::respawn_tanks(WorldOptions u)
-{
-    syslog(LOG_INFO,"Respawning tanks\n");
-    while(red_tanks.size() < u.get_red_tanks()){
-        Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, RED);
-        add_tank(t,u);
-    }
-    while(green_tanks.size() < u.get_green_tanks()){
-        Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, GREEN);
-        add_tank(t,u);
-    }
-}
-
-void DaemonWorld::refresh_zone()
-{
-    syslog(LOG_INFO,"Refreshing map\n");
-    for(uint i=0;i<height;i++){
-        for(uint j=0;j<width;i++){
-            zone[i][j] = EMPTY;
-        }
-    }
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        zone[t->getX()][t->getY()] = RED;
-    }
-    for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
-        zone[t->getX()][t->getY()] = GREEN;
     }
 }
 
@@ -100,9 +53,13 @@ void DaemonWorld::play_round(WorldOptions u)
     crash_tanks(red_tanks,red_tanks);
     crash_tanks(red_tanks,green_tanks);
     crash_tanks(green_tanks,green_tanks);
+    syslog(LOG_INFO,"Adding kills, old counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
     add_kills(u);
+    syslog(LOG_INFO,"New kill counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
     remove_hit_tanks();
+    syslog(LOG_INFO,"Respawning tanks\n");
     respawn_tanks(u);
+    syslog(LOG_INFO,"Refreshing map\n");
     refresh_zone();
     output_map();
     // waits for round time to pass : round time given in ms,
@@ -116,18 +73,6 @@ void DaemonWorld::close()
     close(pipefd);
     closelog();
     World::close();
-}
-
-void DaemonWorld::output_map()
-{
-    std::stringstream ss;
-    ss << width << ',' << height;
-    for(uint i=0;i<height;i++){
-        for(uint j=0;j<width;j++){
-            ss << ',' << zone[i][j];
-        }
-    }
-    write(pipefd,ss.str().c_str(),(height*width*2)+4);
 }
 
 // END OF DAEMONWORLD OVERRIDES
