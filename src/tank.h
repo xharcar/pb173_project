@@ -64,16 +64,6 @@ public:
     uint getY();
 
     /**
-     * @brief X coordinate setter
-     */
-    void setX(int newx);
-
-    /**
-     * @brief Y coordinate setter
-     */
-    void setY(int newy);
-
-    /**
      * @brief color getter
      */
     Color getColor();

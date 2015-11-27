@@ -30,23 +30,9 @@ uint Tank::getY()
     return this->y;
 }
 
-void Tank::setX(int newx)
-{
-    this->x = newx;
-}
-
-void Tank::setY(int newy)
-{
-    this->y = newy;
-}
-
 Color Tank::getColor()
 {
     return this->color;
-}
-
-void Tank::setTID(pthread_t x){
-    this->tid = x;
 }
 
 void Tank::request_command()
@@ -115,6 +101,7 @@ void tank_sig_handler(int sig){
  * @param tankpipe pipe to send orders to world through
  */
 int run_tank(int* tankpipe){
+    // fixme: move srand initialization to class/global scope
     std::srand(std::time(0));
     int x = 0;
     struct sigaction action;
