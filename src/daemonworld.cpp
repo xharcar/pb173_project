@@ -1,6 +1,6 @@
 #include "daemonworld.h"
 
-void DaemonWorld::add_tank(TankClient t, Utils u)
+void DaemonWorld::add_tank(Tank t, WorldOptions u)
 {
     if(t.getColor()==Color::RED)
     {
@@ -16,14 +16,18 @@ void DaemonWorld::add_tank(TankClient t, Utils u)
     }
 }
 
-void DaemonWorld::add_kills(Utils u)
+void DaemonWorld::add_kills(WorldOptions u)
 {
     syslog(LOG_INFO,"Adding kills, old counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
-    for(int i=0;i<red_tanks.size();++i){
-        if(red_tanks[i].getHit()) u.incGreenKills();
+    for (Tank& t : red_tanks) {
+        if (t.getHit()) {
+            u.incGreenKills();
+        }
     }
-    for(int i=0;i<green_tanks.size();++i){
-        if(green_tanks[i].getHit()) u.incRedKills();
+    for (Tank& t : green_tanks) {
+        if (t.getHit()) {
+            u.incRedKills();
+        }
     }
     syslog(LOG_INFO,"New kill counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
 }
@@ -45,17 +49,17 @@ void DaemonWorld::remove_hit_tanks()
     }
 }
 
-void DaemonWorld::respawn_tanks(Utils u)
+void DaemonWorld::respawn_tanks(WorldOptions u)
 {
     syslog(LOG_INFO,"Respawning tanks\n");
-    while(red_tanks.size() < u.getRedTanks()){
+    while(red_tanks.size() < u.get_red_tanks()){
         Coord c = World::free_coord();
-        TankClient t = TankClient(c.first, c.second, RED);
+        Tank t = Tank(c.first, c.second, RED);
         add_tank(t,u);
     }
-    while(green_tanks.size() < u.getGreenTanks()){
+    while(green_tanks.size() < u.get_green_tanks()){
         Coord c = World::free_coord();
-        TankClient t = TankClient(c.first, c.second, GREEN);
+        Tank t = Tank(c.first, c.second, GREEN);
         add_tank(t,u);
     }
 }
@@ -76,12 +80,12 @@ void DaemonWorld::refresh_zone()
     }
 }
 
-void DaemonWorld::play_round(Utils u)
+void DaemonWorld::play_round(WorldOptions u)
 {
     std::vector<std::string> red_actions;
     std::vector<std::string> green_actions;
-    red_actions.resize(u.getRedTanks());
-    green_actions.resize(u.getGreenTanks());
+    red_actions.resize(u.get_red_tanks());
+    green_actions.resize(u.get_green_tanks());
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
     syslog(LOG_INFO,"Round %d\n",u.getRoundsPlayed());
@@ -106,21 +110,12 @@ void DaemonWorld::play_round(Utils u)
 }
 
 
-void DaemonWorld::quit_safe(int sig)
+void DaemonWorld::close()
 {
     syslog(LOG_INFO,"Quitting safely\n");
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        pthread_kill(t->getTID(),SIGTERM);
-        pthread_join(t->getTID(),NULL);
-    }
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        pthread_kill(t->getTID(),SIGTERM);
-        pthread_join(t->getTID(),NULL);
-    }
-    red_tanks.clear();
-    green_tanks.clear();
-    zone.clear();
     close(pipefd);
+    closelog();
+    World::close();
 }
 
 void DaemonWorld::output_map()

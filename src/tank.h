@@ -1,60 +1,146 @@
-#pragma once
+#ifndef TANK_H
+#define TANK_H
 
-#include <unistd.h>
-#include <getopt.h>
-#include <time.h>
-#include <iostream>
+#include "world_shared.h"
+#include "tank.h"
 
-struct TankOptions {
-    int mMapHeight;
-    int mMapWidth;
-    bool mExit;
-
-public:
-    TankOptions(int argc, char *argv[]);
-    void print_help();
-    void print_error();
-
-    int get_map_height() { return this->mMapHeight; }
-    int get_map_width() { return this->mMapWidth; }
-    bool get_exit() { return this->mExit; }
-};
-
-class Tank {
-public:
-    enum Command {
-        MOVE_UP = 0,
-        MOVE_DOWN = 1,
-        MOVE_LEFT = 2,
-        MOVE_RIGHT = 3,
-        FIRE_UP = 4,
-        FIRE_DOWN = 5,
-        FIRE_LEFT = 6,
-        FIRE_RIGHT = 7
-    };
-
-    Tank(TankOptions *utils);
-    ~Tank();
-    void waitForSignal();
-    void nextMove();
-    bool sendCommand(Command command);
-
-    const char * commandToSend;
-    const char moveUp[2] = {'m', 'u'};
-    const char moveDown[2] = {'m', 'd'};
-    const char moveLeft[2] = {'m', 'l'};
-    const char moveRight[2] = {'m', 'r'};
-    const char fireUp[2] = {'f', 'u'};
-    const char fireDown[2] = {'f', 'd'};
-    const char fireLeft[2] = {'f', 'l'};
-    const char fireRight[2] = {'f', 'r'};
-
+/**
+ * @brief Represents a tank in-game
+ */
+class Tank
+{
 private:
-    TankOptions *mUtils;
-    Command lastCommand;
-    bool wasLastMove;
-    bool lastCommandSuccess;
+    pthread_t tid;
+    int pfd [2];
+    bool hit;
+    uint x;
+    uint y;
+    Color color;
+    std::string action;
+public:
 
-    int mWidthPos;
-    int mHeightPos;
+    /**
+     * @brief Tank constructor, sets TID to 0(to indicate not yet initialized properly)
+     *  and hit flag to false(when a tank rolls up onto a battlefield, it usually is in fighting condition)
+     * @param x x coordinate of tank
+     * @param y y coordinate of tank
+     */
+    Tank(uint x, uint y, Color color) : tid(0), hit(false), x(x), y(y), color(color){}
+
+    /**
+     * @brief TID getter (for sending signals,...)
+     * @return TID of tank thread
+     */
+    pthread_t getTID();
+
+    /**
+     * @brief TID setter
+     * @param x TID to be set
+     */
+    void setTID(pthread_t x);
+
+    /**
+     * @brief hit flag getter
+     * @return true if tank has been hit, else false
+     */
+    bool getHit();
+
+    /**
+     * @brief hit flag setter (used only when tank has been hit)
+     * @param shot indicates whether tank has been hit(~true)
+     */
+    void setHit(bool shot);
+
+    /**
+     * @brief X coordinate getter
+     * @return tank x coordinate
+     */
+    uint getX();
+
+    /**
+     * @brief Y coordinate getter
+     * @return tank y coordinate
+     */
+    uint getY();
+
+    /**
+     * @brief X coordinate setter
+     */
+    void setX(int newx);
+
+    /**
+     * @brief Y coordinate setter
+     */
+    void setY(int newy);
+
+    /**
+     * @brief color getter
+     */
+    Color getColor();
+
+    /**
+     * @brief pipe read end getter for commands
+     */
+    int getPipe(){
+        return this->pfd[0];
+    }
+
+    int* getpfd(){
+        return this->pfd;
+    }
+
+    std::string get_action() const {
+        return this->action;
+    }
+
+    /**
+     * @brief spawns a new tank thread, initialized TID of tank
+     * @param tankpath path to tank binary to be executed
+     */
+    void spawn_thread();
+
+    /**
+     * @brief handles newly created tank thread
+     * @param pipeptr pointer pipe from which world reads tank commands
+     */
+    void* handle_thread(void* pipeptr);
+
+    /**
+     * @brief request a command through a SIGUSR2 signal to tank
+     */
+    void request_command();
+
+    /**
+     * @brief communicates with spawned tank
+     */
+    void read_command();
+
+    /**
+     * @brief set tank to be hit if fired upon by foe
+     * @param c color of the shooting tank
+     */
+    void hit_tank(Color c);
+
+    /**
+     * @brief change tank coordinates
+     */
+    void moveleft();
+    void moveright();
+    void moveup();
+    void movedown();
+
+    /**
+     * @brief sends SIFTERM to the thread handle of tank
+     */
+    void kill_thread();
+
+    /**
+     * @brief waits for tank thread to end
+     */
+    void quit();
 };
+
+void tank_sig_handler(int sig);
+
+
+#endif // TANK_H
