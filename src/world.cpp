@@ -277,12 +277,12 @@ void World::remove_hit_tanks()
 void World::respawn_tanks(WorldOptions u)
 {
     std::cout << "Respawning tanks" << std::endl;
-    while(red_tanks.size() < u.getRedTanks()){
+    while(red_tanks.size() < u.get_red_tanks()){
         Coord c = World::free_coord();
         Tank t = Tank(c.first, c.second, RED);
         add_tank(t,u);
     }
-    while(green_tanks.size() < u.getGreenTanks()){
+    while(green_tanks.size() < u.get_green_tanks()){
         Coord c = World::free_coord();
         Tank t = Tank(c.first, c.second, GREEN);
         add_tank(t,u);
@@ -332,8 +332,8 @@ void World::play_round(WorldOptions u)
 {
     std::vector<std::string> red_actions;
     std::vector<std::string> green_actions;
-    red_actions.resize(u.getRedTanks());
-    green_actions.resize(u.getGreenTanks());
+    red_actions.resize(u.get_red_tanks());
+    green_actions.resize(u.get_green_tanks());
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
     pthread_cond_signal(&cvar);
@@ -457,33 +457,43 @@ int main(int argc, char *argv[])
     set_up_signal_handling();
     int pid_fd = world_running("/var/run/world.pid");
 
-    pthread_mutex_init(&mtx,NULL);
-    pthread_cond_init(&cvar,NULL);
-    argv_extra = argv;
+    // pthread_mutex_init(&mtx,NULL);
+    // pthread_cond_init(&cvar,NULL);
+    // argv_extra = argv;
 
-    WorldOptions mUtils(argc, argv);
+    WorldOptions opts(argc, argv);
 
-
-    if((mUtils.getMapHeight()*mUtils.getMapWidth()) < (mUtils.getGreenTanks()+ mUtils.getRedTanks())){
+    // Checking if map space is sufficient
+    int map_space = opts.get_map_height()*opts.get_map_width();
+    int tank_count = opts.get_green_tanks()+ opts.get_red_tanks();
+    if(map_space < tank_count) {
         std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
         return 2;
     }
-    for (uint i = 0; i < mUtils.getGreenTanks(); i++)
-    {
-        Coord c = w->free_coord();
-        Tank t = Tank(c.first, c.second, GREEN);
-        w->add_tank(t,mUtils);
+
+    World w = World(opts.get_map_height(), opts.get_map_width());
+    if (opts.get_daemonize()) {
+        /* fixme: supply fifo path from parsed arguments */
+        std::string open_pipe;
+        w = DaemonWorld(opts.get_map_height(), opts.get_map_width(), open_pipe);
     }
-    for (uint i = 0; i < mUtils.getRedTanks(); i++)
+
+    for (uint i = 0; i < opts.get_green_tanks(); i++)
     {
-        Coord c = w->free_coord();
-        Tank t = Tank(c.first, c.second, RED);
-        w->add_tank(t,mUtils);
+        Coord c = w.free_coord();
+        Tank t = Tank(c.first, c.second, Color::GREEN);
+        w.add_tank(t,opts);
+    }
+    for (uint i = 0; i < opts.get_red_tanks(); i++)
+    {
+        Coord c = w.free_coord();
+        Tank t = Tank(c.first, c.second, Color::RED);
+        w.add_tank(t,opts);
     }
 
     while(true)
     {
-        w->play_round(mUtils);
+        w.play_round(opts);
     }
 
     close(pid_fd);

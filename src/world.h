@@ -1,20 +1,18 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-// C++ includes
-#include <utility> // pair
-#include <cstring> // strtok
-#include <iostream> // i/o
-#include <sstream> // stringstream
+#include <utility>
+#include <cstring>
+#include <iostream>
+#include <sstream>
 #include <boost/range/join.hpp>
 
-// Legacy C/Linux includes
-#include <errno.h> // errno
-#include <syslog.h> // logging
-#include <getopt.h> // options
-#include <sys/file.h> // FIFO, flock
-#include <sys/stat.h> // mkfifo
-#include <fcntl.h> // flock
+#include <errno.h>
+#include <syslog.h>
+#include <getopt.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/inotify.h>
 
 #include "tank.h"
@@ -32,8 +30,9 @@ std::vector<std::string> tank_messages;
 
 /**
  * @brief set_up_signal_handling uses sigaction function
- * to set up set_up_signal_handling() as signal handler
+ * to set up World::set_world_signal_status(int sig) as signal handler
  */
+
 void set_up_signal_handling();
 
 /**
@@ -71,21 +70,21 @@ public:
     void print_help();
     void print_error();
 
-    bool getDaemonize() { return this->mDaemonize; }
+    bool get_daemonize() { return this->mDaemonize; }
 
     uint getRoundTime() { return this->mRoundTime; }
 
-    uint getMapHeight() { return this->mMapHeight; }
+    uint get_map_height() { return this->mMapHeight; }
 
-    uint getMapWidth() { return this->mMapWidth; }
+    uint get_map_width() { return this->mMapWidth; }
 
     std::string getGreenPath() { return this->mGreenPath; }
 
     std::string getRedPath() { return this->mRedPath; }
 
-    uint getGreenTanks() { return this->mGreenTanks; }
+    uint get_green_tanks() { return this->mGreenTanks; }
 
-    uint getRedTanks() { return this->mRedTanks; }
+    uint get_red_tanks() { return this->mRedTanks; }
 
     uint getRedKills() { return this->red_kills; }
 
