@@ -121,7 +121,7 @@ class World
 protected:
     std::vector<Tank> green_tanks;
     std::vector<Tank> red_tanks;
-    std::vector< std::vector<Color> > zone;
+    std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
     uint height;
     uint width;
     pthread_cond_t tank_cond_com;
@@ -214,8 +214,7 @@ public:
      * @param tanks2 set of tanks tanks from tanks1 can run into
      * note: allied tanks can crash into each other
      */
-    void crash_tanks(std::vector<Tank> tanks1,
-                     std::vector<Tank> tanks2);
+    void crash_tanks(std::vector<Tank> tanks1, std::vector<Tank> tanks2);
 
     /**
      * @brief adds kills according to tanks hit; crashes count
@@ -238,7 +237,7 @@ public:
     void respawn_tanks(WorldOptions u);
 
     /**
-     * @brief cleans up world
+     * @brief cleans up world's resources
      */
     void close();
 
@@ -247,7 +246,8 @@ public:
      */
     void output_map();
 
-    void process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga);
+    void process_commands(WorldOptions u, std::vector<std::string> ra,
+                          std::vector<std::string> ga);
 
     /**
      * @brief set_world_signal_status handler to pass caught signal into a flag

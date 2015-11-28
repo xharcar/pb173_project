@@ -287,21 +287,6 @@ void World::respawn_tanks(WorldOptions u)
     }
 }
 
-void World::refresh_zone()
-{
-    for(uint i=0;i<height;i++){
-        for(uint j=0;j<width;i++){
-            zone[i][j] = EMPTY;
-        }
-    }
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        zone[t->getX()][t->getY()] = RED;
-    }
-    for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
-        zone[t->getX()][t->getY()] = GREEN;
-    }
-}
-
 /*
 void World::process_commands( WorldOptions u, std::vector< std::string > ra, std::vector< std::string > ga )
 {
@@ -354,8 +339,6 @@ void World::play_round(WorldOptions u)
     remove_hit_tanks();
     std::cout << "Respawning tanks" << std::endl;
     respawn_tanks(u);
-    std::cout << "Refreshing map" << std::endl;
-    refresh_zone();
     std::cout << "Round " << u.getRoundsPlayed() << std::endl;
     output_map();
     // waits for round time to pass : round time given in ms,
