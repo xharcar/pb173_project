@@ -181,12 +181,6 @@ public:
     void play_round(WorldOptions u);
 
     /**
-     * @brief refreshes battlefield status at end of round for
-     *          correct output
-     */
-    void refresh_zone();
-
-    /**
      * @brief sends all tanks SIGUSR2 as a request for commands
      */
     void req_com();

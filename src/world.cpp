@@ -102,6 +102,7 @@ void WorldOptions::print_error()
 // WORLD
 void World::add_tank(Tank t, WorldOptions u)
 {
+    this->zone[t.getX()][t.getY()] = t.getColor();
     if(t.getColor() == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
@@ -251,18 +252,21 @@ void World::add_kills(WorldOptions u)
 void World::remove_hit_tanks()
 {
     std::cout << "Removing hit tanks" << std::endl;
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        if(t->getHit()){
+    for(Tank& t : red_tanks) {
+        if (t->getHit()) {
             std::cout << "Red tank with TID " << t->getTID() << " at "
-            << t->getX() << "," << t->getY() << " has been hit, removing" << std::endl;
+                      << t->getX() << "," << t->getY()
+                      << " has been hit, removing" << std::endl;
+            this->zone[t.getX()][t.getY()] = t.getColor();
             t->kill_thread();
             red_tanks.erase(t);
         }
     }
-    for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
+    for(Tank& t : red_tanks) {
         if(t->getHit()){
             std::cout << "Green tank with TID " << t->getTID() << " at "
             << t->getX() << "," << t->getY() << " has been hit, removing" << std::endl;
+            this->zone[t.getX()][t.getY()] = t.getColor();
             t->kill_thread();
             green_tanks.erase(t);
         }
