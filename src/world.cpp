@@ -34,10 +34,9 @@ WorldOptions::WorldOptions(int argc, char* argv[])
     int c;
     while ((c = getopt_long(argc, argv, "d:c:v:g:r:t:a:p:h", longopts, NULL)) != -1)
     {
-        switch (c)
-        {
+        switch (c) {
         case 'a':
-            this->mMapWidth = atoi(argv[optind-1]);
+            this->mMapWidth = atoi(argv[optind - 1]);
             this->mMapHeight = atoi(argv[optind]);
             break;
         case 'c':
@@ -46,13 +45,13 @@ WorldOptions::WorldOptions(int argc, char* argv[])
         case 'v':
             this->mRedTanks = atoi(optarg);
             break;
-        case 'd' :
+        case 'd':
             this->mDaemonize = true;
             break;
         case 'r':
             this->mRedPath.assign(optarg);
             break;
-        case 'g' :
+        case 'g':
             this->mGreenPath.assign(optarg);
             break;
         case 't':
@@ -153,33 +152,28 @@ void World::fire()
     }
 }
 
-void World::fire_direction(Tank& t) {
+void World::fire_direction(Tank& t)
+{
     auto& foe_tanks = t.get_color() == Color::GREEN ? red_tanks : green_tanks;
-    for (Tank& target : foe_tanks)
-    {
-        switch(t.get_action()[1])
-        {
+    for (Tank& target : foe_tanks) {
+        switch (t.get_action()[1]) {
         case 'u':
-            if (target.get_y() < t.get_y() && target.get_x() == t.get_x())
-            {
+            if (target.get_y() < t.get_y() && target.get_x() == t.get_x()) {
                 target.hit_tank(t);
             }
             break;
         case 'd':
-            if (target.get_y() > t.get_y() && target.get_x() == t.get_x())
-            {
+            if (target.get_y() > t.get_y() && target.get_x() == t.get_x()) {
                 target.hit_tank(t);
             }
             break;
         case 'l':
-            if (target.get_y() == t.get_y() && target.get_x() < t.get_x())
-            {
+            if (target.get_y() == t.get_y() && target.get_x() < t.get_x()) {
                 target.hit_tank(t);
             }
             break;
         case 'r':
-            if (target.get_y() == t.get_y() && target.get_x() < t.get_x())
-            {
+            if (target.get_y() == t.get_y() && target.get_x() < t.get_x()) {
                 target.hit_tank(t);
             }
             break;
@@ -251,16 +245,16 @@ void World::remove_hit_tanks()
 {
     std::cout << "Removing hit tanks" << std::endl;
     for (auto t = red_tanks.begin(); t != red_tanks.end(); t++) {
-        if (t->getHit()) {
-            this->zone[t->getX()][t->getY()] = Color::EMPTY;
+        if (t->get_hit()) {
+            this->zone[t->get_x()][t->get_x()] = Color::EMPTY;
             t->print_destroy();
             t->kill_thread();
             red_tanks.erase(t);
         }
     }
     for (auto t = green_tanks.begin(); t != green_tanks.end(); t++) {
-        if (t->getHit()) {
-            this->zone[t->getX()][t->getY()] = Color::EMPTY;
+        if (t->get_hit()) {
+            this->zone[t->get_x()][t->get_x()] = Color::EMPTY;
             t->print_destroy();
             t->kill_thread();
             green_tanks.erase(t);
@@ -386,20 +380,21 @@ void World::handle_signal(int sig)
     }
 }
 
-int world_running( std::string pid_filepath )
+int world_running(std::string pid_filepath)
 {
     // Possibly handle other errors when calling open()
-    int pid_fd = open( pid_filepath.c_str(), O_CREAT | O_RDWR, 0666 );
-    while ( flock( pid_fd, LOCK_EX | LOCK_NB ) ) {
-        switch ( errno ) {
+    int pid_fd = open(pid_filepath.c_str(), O_CREAT | O_RDWR, 0666);
+    while (flock(pid_fd, LOCK_EX | LOCK_NB)) {
+        switch (errno) {
         // Another instance is running
         case EWOULDBLOCK:
-            std::cerr << "Another instance of world is already running." << std::endl;
+            std::cerr << "Another instance of world is already running."
+                      << std::endl;
             std::cerr << "Waiting for its end." << std::endl;
-            watch_pid( pid_filepath );
+            watch_pid(pid_filepath);
             continue;
         default:
-            assert( false );
+            assert(false);
         }
     }
     return pid_fd;
