@@ -3,8 +3,10 @@
 
 #include <utility>
 #include <cstring>
+#include <chrono>
 #include <iostream>
 #include <sstream>
+#include <random>
 #include <boost/range/join.hpp>
 
 #include <errno.h>
@@ -58,7 +60,7 @@ class WorldOptions
     uint mMapWidth;
     std::string mGreenPath;
     std::string mRedPath;
-    std::string fifoPath;
+    std::string fifo_path;
     uint mGreenTanks;
     uint mRedTanks;
     uint red_kills;
@@ -92,7 +94,7 @@ public:
 
     uint getRoundsPlayed() { return this->rounds_played; }
 
-    std::string getFifoPath() { return this->fifoPath; }
+    std::string getFifoPath() { return this->fifo_path; }
 
     void incRedKills()
     {

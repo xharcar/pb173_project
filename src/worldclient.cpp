@@ -113,7 +113,12 @@ void NCursesClient::parse_dimensions() {
 void NCursesClient::print_tanks() {
     char sector;
     int x = 0, y = 0;
-    while ( fscanf(pipe_stream, ",%c", &sector) != EOF ) {
+    parse_dimensions();
+    while ( true ) {
+        if ( fscanf(pipe_stream, ",%c", &sector) == EOF ) {
+            std::cerr << strerror(errno) << "Error occured while parsing the pipe stream." << std::endl;
+            break;
+        }
         switch ( sector ) {
         case 'r':
             draw_tank(x, y, Color::RED);

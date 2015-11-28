@@ -24,7 +24,8 @@ void parse_args(int argc, char *argv[], Options& opts);
 
 void print_help(char * progname);
 
-class WorldClient {
+class WorldClient
+{
 protected:
     pid_t world_pid;
     FILE * pipe_stream;
@@ -37,7 +38,7 @@ public:
         open_pipe(pipe);
     }
 
-    /*
+    /**
      * @brief Read pid of the world process from the file /var/run/world.pid
      */
     void get_world_pid();

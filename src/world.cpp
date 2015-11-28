@@ -50,16 +50,16 @@ WorldOptions::WorldOptions(int argc, char* argv[])
             this->mDaemonize = true;
             break;
         case 'r':
-            this->mRedPath.append(optarg);
+            this->mRedPath.assign(optarg);
             break;
         case 'g' :
-            this->mGreenPath.append(optarg);
+            this->mGreenPath.assign(optarg);
             break;
         case 't':
             this->mRoundTime = atoi(optarg);
             break;
         case 'p':
-            this->fifoPath.append(optarg);
+            this->fifo_path.assign(optarg);
             break;
         case 'h':
             this->print_help();
@@ -127,20 +127,17 @@ bool World::is_free(int x, int y)
 
 Coord World::free_coord()
 {
-    Coord rv;
+    // fixme: initialize seed in a class/global scope
     std::srand(std::time(0));
-    int x = std::rand() % this->width;
-    int y = std::rand() % this->height;
-    while (this->is_free(x, y))
-    {
-        // only loops if first try failed,ends as soon as
-        // a free field is found
+    int x;
+    int y;
+    // only loops if first try failed,ends as soon as
+    // a free field is found
+    do {
         x = std::rand() % this->width;
         y = std::rand() % this->height;
-    }
-    rv.first = x;
-    rv.second = y;
-    return rv;
+    } while (this->is_free(x, y));
+    return Coord(x, y);
 }
 
 
