@@ -4,35 +4,9 @@
 int tank_exit = 0;
 int tank_send = 0;
 
-
-bool Tank::getHit()
-{
-    return this->hit;
-}
-
-void Tank::setHit(bool shot)
-{
-    this->hit = shot;
-}
-
-uint Tank::getX()
-{
-    return this->x;
-}
-
-uint Tank::getY()
-{
-    return this->y;
-}
-
-Color Tank::getColor()
-{
-    return this->color;
-}
-
 void Tank::request_command()
 {
-    pthread_kill(tid.native_handle(), SIGUSR2);
+    pthread_kill(t_handle.native_handle(), SIGUSR2);
 }
 
 void Tank::read_command()
@@ -44,21 +18,23 @@ void Tank::read_command()
 
 void Tank::hit_tank(Tank& attacker)
 {
-    if (attacker.getColor() != this->color)
+    if (attacker.get_color() != this->color)
     {
         this->hit = true;
-        this->attacker = attacker;
+        this->attacker.color = attacker.get_color();
+        this->attacker.x = attacker.get_x();
+        this->attacker.y = attacker.get_y();
     }
 }
 
 void Tank::kill_thread()
 {
-    pthread_kill(tid.native_handle(), SIGTERM);
+    pthread_kill(t_handle.native_handle(), SIGTERM);
 }
 
 void Tank::quit()
 {
-    tid.join();
+    t_handle.join();
 }
 
 void tank_sig_handler(int sig){
@@ -99,10 +75,10 @@ int run_tank(int socket){
 
 void Tank::spawn_thread()
 {
-    this->tid = std::thread(run_tank, NULL);
+    this->t_handle = std::thread(run_tank, NULL);
 }
 
-void Tank::print_destroy(Tank& attacker) {
+void Tank::print_destroy() {
     std::cout << "Tank destroyed: ";
     if (color == Color::RED) {
         std::cout << "Red";
@@ -110,11 +86,11 @@ void Tank::print_destroy(Tank& attacker) {
         std::cout << "Green";
     }
     // fixme: possibly return the PID of a running Tankclient
-    std::cout << ", " << tid.get_id() << ", [" << getX() << ", " << getY()
+    std::cout << ", " << t_handle.get_id() << ", [" << get_x() << ", " << get_y()
               << "]" << std::endl;
     // fixme:: possibly overload stream operator for Tank to print out tank info
-    std::cout << "Attacker: " << tid.get_id() << ", [" << getX() << ", "
-              << getY() << "]" << std::endl;
+    std::cout << "Attacker: " << attacker.color << ", [" << attacker.x << ", "
+              << attacker.y << "]" << std::endl;
 }
 
 

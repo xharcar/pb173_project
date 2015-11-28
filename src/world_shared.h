@@ -1,10 +1,12 @@
 #ifndef WORLD_SHARED_H
 #define WORLD_SHARED_H
 
+#include <chrono>
 #include <string>
 #include <vector>
 #include <thread>
 #include <random>
+#include <iostream>
 
 #include <ctime> // time(0)
 #include <cassert>
@@ -16,6 +18,8 @@
 #include <pthread.h>
 
 enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
+
+using Coord = std::pair<int, int>;
 
 /*
 struct RandomGen {

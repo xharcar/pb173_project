@@ -2,7 +2,7 @@
 
 void DaemonWorld::add_tank(Tank t, WorldOptions u)
 {
-    if(t.getColor()==Color::RED)
+    if(t.get_color()==Color::RED)
     {
         syslog(LOG_INFO,"Adding red tank\n");
         red_tanks.push_back(t);

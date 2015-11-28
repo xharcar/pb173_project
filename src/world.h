@@ -3,10 +3,7 @@
 
 #include <utility>
 #include <cstring>
-#include <chrono>
-#include <iostream>
 #include <sstream>
-#include <random>
 #include <boost/range/join.hpp>
 
 #include <errno.h>
@@ -21,7 +18,6 @@
 
 
 // Utility type definitions
-typedef std::pair<int, int> Coord;
 typedef unsigned int uint;
 // mutex for writing commands
 pthread_mutex_t mtx;
@@ -210,11 +206,9 @@ public:
     /**
      * @brief checks for tanks running into each other,
      *          healthy tanks running into hit ones do not crash
-     * @param tanks1 set of tanks possibly crashing into others
-     * @param tanks2 set of tanks tanks from tanks1 can run into
      * note: allied tanks can crash into each other
      */
-    void crash_tanks(std::vector<Tank> tanks1, std::vector<Tank> tanks2);
+    void crash_tanks();
 
     /**
      * @brief adds kills according to tanks hit; crashes count

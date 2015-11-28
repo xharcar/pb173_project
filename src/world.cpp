@@ -102,8 +102,8 @@ void WorldOptions::print_error()
 // WORLD
 void World::add_tank(Tank t, WorldOptions u)
 {
-    this->zone[t.getX()][t.getY()] = t.getColor();
-    if(t.getColor() == Color::RED)
+    this->zone[t.get_x()][t.get_y()] = t.get_color();
+    if(t.get_color() == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
         red_tanks.push_back(t);
@@ -154,33 +154,33 @@ void World::fire()
 }
 
 void World::fire_direction(Tank& t) {
-    auto& foe_tanks = t.getColor() == Color::GREEN ? red_tanks : green_tanks;
+    auto& foe_tanks = t.get_color() == Color::GREEN ? red_tanks : green_tanks;
     for (Tank& target : foe_tanks)
     {
         switch(t.get_action()[1])
         {
         case 'u':
-            if (target.getY() < t.getY() && target.getX() == t.getX())
+            if (target.get_y() < t.get_y() && target.get_x() == t.get_x())
             {
-                target.hit_tank(t.getColor());
+                target.hit_tank(t);
             }
             break;
         case 'd':
-            if (target.getY() > t.getY() && target.getX() == t.getX())
+            if (target.get_y() > t.get_y() && target.get_x() == t.get_x())
             {
-                target.hit_tank(t.getColor());
+                target.hit_tank(t);
             }
             break;
         case 'l':
-            if (target.getY() == t.getY() && target.getX() < t.getX())
+            if (target.get_y() == t.get_y() && target.get_x() < t.get_x())
             {
-                target.hit_tank(t.getColor());
+                target.hit_tank(t);
             }
             break;
         case 'r':
-            if (target.getY() == t.getY() && target.getX() < t.getX())
+            if (target.get_y() == t.get_y() && target.get_x() < t.get_x())
             {
-                target.hit_tank(t.getColor());
+                target.hit_tank(t);
             }
             break;
         default:
@@ -195,7 +195,7 @@ void World::movetanks()
     {
         if (t.get_action().size() != 0
             && t.get_action()[0] == 'm'
-            && !t.getHit())
+            && !t.get_hit())
         {
             switch (t.get_action()[1])
             {
@@ -218,18 +218,16 @@ void World::movetanks()
     }
 }
 
-void World::crash_tanks(std::vector<Tank> tanks1,
-                        std::vector<Tank> tanks2)
+void World::crash_tanks()
 {
-    for(std::size_t i=0;i<tanks1.size();++i){
-        for(std::size_t j=0;j<tanks2.size();++j){
-            if(tanks1[i].getTID() != tanks2[j].getTID() &&
-               // prevents a tank crashing into itself
-               tanks1[i].getX() == tanks2[j].getX() &&
-               tanks1[i].getY() == tanks2[j].getY() &&
-               !tanks1[i].getHit() && !tanks2[j].getHit()){
-                    tanks1[i].setHit(true);
-                    tanks2[j].setHit(true);
+    for (Tank& t : boost::join(green_tanks, red_tanks)) {
+        for (Tank& u : boost::join(green_tanks, red_tanks)) {
+            if (&t == &u || t.get_hit() || u.get_hit()) {
+                continue;
+            }
+            else if (t.get_position() == u.get_position()) {
+                t.hit_tank(u);
+                u.hit_tank(t);
             }
         }
     }
@@ -238,12 +236,12 @@ void World::crash_tanks(std::vector<Tank> tanks1,
 void World::add_kills(WorldOptions u)
 {
     for (Tank& t : red_tanks) {
-        if (t.getHit()) {
+        if (t.get_hit()) {
             u.incGreenKills();
         }
     }
     for (Tank& t : green_tanks) {
-        if (t.getHit()) {
+        if (t.get_hit()) {
             u.incRedKills();
         }
     }
@@ -252,20 +250,19 @@ void World::add_kills(WorldOptions u)
 void World::remove_hit_tanks()
 {
     std::cout << "Removing hit tanks" << std::endl;
-    for (Tank& t : red_tanks) {
-        if (t.getHit()) {
-            this->zone[t.getX()][t.getY()] = t.getColor();
-            t.kill_thread();
+    for (auto t = red_tanks.begin(); t != red_tanks.end(); t++) {
+        if (t->getHit()) {
+            this->zone[t->getX()][t->getY()] = Color::EMPTY;
+            t->print_destroy();
+            t->kill_thread();
             red_tanks.erase(t);
         }
     }
-    for (Tank& t : red_tanks) {
-        if (t.getHit()) {
-            std::cout << "Green tank with TID " << t.getTID() << " at "
-                      << t.getX() << "," << t.getY()
-                      << " has been hit, removing" << std::endl;
-            this->zone[t.getX()][t.getY()] = t.getColor();
-            t.kill_thread();
+    for (auto t = green_tanks.begin(); t != green_tanks.end(); t++) {
+        if (t->getHit()) {
+            this->zone[t->getX()][t->getY()] = Color::EMPTY;
+            t->print_destroy();
+            t->kill_thread();
             green_tanks.erase(t);
         }
     }
@@ -324,9 +321,7 @@ void World::play_round(WorldOptions u)
     std::cout << "Moving tanks" << std::endl;
     movetanks();
     std::cout << "Checking for tank crashes" << std::endl;
-    crash_tanks(red_tanks,red_tanks);
-    crash_tanks(red_tanks,green_tanks);
-    crash_tanks(green_tanks,green_tanks);
+    crash_tanks();
     std::cout << "Adding kills, old counts: " << std::endl
     << "Red: " << u.getRedKills() << std::endl
     << "Green: " << u.getGreenKills() << std::endl;

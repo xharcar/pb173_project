@@ -3,25 +3,32 @@
 
 #include "world_shared.h"
 
+struct TankShell
+{
+    Color color;
+    int x;
+    int y;
+};
+
 /**
  * @brief Represents a tank in-game
  */
 class Tank
 {
 private:
-    std::thread tid;
+    std::thread t_handle;
     int pfd [2];
     bool hit;
-    uint x;
-    uint y;
+    int x;
+    int y;
     Color color;
     std::string action;
-    Tank& attacker;
+    TankShell attacker;
 public:
-
     /**
-     * @brief Tank constructor, sets TID to 0(to indicate not yet initialized properly)
-     *  and hit flag to false(when a tank rolls up onto a battlefield, it usually is in fighting condition)
+     * @brief Tank constructor, sets TID to 0(to indicate not yet initialized
+     * properly) and hit flag to false(when a tank rolls up onto a battlefield,
+     * it usually is in fighting condition)
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
@@ -31,30 +38,30 @@ public:
      * @brief hit flag getter
      * @return true if tank has been hit, else false
      */
-    bool getHit();
-
-    /**
-     * @brief hit flag setter (used only when tank has been hit)
-     * @param shot indicates whether tank has been hit(~true)
-     */
-    void setHit(bool shot);
+    bool get_hit() const { return this->hit; }
 
     /**
      * @brief X coordinate getter
      * @return tank x coordinate
      */
-    uint getX();
+    uint get_x() const { return this->x; }
 
     /**
      * @brief Y coordinate getter
      * @return tank y coordinate
      */
-    uint getY();
+    uint get_y() const { return this->y; }
+
+    /**
+     * @brief getPosition
+     * @return tank position
+     */
+    Coord get_position() const { return Coord(x, y); }
 
     /**
      * @brief color getter
      */
-    Color getColor();
+    Color get_color() const { return this->color; }
 
     /**
      * @brief pipe read end getter for commands
@@ -70,6 +77,14 @@ public:
     std::string get_action() const {
         return this->action;
     }
+
+    /**
+     * @brief change tank's coordinates
+     */
+    void moveleft() { this->x--; }
+    void moveright() { this->x++; }
+    void moveup() { this->y++; }
+    void movedown() { this->y--; }
 
     /**
      * @brief spawns a new tank thread, initialized TID of tank
@@ -94,18 +109,10 @@ public:
     void read_command();
 
     /**
-     * @brief set tank to be hit if fired upon by foe
-     * @param c color of the shooting tank
+     * @brief set tank to be hit if fired upon by foe and remember the attacker
+     * @param attacker the shooting tank
      */
-    void Tank::hit_tank(Tank& attacker)
-
-    /**
-     * @brief change tank's coordinates
-     */
-    void moveleft() { this->x--; }
-    void moveright() { this->x++; }
-    void moveup() { this->y++; }
-    void movedown() { this->y--; }
+    void hit_tank(Tank& attacker);
 
     /**
      * @brief sends SIFTERM to the thread handle of tank
@@ -116,6 +123,11 @@ public:
      * @brief waits for tank thread to end
      */
     void quit();
+
+    /**
+     * @brief print_destroy print tank's info after destruction and attackers info
+     */
+    void print_destroy();
 };
 
 void tank_sig_handler(int sig);
