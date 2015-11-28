@@ -8,14 +8,17 @@ char** argv_extra;
 
 // METHOD IMPLEMENTATIONS
 
-WorldOptions::WorldOptions(int argc, char* argv[])
+WorldOptions::WorldOptions()
     // Set default values here
-    : mDaemonize(false)
-    , mGreenPath("../bin/tank")
-    , mRedPath("../bin/tank")
+    : daemonize(false)
+    , green_tank_path("../bin/tank")
+    , red_tank_path("../bin/tank")
     , red_kills(0)
     , green_kills(0)
     , rounds_played(0)
+{}
+
+void WorldOptions::parse_options(int argc, char* argv[])
 {
     struct option longopts[] =
     {
@@ -46,13 +49,13 @@ WorldOptions::WorldOptions(int argc, char* argv[])
             this->mRedTanks = atoi(optarg);
             break;
         case 'd':
-            this->mDaemonize = true;
+            this->daemonize = true;
             break;
         case 'r':
-            this->mRedPath.assign(optarg);
+            this->red_tank_path.assign(optarg);
             break;
         case 'g':
-            this->mGreenPath.assign(optarg);
+            this->green_tank_path.assign(optarg);
             break;
         case 't':
             this->mRoundTime = atoi(optarg);
@@ -99,13 +102,13 @@ void WorldOptions::print_error()
 }
 
 // WORLD
-void World::add_tank(Tank t, WorldOptions u)
+void World::add_tank(Tank& t, WorldOptions u)
 {
     this->zone[t.get_x()][t.get_y()] = t.get_color();
     if(t.get_color() == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
-        red_tanks.push_back(t);
+        red_tanks.push_back(std::move(t));
         // spawn_thread(t, u.getRedPath());
     }
     else
@@ -262,17 +265,17 @@ void World::remove_hit_tanks()
     }
 }
 
-void World::respawn_tanks(WorldOptions u)
+void World::respawn_tanks(WorldOptions opts)
 {
-    while(red_tanks.size() < u.get_red_tanks()){
+    while(red_tanks.size() < opts.get_red_tanks()){
         Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, RED);
-        add_tank(t,u);
+        Tank t = Tank(c.first, c.second, Color::RED);
+        this->add_tank(t, opts);
     }
-    while(green_tanks.size() < u.get_green_tanks()){
+    while(green_tanks.size() < opts.get_green_tanks()){
         Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, GREEN);
-        add_tank(t,u);
+        Tank t = Tank(c.first, c.second, Color::GREEN);
+        this->add_tank(t, opts);
     }
 }
 
@@ -341,7 +344,7 @@ void World::output_map()
             ss << ',' << zone[i][j];
         }
     }
-    write(pipefd,ss.str().c_str(),(height*width*2)+4);
+    // write(pipefd,ss.str().c_str(),(height*width*2)+4);
 }
 
 void World::close()
@@ -439,11 +442,12 @@ int main(int argc, char *argv[])
     // pthread_cond_init(&cvar,NULL);
     // argv_extra = argv;
 
-    WorldOptions opts(argc, argv);
+    WorldOptions opts;
+    opts.parse_options(argc, argv);
 
     // Checking if map space is sufficient
-    int map_space = opts.get_map_height()*opts.get_map_width();
-    int tank_count = opts.get_green_tanks()+ opts.get_red_tanks();
+    int map_space = opts.get_map_height() * opts.get_map_width();
+    int tank_count = opts.get_green_tanks() + opts.get_red_tanks();
     if(map_space < tank_count) {
         std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
         return 2;
@@ -452,21 +456,20 @@ int main(int argc, char *argv[])
     World w = World(opts.get_map_height(), opts.get_map_width());
     if (opts.get_daemonize()) {
         /* fixme: supply fifo path from parsed arguments */
-        std::string open_pipe;
-        w = DaemonWorld(opts.get_map_height(), opts.get_map_width(), open_pipe);
+        w = DaemonWorld(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path());
     }
 
     for (uint i = 0; i < opts.get_green_tanks(); i++)
     {
         Coord c = w.free_coord();
         Tank t = Tank(c.first, c.second, Color::GREEN);
-        w.add_tank(t,opts);
+        w.add_tank(t, opts);
     }
     for (uint i = 0; i < opts.get_red_tanks(); i++)
     {
         Coord c = w.free_coord();
         Tank t = Tank(c.first, c.second, Color::RED);
-        w.add_tank(t,opts);
+        w.add_tank(t, opts);
     }
 
     while(true)

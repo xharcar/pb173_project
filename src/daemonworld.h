@@ -21,7 +21,7 @@ public:
     DaemonWorld(int height, int width, std::string pipe) : World(height, width), pipe(pipe)
     {
          openlog("Internet of Tanks: World", LOG_PID, LOG_USER);
-         //pipefd = mkfifo(pipe.c_str(),0444);
+         pipefd = mkfifo(pipe.c_str(),0444);
     }
 
     ~DaemonWorld()

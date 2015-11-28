@@ -50,12 +50,12 @@ void watch_pid( std::string pid_filepath );
  */
 class WorldOptions
 {
-    bool mDaemonize;
+    bool daemonize;
     uint mRoundTime;
     uint mMapHeight;
     uint mMapWidth;
-    std::string mGreenPath;
-    std::string mRedPath;
+    std::string green_tank_path;
+    std::string red_tank_path;
     std::string fifo_path;
     uint mGreenTanks;
     uint mRedTanks;
@@ -64,11 +64,15 @@ class WorldOptions
     uint rounds_played;
 
 public:
-    WorldOptions(int argc, char *argv[]);
+    WorldOptions();
+
+    void parse_options(int argc, char* argv[]);
+
     void print_help();
+
     void print_error();
 
-    bool get_daemonize() { return this->mDaemonize; }
+    bool get_daemonize() { return this->daemonize; }
 
     uint getRoundTime() { return this->mRoundTime; }
 
@@ -76,9 +80,9 @@ public:
 
     uint get_map_width() { return this->mMapWidth; }
 
-    std::string getGreenPath() { return this->mGreenPath; }
+    std::string getGreenPath() { return this->green_tank_path; }
 
-    std::string getRedPath() { return this->mRedPath; }
+    std::string getRedPath() { return this->red_tank_path; }
 
     uint get_green_tanks() { return this->mGreenTanks; }
 
@@ -90,7 +94,7 @@ public:
 
     uint getRoundsPlayed() { return this->rounds_played; }
 
-    std::string getFifoPath() { return this->fifo_path; }
+    std::string get_fifo_path() { return this->fifo_path; }
 
     void incRedKills()
     {
@@ -147,7 +151,7 @@ public:
      * @param t info about tank to spawn
      * @param u Utils instance with tank binary path
      */
-    void add_tank(Tank t, WorldOptions u);
+    void add_tank(Tank& t, WorldOptions u);
 
     /**
      * @brief Checks if given map coordinate is free

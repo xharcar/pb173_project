@@ -92,5 +92,3 @@ void Tank::print_destroy() {
     std::cout << "Attacker: " << attacker.color << ", [" << attacker.x << ", "
               << attacker.y << "]" << std::endl;
 }
-
-
