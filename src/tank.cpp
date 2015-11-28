@@ -5,11 +5,6 @@ int tank_exit = 0;
 int tank_send = 0;
 
 
-pthread_t Tank::getTID()
-{
-    return this->tid;
-}
-
 bool Tank::getHit()
 {
     return this->hit;
@@ -37,7 +32,7 @@ Color Tank::getColor()
 
 void Tank::request_command()
 {
-    pthread_kill(this->getTID(), SIGUSR2);
+    pthread_kill(tid.native_handle(), SIGUSR2);
 }
 
 void Tank::read_command()
@@ -47,42 +42,23 @@ void Tank::read_command()
     this->action = std::string(buf);
 }
 
-void Tank::hit_tank(Color c)
+void Tank::hit_tank(Tank& attacker)
 {
-    if (c != this->color)
+    if (attacker.getColor() != this->color)
     {
         this->hit = true;
+        this->attacker = attacker;
     }
-}
-
-void Tank::moveleft()
-{
-    this->x--;
-}
-
-void Tank::moveright()
-{
-    this->x++;
-}
-
-void Tank::moveup()
-{
-    this->y++;
-}
-
-void Tank::movedown()
-{
-    this->y--;
 }
 
 void Tank::kill_thread()
 {
-    pthread_kill(getTID(), SIGTERM);
+    pthread_kill(tid.native_handle(), SIGTERM);
 }
 
 void Tank::quit()
 {
-    pthread_join(getTID(), NULL);
+    tid.join();
 }
 
 void tank_sig_handler(int sig){
@@ -100,9 +76,10 @@ void tank_sig_handler(int sig){
  * @brief runs a tank
  * @param tankpipe pipe to send orders to world through
  */
-int run_tank(int* tankpipe){
+int run_tank(int socket){
     // fixme: move srand initialization to class/global scope
     std::srand(std::time(0));
+    /*
     int x = 0;
     struct sigaction action;
     action.sa_flags=0;
@@ -117,17 +94,27 @@ int run_tank(int* tankpipe){
         }
     }
     return 0;
+    */
 }
 
 void Tank::spawn_thread()
 {
-    /*
-    tankpath.clear();
-    pipe(t.getpfd());
-    pthread_t x = t.getTID();
-    t.setTID(x);
-    */
-    // TankOptions opts;
-    // pthread_create(&tid, NULL, run_tank, (void*) opts);
+    this->tid = std::thread(run_tank, NULL);
 }
+
+void Tank::print_destroy(Tank& attacker) {
+    std::cout << "Tank destroyed: ";
+    if (color == Color::RED) {
+        std::cout << "Red";
+    } else {
+        std::cout << "Green";
+    }
+    // fixme: possibly return the PID of a running Tankclient
+    std::cout << ", " << tid.get_id() << ", [" << getX() << ", " << getY()
+              << "]" << std::endl;
+    // fixme:: possibly overload stream operator for Tank to print out tank info
+    std::cout << "Attacker: " << tid.get_id() << ", [" << getX() << ", "
+              << getY() << "]" << std::endl;
+}
+
 

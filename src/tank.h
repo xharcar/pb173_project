@@ -2,7 +2,6 @@
 #define TANK_H
 
 #include "world_shared.h"
-#include "tank.h"
 
 /**
  * @brief Represents a tank in-game
@@ -10,13 +9,14 @@
 class Tank
 {
 private:
-    pthread_t tid;
+    std::thread tid;
     int pfd [2];
     bool hit;
     uint x;
     uint y;
     Color color;
     std::string action;
+    Tank& attacker;
 public:
 
     /**
@@ -25,19 +25,7 @@ public:
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color) : tid(0), hit(false), x(x), y(y), color(color){}
-
-    /**
-     * @brief TID getter (for sending signals,...)
-     * @return TID of tank thread
-     */
-    pthread_t getTID();
-
-    /**
-     * @brief TID setter
-     * @param x TID to be set
-     */
-    void setTID(pthread_t x);
+    Tank(uint x, uint y, Color color) : hit(false), x(x), y(y), color(color) {}
 
     /**
      * @brief hit flag getter
@@ -109,15 +97,15 @@ public:
      * @brief set tank to be hit if fired upon by foe
      * @param c color of the shooting tank
      */
-    void hit_tank(Color c);
+    void Tank::hit_tank(Tank& attacker)
 
     /**
      * @brief change tank's coordinates
      */
-    void moveleft();
-    void moveright();
-    void moveup();
-    void movedown();
+    void moveleft() { this->x--; }
+    void moveright() { this->x++; }
+    void moveup() { this->y++; }
+    void movedown() { this->y--; }
 
     /**
      * @brief sends SIFTERM to the thread handle of tank

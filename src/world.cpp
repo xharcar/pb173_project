@@ -252,22 +252,20 @@ void World::add_kills(WorldOptions u)
 void World::remove_hit_tanks()
 {
     std::cout << "Removing hit tanks" << std::endl;
-    for(Tank& t : red_tanks) {
-        if (t->getHit()) {
-            std::cout << "Red tank with TID " << t->getTID() << " at "
-                      << t->getX() << "," << t->getY()
-                      << " has been hit, removing" << std::endl;
+    for (Tank& t : red_tanks) {
+        if (t.getHit()) {
             this->zone[t.getX()][t.getY()] = t.getColor();
-            t->kill_thread();
+            t.kill_thread();
             red_tanks.erase(t);
         }
     }
-    for(Tank& t : red_tanks) {
-        if(t->getHit()){
-            std::cout << "Green tank with TID " << t->getTID() << " at "
-            << t->getX() << "," << t->getY() << " has been hit, removing" << std::endl;
+    for (Tank& t : red_tanks) {
+        if (t.getHit()) {
+            std::cout << "Green tank with TID " << t.getTID() << " at "
+                      << t.getX() << "," << t.getY()
+                      << " has been hit, removing" << std::endl;
             this->zone[t.getX()][t.getY()] = t.getColor();
-            t->kill_thread();
+            t.kill_thread();
             green_tanks.erase(t);
         }
     }

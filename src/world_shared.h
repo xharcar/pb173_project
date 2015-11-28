@@ -1,11 +1,14 @@
 #ifndef WORLD_SHARED_H
 #define WORLD_SHARED_H
 
-#include <cassert>
-#include <ctime> // time(0)
-#include <cstdlib>
 #include <string>
 #include <vector>
+#include <thread>
+#include <random>
+
+#include <ctime> // time(0)
+#include <cassert>
+#include <cstdlib>
 #include <csignal>
 
 #include <unistd.h>
@@ -14,13 +17,15 @@
 
 enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
 
+/*
 struct RandomGen {
     std::minstd_rand seed;
-    seed.(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto t = std::chrono::high_resolution_clock::now()::time_since_epoch().count();
     int rand() {
-        return
+        return seed.
     }
 
-}
+};
+*/
 
 #endif // WORLD_SHARED_H
