@@ -108,13 +108,13 @@ void World::add_tank(Tank& t, WorldOptions u)
     if(t.get_color() == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
-        red_tanks.push_back(std::move(t));
+        // red_tanks.push_back(std::move(t));
         // spawn_thread(t, u.getRedPath());
     }
     else
     {
         std::cout << "Adding green tank" << std::endl;
-        green_tanks.push_back(t);
+        // green_tanks.push_back(std::move(t));
         // spawn_thread(t, u.getGreenPath());
     }
 }
@@ -362,9 +362,8 @@ void World::close()
     green_tanks.clear();
     zone.clear();
 }
-// END OF WORLD
 
-void World::set_world_signal_status(int sig) {
+void World::set_world_signal_status(int sig, siginfo_t* info, void* uctx) {
     World::world_signal_status = sig;
 }
 
@@ -415,27 +414,15 @@ void watch_pid( std::string pid_filepath )
         std::abort();
     }
 
-    // Blocking call waiting for the end of a different world
+    /* Blocking call waiting for the end of a different world */
     select(inotify_instance, NULL, NULL, NULL, NULL);
-}
-
-void set_up_signal_handling()
-{
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = World::set_world_signal_status;
-    sigfillset(&sa.sa_mask);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGQUIT, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGUSR1, &sa, NULL);
-
 }
 
 int main(int argc, char *argv[])
 {
-    set_up_signal_handling();
+    process_signal_handling();
+    set_up_thread_hadler(World::set_world_signal_status);
+
     int pid_fd = world_running("/var/run/world.pid");
 
     // pthread_mutex_init(&mtx,NULL);
@@ -453,28 +440,29 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    World w = World(opts.get_map_height(), opts.get_map_width());
+    std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width()));
+    //World& w = World(opts.get_map_height(), opts.get_map_width());
     if (opts.get_daemonize()) {
         /* fixme: supply fifo path from parsed arguments */
-        w = DaemonWorld(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path());
+        w.reset(new DaemonWorld(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
     }
 
     for (uint i = 0; i < opts.get_green_tanks(); i++)
     {
-        Coord c = w.free_coord();
+        Coord c = w->free_coord();
         Tank t = Tank(c.first, c.second, Color::GREEN);
-        w.add_tank(t, opts);
+        w->add_tank(t, opts);
     }
     for (uint i = 0; i < opts.get_red_tanks(); i++)
     {
-        Coord c = w.free_coord();
+        Coord c = w->free_coord();
         Tank t = Tank(c.first, c.second, Color::RED);
-        w.add_tank(t, opts);
+        w->add_tank(t, opts);
     }
 
     while(true)
     {
-        w.play_round(opts);
+        w->play_round(opts);
     }
 
     close(pid_fd);

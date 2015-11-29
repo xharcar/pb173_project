@@ -23,7 +23,11 @@ private:
     int y;
     Color color;
     std::string action;
+    // fixmme: attacker attribute could possibly be avoided by erasing tank
+    // at the time of tank being hit or moved
     TankShell attacker;
+    volatile std::sig_atomic_t tank_signal_status = 0;
+
 public:
     /**
      * @brief Tank constructor, sets TID to 0(to indicate not yet initialized

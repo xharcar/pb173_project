@@ -57,12 +57,6 @@ int run_tank(int socket){
     std::srand(std::time(0));
     /*
     int x = 0;
-    struct sigaction action;
-    action.sa_flags=0;
-    action.sa_handler = tank_sig_handler;
-    sigaction(SIGTERM,&action,NULL);
-    // not gonna do AI in 20min
-    std::vector<std::string> commands {"fu","fd","fr","fl","mu","md","mr","ml"};
     while(tank_exit==0){
         x = std::rand() % 8;
         if(tank_send){

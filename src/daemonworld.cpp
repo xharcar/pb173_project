@@ -19,15 +19,17 @@ void DaemonWorld::add_tank(Tank t, WorldOptions u)
 void DaemonWorld::remove_hit_tanks()
 {
     syslog(LOG_INFO,"Removing hit tanks\n");
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        if(t->getHit()){
-            pthread_kill(t->getTID(),SIGTERM);
+    for (auto t = red_tanks.begin(); t != red_tanks.end(); t++) {
+        if (t->get_hit()) {
+            this->zone[t->get_x()][t->get_x()] = Color::EMPTY;
+            t->kill_thread();
             red_tanks.erase(t);
         }
     }
-    for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
-        if(t->getHit()){
-            pthread_kill(t->getTID(),SIGTERM);
+    for (auto t = green_tanks.begin(); t != green_tanks.end(); t++) {
+        if (t->get_hit()) {
+            this->zone[t->get_x()][t->get_x()] = Color::EMPTY;
+            t->kill_thread();
             green_tanks.erase(t);
         }
     }
@@ -50,9 +52,7 @@ void DaemonWorld::play_round(WorldOptions u)
     syslog(LOG_INFO,"Moving tanks");
     movetanks();
     syslog(LOG_INFO,"Checking for tank crashes");
-    crash_tanks(red_tanks,red_tanks);
-    crash_tanks(red_tanks,green_tanks);
-    crash_tanks(green_tanks,green_tanks);
+    crash_tanks();
     syslog(LOG_INFO,"Adding kills, old counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
     add_kills(u);
     syslog(LOG_INFO,"New kill counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
@@ -60,7 +60,6 @@ void DaemonWorld::play_round(WorldOptions u)
     syslog(LOG_INFO,"Respawning tanks\n");
     respawn_tanks(u);
     syslog(LOG_INFO,"Refreshing map\n");
-    refresh_zone();
     output_map();
     // waits for round time to pass : round time given in ms,
     // sleep time in us, hence *1000

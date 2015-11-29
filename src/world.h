@@ -2,9 +2,9 @@
 #define WORLD_H
 
 #include <utility>
-#include <cstring>
 #include <sstream>
 #include <boost/range/join.hpp>
+#include <memory>
 
 #include <errno.h>
 #include <syslog.h>
@@ -16,7 +16,6 @@
 
 #include "tank.h"
 
-
 // Utility type definitions
 typedef unsigned int uint;
 // mutex for writing commands
@@ -27,11 +26,10 @@ pthread_cond_t cvar;
 std::vector<std::string> tank_messages;
 
 /**
- * @brief set_up_signal_handling uses sigaction function
+ * @brief process_signal_handling uses sigaction function
  * to set up World::set_world_signal_status(int sig) as signal handler
  */
-
-void set_up_signal_handling();
+void process_signal_handling();
 
 /**
  * @brief checks whether an instance of world is already running
@@ -130,6 +128,7 @@ protected:
     static volatile sig_atomic_t world_signal_status;
 
 public:
+    World(const World&) = delete;
     /**
      * @brief World constructor, also gets a pseudorandom seed
      *  and sets the whole world to empty (no tanks on battlefield)
@@ -252,7 +251,7 @@ public:
      * in an atomic way
      * @param sig caught signal
      */
-    static void set_world_signal_status(int sig);
+    static void set_world_signal_status(int sig, siginfo_t *info, void *uctx);
 
     /**
      * @brief handle_signal is used to check flag World::world_signal_status
