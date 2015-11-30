@@ -48,6 +48,8 @@ public:
      * @brief Opens pipe for trasfering map from world process
      */
     void open_pipe(char* pipe);
+
+    void parse_dimensions();
 };
 
 class NCursesClient  : public WorldClient

@@ -18,12 +18,6 @@
 
 // Utility type definitions
 typedef unsigned int uint;
-// mutex for writing commands
-pthread_mutex_t mtx;
-// conditional variable to control writing messages
-pthread_cond_t cvar;
-// messages coming from tanks, to be processed
-std::vector<std::string> tank_messages;
 
 /**
  * @brief process_signal_handling uses sigaction function
@@ -259,6 +253,12 @@ public:
      * @param sig causing the interuption
      */
     void handle_signal(int sig);
+
+    /**
+     * @brief refreshes battlefield status at end of round for
+     *          correct output
+     */
+    void refresh_zone();
 };
 
 #endif // WORLD_H

@@ -113,7 +113,7 @@ NCursesClient::NCursesClient(char* pipe) : WorldClient(pipe)
     keys();
 }
 
-void NCursesClient::parse_dimensions()
+void WorldClient::parse_dimensions()
 {
     clearerr(this->pipe_stream);
     int dimensions = fscanf(pipe_stream, "%d, %d", &width, &height);

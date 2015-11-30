@@ -5,8 +5,12 @@ volatile std::sig_atomic_t World::world_signal_status = 0;
 
 // extra var to pass ARGV through for restart
 char** argv_extra;
-
-// METHOD IMPLEMENTATIONS
+// mutex for writing commands
+pthread_mutex_t mtx;
+// conditional variable to control writing messages
+pthread_cond_t cvar;
+// messages coming from tanks, to be processed
+std::vector<std::string> tank_messages;
 
 WorldOptions::WorldOptions()
     // Set default values here
@@ -108,13 +112,13 @@ void World::add_tank(Tank& t, WorldOptions u)
     if(t.get_color() == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
-        // red_tanks.push_back(std::move(t));
+        red_tanks.push_back(std::move(t));
         // spawn_thread(t, u.getRedPath());
     }
     else
     {
         std::cout << "Adding green tank" << std::endl;
-        // green_tanks.push_back(std::move(t));
+        green_tanks.push_back(std::move(t));
         // spawn_thread(t, u.getGreenPath());
     }
 }
@@ -312,7 +316,7 @@ void World::play_round(WorldOptions u)
     u.incRoundsPlayed();
     pthread_cond_signal(&cvar);
     usleep((useconds_t)u.getRoundTime()*1000);
-    process_commands(u,red_actions,green_actions);
+    //process_commands(u,red_actions,green_actions);
     std::cout << "FIRE EVERYTHING!" << std::endl;
     fire();
     std::cout << "Moving tanks" << std::endl;
@@ -363,7 +367,7 @@ void World::close()
     zone.clear();
 }
 
-void World::set_world_signal_status(int sig, siginfo_t* info, void* uctx) {
+void World::set_world_signal_status(int sig, siginfo_t* info, void* context) {
     World::world_signal_status = sig;
 }
 
@@ -379,6 +383,22 @@ void World::handle_signal(int sig)
         close();
         execl("../world","../world,",argv_extra,(char*)NULL);
         break;
+    }
+}
+
+void World::refresh_zone()
+{
+    std::cout << "Refreshing map" << std::endl;
+    for(uint i=0;i<height;i++){
+        for(uint j=0;j<width;i++){
+            zone[i][j] = EMPTY;
+        }
+    }
+    for (Tank& t : red_tanks) {
+        zone[t.get_x()][t.get_y()] = Color::RED;
+    }
+    for (Tank& t : green_tanks) {
+        zone[t.get_x()][t.get_y()] = Color::GREEN;
     }
 }
 
@@ -441,9 +461,7 @@ int main(int argc, char *argv[])
     }
 
     std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width()));
-    //World& w = World(opts.get_map_height(), opts.get_map_width());
     if (opts.get_daemonize()) {
-        /* fixme: supply fifo path from parsed arguments */
         w.reset(new DaemonWorld(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
     }
 
