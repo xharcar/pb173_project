@@ -36,8 +36,7 @@ public:
         FIRE_RIGHT = 7
     };
 
-    TankClient(TankOptions *utils);
-    ~TankClient();
+    TankClient(TankOptions& utils);
     void waitForSignal();
     void nextMove();
     bool sendCommand(Command command);
@@ -53,7 +52,7 @@ public:
     const char fireRight[2] = {'f', 'r'};
 
 private:
-    TankOptions *mUtils;
+    TankOptions mUtils;
     Command lastCommand;
     bool wasLastMove;
     bool lastCommandSuccess;

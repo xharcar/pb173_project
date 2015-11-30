@@ -60,17 +60,12 @@ void TankOptions::print_help()
     printf("=====================================================\n");
 }
 
-TankClient::TankClient(TankOptions *utils) :
-    mUtils(utils),
-    lastCommandSuccess(true),
-    wasLastMove(false) //temporary
+TankClient::TankClient(TankOptions& utils)
+    : mUtils(utils),
+      wasLastMove(false), // temporary
+      lastCommandSuccess(true)
 {
     srand(time(NULL));
-}
-
-TankClient::~TankClient()
-{
-    delete this->mUtils;
 }
 
 void TankClient::waitForSignal()
@@ -178,25 +173,16 @@ void signal_handler(int sig)
     }
 }
 
-// void run_tank(TankOptions opt)
 int main(int argc, char* argv[])
 {
-    struct sigaction action;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-    action.sa_handler = signal_handler;
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-    sigaction(SIGQUIT, &action, NULL);
-    sigaction(SIGUSR2, &action, NULL);
+    TankOptions opts;
+    opts.parse(argc, argv);
 
-
-    TankOptions* utils = new TankOptions(argc, argv);
-    TankClient * tank = new TankClient(utils);
+    TankClient tank(opts);
 
     while(true)
     {
-        tank->waitForSignal();
+        tank.waitForSignal();
     }
 }
 
