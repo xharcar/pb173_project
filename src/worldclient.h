@@ -12,7 +12,7 @@
 #include <getopt.h>
 
 struct Options {
-    char * pipe;
+    char* pipe;
 };
 
 enum Color {
@@ -20,24 +20,26 @@ enum Color {
     GREEN = 2,
 };
 
-void parse_args(int argc, char *argv[], Options& opts);
+void parse_args(int argc, char* argv[], Options& opts);
 
-void print_help(char * progname);
+void print_help(char* progname);
 
-class WorldClient {
+class WorldClient
+{
 protected:
     pid_t world_pid;
-    FILE * pipe_stream;
+    FILE* pipe_stream;
     int height;
     int width;
 
 public:
-    WorldClient(char * pipe) {
+    WorldClient(char* pipe)
+    {
         get_world_pid();
         open_pipe(pipe);
     }
 
-    /*
+    /**
      * @brief Read pid of the world process from the file /var/run/world.pid
      */
     void get_world_pid();
@@ -45,20 +47,24 @@ public:
     /**
      * @brief Opens pipe for trasfering map from world process
      */
-    void open_pipe(char * pipe);
+    void open_pipe(char* pipe);
+
+    void parse_dimensions();
 };
 
-class NCursesClient  : public WorldClient {
-    WINDOW * nc_world;
+class NCursesClient  : public WorldClient
+{
+    WINDOW* nc_world;
     // WINDOW * nc_stats;
 
 public:
     /*
      * Initializes ncurses
      */
-    NCursesClient(char * pipe);
+    NCursesClient(char* pipe);
 
-    ~NCursesClient() {
+    ~NCursesClient()
+    {
         delwin(nc_world);
         // delwin(nc_stats);
         endwin();
@@ -78,7 +84,7 @@ public:
      * @brief draw tank on the screen
      */
     void draw_tank(int x, int y, Color color);
-    
+
     /**
      * @brief remove tank ftom the screen
      */

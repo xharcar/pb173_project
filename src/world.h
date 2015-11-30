@@ -1,39 +1,29 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <utility>
-#include <cstring>
-#include <iostream>
+#include <memory>
 #include <sstream>
+#include <utility>
 #include <boost/range/join.hpp>
 
 #include <errno.h>
-#include <syslog.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <sys/file.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <sys/inotify.h>
+#include <sys/stat.h>
+#include <syslog.h>
 
 #include "tank.h"
 
-
 // Utility type definitions
-typedef std::pair<int, int> Coord;
 typedef unsigned int uint;
-// mutex for writing commands
-pthread_mutex_t mtx;
-// conditional variable to control writing messages
-pthread_cond_t cvar;
-// messages coming from tanks, to be processed
-std::vector<std::string> tank_messages;
 
 /**
- * @brief set_up_signal_handling uses sigaction function
+ * @brief process_signal_handling uses sigaction function
  * to set up World::set_world_signal_status(int sig) as signal handler
  */
-
-void set_up_signal_handling();
+void process_signal_handling();
 
 /**
  * @brief checks whether an instance of world is already running
@@ -52,13 +42,13 @@ void watch_pid( std::string pid_filepath );
  */
 class WorldOptions
 {
-    bool mDaemonize;
+    bool daemonize;
     uint mRoundTime;
     uint mMapHeight;
     uint mMapWidth;
-    std::string mGreenPath;
-    std::string mRedPath;
-    std::string fifoPath;
+    std::string green_tank_path;
+    std::string red_tank_path;
+    std::string fifo_path;
     uint mGreenTanks;
     uint mRedTanks;
     uint red_kills;
@@ -66,11 +56,15 @@ class WorldOptions
     uint rounds_played;
 
 public:
-    WorldOptions(int argc, char *argv[]);
+    WorldOptions();
+
+    void parse_options(int argc, char* argv[]);
+
     void print_help();
+
     void print_error();
 
-    bool get_daemonize() { return this->mDaemonize; }
+    bool get_daemonize() { return this->daemonize; }
 
     uint getRoundTime() { return this->mRoundTime; }
 
@@ -78,9 +72,9 @@ public:
 
     uint get_map_width() { return this->mMapWidth; }
 
-    std::string getGreenPath() { return this->mGreenPath; }
+    std::string getGreenPath() { return this->green_tank_path; }
 
-    std::string getRedPath() { return this->mRedPath; }
+    std::string getRedPath() { return this->red_tank_path; }
 
     uint get_green_tanks() { return this->mGreenTanks; }
 
@@ -92,7 +86,7 @@ public:
 
     uint getRoundsPlayed() { return this->rounds_played; }
 
-    std::string getFifoPath() { return this->fifoPath; }
+    std::string get_fifo_path() { return this->fifo_path; }
 
     void incRedKills()
     {
@@ -119,7 +113,7 @@ class World
 protected:
     std::vector<Tank> green_tanks;
     std::vector<Tank> red_tanks;
-    std::vector< std::vector<Color> > zone;
+    std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
     uint height;
     uint width;
     pthread_cond_t tank_cond_com;
@@ -128,6 +122,7 @@ protected:
     static volatile sig_atomic_t world_signal_status;
 
 public:
+    World(const World&) = delete;
     /**
      * @brief World constructor, also gets a pseudorandom seed
      *  and sets the whole world to empty (no tanks on battlefield)
@@ -149,7 +144,7 @@ public:
      * @param t info about tank to spawn
      * @param u Utils instance with tank binary path
      */
-    void add_tank(Tank t, WorldOptions u);
+    void add_tank(Tank& t, WorldOptions u);
 
     /**
      * @brief Checks if given map coordinate is free
@@ -177,12 +172,6 @@ public:
      * @param u Utils class instance holding necessary data
      */
     void play_round(WorldOptions u);
-
-    /**
-     * @brief refreshes battlefield status at end of round for
-     *          correct output
-     */
-    void refresh_zone();
 
     /**
      * @brief sends all tanks SIGUSR2 as a request for commands
@@ -214,12 +203,9 @@ public:
     /**
      * @brief checks for tanks running into each other,
      *          healthy tanks running into hit ones do not crash
-     * @param tanks1 set of tanks possibly crashing into others
-     * @param tanks2 set of tanks tanks from tanks1 can run into
      * note: allied tanks can crash into each other
      */
-    void crash_tanks(std::vector<Tank> tanks1,
-                     std::vector<Tank> tanks2);
+    void crash_tanks();
 
     /**
      * @brief adds kills according to tanks hit; crashes count
@@ -242,7 +228,7 @@ public:
     void respawn_tanks(WorldOptions u);
 
     /**
-     * @brief cleans up world
+     * @brief cleans up world's resources
      */
     void close();
 
@@ -251,14 +237,15 @@ public:
      */
     void output_map();
 
-    void process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga);
+    void process_commands(WorldOptions u, std::vector<std::string> ra,
+                          std::vector<std::string> ga);
 
     /**
      * @brief set_world_signal_status handler to pass caught signal into a flag
      * in an atomic way
      * @param sig caught signal
      */
-    static void set_world_signal_status(int sig);
+    static void set_world_signal_status(int sig, siginfo_t *info, void *uctx);
 
     /**
      * @brief handle_signal is used to check flag World::world_signal_status
@@ -266,6 +253,12 @@ public:
      * @param sig causing the interuption
      */
     void handle_signal(int sig);
+
+    /**
+     * @brief refreshes battlefield status at end of round for
+     *          correct output
+     */
+    void refresh_zone();
 };
 
 #endif // WORLD_H

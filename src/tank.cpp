@@ -4,120 +4,37 @@
 int tank_exit = 0;
 int tank_send = 0;
 
-
-Tank::Tank(uint x, uint y, Color color) : tid(0), hit(false), x(x), y(y), color(color)
-{
-    newSock = -1;
-    clientConnected = false;
-    threadControl = true;
-    this->serverThread = new std::thread(&Tank::serverLoop, this);
-}
-
-Tank::~Tank()
-{
-    this->threadControl = false;
-    if(this->serverThread->joinable())
-        this->serverThread->join();
-    delete this->serverThread;
-}
-
-pthread_t Tank::getTID()
-{
-    return this->tid;
-}
-
-bool Tank::getHit()
-{
-    return this->hit;
-}
-
-void Tank::setHit(bool shot)
-{
-    this->hit = shot;
-}
-
-uint Tank::getX()
-{
-    return this->x;
-}
-
-uint Tank::getY()
-{
-    return this->y;
-}
-
-void Tank::setX(int newx)
-{
-    this->x = newx;
-}
-
-void Tank::setY(int newy)
-{
-    this->y = newy;
-}
-
-Color Tank::getColor()
-{
-    return this->color;
-}
-
-void Tank::setTID(pthread_t x){
-    this->tid = x;
-}
-
 void Tank::request_command()
 {
-    //pthread_kill(this->getTID(), SIGUSR2);
-    if(newSock > 0)
-        if (send(newSock, "re", 2, 0) == -1) {
-            perror("send");
-        }
-
+    pthread_kill(t_handle.native_handle(), SIGUSR2);
 }
 
 void Tank::read_command()
 {
-//    char buf[4] = "\0";
-//    read(this->getPipe(), buf, 3);
-//    this->action = std::string(buf);
+    char buf[4] = "\0";
+    read(this->getPipe(), buf, 3);
+    this->action = std::string(buf);
 }
 
-void Tank::hit_tank(Color c)
+void Tank::hit_tank(Tank& attacker)
 {
-    if (c != this->color)
+    if (attacker.get_color() != this->color)
     {
         this->hit = true;
+        this->attacker.color = attacker.get_color();
+        this->attacker.x = attacker.get_x();
+        this->attacker.y = attacker.get_y();
     }
-}
-
-void Tank::moveleft()
-{
-    this->x--;
-}
-
-void Tank::moveright()
-{
-    this->x++;
-}
-
-void Tank::moveup()
-{
-    this->y++;
-}
-
-void Tank::movedown()
-{
-    this->y--;
 }
 
 void Tank::kill_thread()
 {
-    /*pthread_kill(getTID(), SIGTERM);*/
+    // pthread_kill(t_handle.native_handle(), SIGTERM);
 }
 
 void Tank::quit()
 {
-    pthread_join(getTID(), NULL);
+    t_handle.join();
 }
 
 bool Tank::createServer()
@@ -274,15 +191,11 @@ void tank_sig_handler(int sig){
  * @brief runs a tank
  * @param tankpipe pipe to send orders to world through
  */
-int run_tank(int* tankpipe){
+int run_tank(int socket){
+    // fixme: move srand initialization to class/global scope
     std::srand(std::time(0));
+    /*
     int x = 0;
-    struct sigaction action;
-    action.sa_flags=0;
-    action.sa_handler = tank_sig_handler;
-    sigaction(SIGTERM,&action,NULL);
-    // not gonna do AI in 20min
-    std::vector<std::string> commands {"fu","fd","fr","fl","mu","md","mr","ml"};
     while(tank_exit==0){
         x = std::rand() % 8;
         if(tank_send){
@@ -290,17 +203,25 @@ int run_tank(int* tankpipe){
         }
     }
     return 0;
+    */
 }
 
 void Tank::spawn_thread()
 {
-    /*
-    tankpath.clear();
-    pipe(t.getpfd());
-    pthread_t x = t.getTID();
-    t.setTID(x);
-    */
-    // TankOptions opts;
-    // pthread_create(&tid, NULL, run_tank, (void*) opts);
+    this->t_handle = std::thread(run_tank, NULL);
 }
 
+void Tank::print_destroy() {
+    std::cout << "Tank destroyed: ";
+    if (color == Color::RED) {
+        std::cout << "Red";
+    } else {
+        std::cout << "Green";
+    }
+    // fixme: possibly return the PID of a running Tankclient
+    std::cout << ", " << t_handle.get_id() << ", [" << get_x() << ", " << get_y()
+              << "]" << std::endl;
+    // fixme:: possibly overload stream operator for Tank to print out tank info
+    std::cout << "Attacker: " << attacker.color << ", [" << attacker.x << ", "
+              << attacker.y << "]" << std::endl;
+}

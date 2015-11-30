@@ -26,74 +26,68 @@ enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
 class Tank
 {
 private:
-    pthread_t tid;
+    std::thread t_handle;
     int pfd [2];
     bool hit;
-    uint x;
-    uint y;
+    int x;
+    int y;
     Color color;
     std::string action;
+    // fixmme: attacker attribute could possibly be avoided by erasing tank
+    // at the time of tank being hit or moved
+    TankShell attacker;
+    volatile std::sig_atomic_t tank_signal_status = 0;
+
+    struct addrinfo *myaddr, myhints;
+    int listener, newSock, fdMax;
+    std::string myPort;
+    fd_set master, tmpSet;
+    bool clientConnected;
+
+    std::thread *serverThread;
+    bool threadControl;
+
+    bool createServer();
+    void serverLoop();
+    void getAddress(struct sockaddr *ai_addr, char **address);
 public:
     /**
-     * @brief Tank constructor, sets TID to 0(to indicate not yet initialized properly)
-     *  and hit flag to false(when a tank rolls up onto a battlefield, it usually is in fighting condition)
+     * @brief Tank constructor, sets TID to 0(to indicate not yet initialized
+     * properly) and hit flag to false(when a tank rolls up onto a battlefield,
+     * it usually is in fighting condition)
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color);
-    ~Tank();
-    /**
-     * @brief TID getter (for sending signals,...)
-     * @return TID of tank thread
-     */
-    pthread_t getTID();
-
-    /**
-     * @brief TID setter
-     * @param x TID to be set
-     */
-
-
-    void setTID(pthread_t x);
+    Tank(uint x, uint y, Color color) : tid(0), hit(false), x(x), y(y), color(color){}
 
     /**
      * @brief hit flag getter
      * @return true if tank has been hit, else false
      */
-    bool getHit();
-
-    /**
-     * @brief hit flag setter (used only when tank has been hit)
-     * @param shot indicates whether tank has been hit(~true)
-     */
-    void setHit(bool shot);
+    bool get_hit() const { return this->hit; }
 
     /**
      * @brief X coordinate getter
      * @return tank x coordinate
      */
-    uint getX();
+    uint get_x() const { return this->x; }
 
     /**
      * @brief Y coordinate getter
      * @return tank y coordinate
      */
-    uint getY();
+    uint get_y() const { return this->y; }
 
     /**
-     * @brief X coordinate setter
+     * @brief getPosition
+     * @return tank position
      */
-    void setX(int newx);
-
-    /**
-     * @brief Y coordinate setter
-     */
-    void setY(int newy);
+    Coord get_position() const { return Coord(x, y); }
 
     /**
      * @brief color getter
      */
-    Color getColor();
+    Color get_color() const { return this->color; }
 
     /**
      * @brief pipe read end getter for commands
@@ -109,6 +103,14 @@ public:
     std::string get_action() const {
         return this->action;
     }
+
+    /**
+     * @brief change tank's coordinates
+     */
+    void moveleft() { this->x--; }
+    void moveright() { this->x++; }
+    void moveup() { this->y++; }
+    void movedown() { this->y--; }
 
     /**
      * @brief spawns a new tank thread, initialized TID of tank
@@ -133,18 +135,10 @@ public:
     void read_command();
 
     /**
-     * @brief set tank to be hit if fired upon by foe
-     * @param c color of the shooting tank
+     * @brief set tank to be hit if fired upon by foe and remember the attacker
+     * @param attacker the shooting tank
      */
-    void hit_tank(Color c);
-
-    /**
-     * @brief change tank coordinates
-     */
-    void moveleft();
-    void moveright();
-    void moveup();
-    void movedown();
+    void hit_tank(Tank& attacker);
 
     /**
      * @brief sends SIFTERM to the thread handle of tank
@@ -155,23 +149,14 @@ public:
      * @brief waits for tank thread to end
      */
     void quit();
-private:
-    struct addrinfo *myaddr, myhints;
-    int listener, newSock, fdMax;
-    std::string myPort;
-    fd_set master, tmpSet;
-    bool clientConnected;
 
-    std::thread *serverThread;
-    bool threadControl;
 
-    bool createServer();
-    void serverLoop();
-    void getAddress(struct sockaddr *ai_addr, char **address);
-
+    /**
+     * @brief print_destroy print tank's info after destruction and attackers info
+     */
+    void print_destroy();
 };
 
 void tank_sig_handler(int sig);
-
 
 #endif // TANK_H

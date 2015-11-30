@@ -3,8 +3,8 @@
 
 #include <unistd.h>
 #include <getopt.h>
-#include <time.h>
-#include <signal.h>
+#include <ctime>
+#include <csignal>
 #include <iostream>
 #include <thread>
 #include <mutex>
@@ -24,7 +24,8 @@ struct TankOptions {
     char* mPort;
 
 public:
-    TankOptions(int argc, char *argv[]);
+    TankOptions();
+    void parse(int argc, char *argv[]);
     void print_help();
     void print_error();
 
@@ -51,7 +52,7 @@ public:
         WRONG_COMMAND = 10
     };
 
-    TankClient(TankOptions *utils);
+    TankClient(TankOptions& utils);
     ~TankClient();
     void waitForSignal();
     void readKey();
@@ -86,8 +87,8 @@ private:
     char buffer[2];
     std::mutex commandMutex;
 
-
-    TankOptions *mUtils;
+private:
+    TankOptions mUtils;
     Command lastCommand;
     bool wasLastMove;
     bool lastCommandSuccess;

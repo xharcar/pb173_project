@@ -1,6 +1,6 @@
 #include "worldclient.h"
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
     Options opts;
     parse_args(argc, argv, opts);
@@ -13,7 +13,7 @@ int main(int argc, char * argv[])
     return 0;
 }
 
-void parse_args(int argc, char * argv[], Options & opts)
+void parse_args(int argc, char* argv[], Options& opts)
 {
     if (argc < 2) {
         std::cout << "Wrong argument" << std::endl;
@@ -43,41 +43,56 @@ void parse_args(int argc, char * argv[], Options & opts)
     }
 }
 
-void print_help(char * progname)
+void print_help(char* progname)
 {
-    std::cout << "Usage: " << progname << " [-p <path to named pipe> | -h]" << std::endl;
-    std::cout << std::endl;
+    std::cout << "Usage: " << progname << " [-p <path to named pipe> | -h]"
+              << std::endl
+              << std::endl;
 }
 
-void WorldClient::get_world_pid() {
+void WorldClient::get_world_pid()
+{
     std::ifstream pid_file;
     pid_file.open("/var/run/world.pid");
     if (pid_file) {
-        std::cerr << "world.pid file does not exist. World process is not running." << std::endl;
+        std::cerr
+            << "world.pid file does not exist. World process is not running."
+            << std::endl;
         exit(-1);
-    } else if ( pid_file >> world_pid ) {
+    }
+    else if (pid_file >> world_pid) {
         /* Successfully read the number  */
-    } else {
+    }
+    else {
         /* Failed to read the number */
-        std::cerr << "Failed to read the pid from the world.pid file." << std::endl;
+        std::cerr << "Failed to read the pid from the world.pid file."
+                  << std::endl;
         exit(-1);
     }
 }
 
-void WorldClient::open_pipe(char * pipe) {
+void WorldClient::open_pipe(char* pipe)
+{
     int fd;
-    if ( (fd = open(pipe, O_RDONLY) ) < 0 ) {
-        std::cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << std::endl;
+    if ((fd = open(pipe, O_RDONLY)) < 0) {
+        std::cerr
+            << strerror(errno)
+            << "Can not open the pipe for streaming data from world process."
+            << std::endl;
         exit(-1);
     }
-    this->pipe_stream = fdopen( fd, "r" );
-    if ( !this->pipe_stream ) {
-        std::cerr << strerror(errno) << "Can not open the pipe for streaming data from world process." << std::endl;
+    this->pipe_stream = fdopen(fd, "r");
+    if (!this->pipe_stream) {
+        std::cerr
+            << strerror(errno)
+            << "Can not open the pipe for streaming data from world process."
+            << std::endl;
         exit(-1);
     }
 }
 
-NCursesClient::NCursesClient(char * pipe) : WorldClient(pipe) {
+NCursesClient::NCursesClient(char* pipe) : WorldClient(pipe)
+{
     initscr();
     start_color();
     /* Create color associations in ncurses */
@@ -98,23 +113,35 @@ NCursesClient::NCursesClient(char * pipe) : WorldClient(pipe) {
     keys();
 }
 
-void NCursesClient::parse_dimensions() {
-    clearerr( this->pipe_stream );
-    int dimensions = fscanf( pipe_stream, "%d, %d", &width, &height );
-    if ( dimensions == EOF && ferror(pipe_stream) ) {
-        std::cerr << strerror(errno) << "Error occured while parsing the pipe stream." << std::endl;
+void WorldClient::parse_dimensions()
+{
+    clearerr(this->pipe_stream);
+    int dimensions = fscanf(pipe_stream, "%d, %d", &width, &height);
+    if (dimensions == EOF && ferror(pipe_stream)) {
+        std::cerr << strerror(errno)
+                  << "Error occured while parsing the pipe stream."
+                  << std::endl;
     }
-    else if ( dimensions != 2 ) {
-        std::cerr << "Error: Worng format of the data in the pipe." << std::endl;
+    else if (dimensions != 2) {
+        std::cerr << "Error: Worng format of the data in the pipe."
+                  << std::endl;
         exit(-1);
     }
 }
 
-void NCursesClient::print_tanks() {
+void NCursesClient::print_tanks()
+{
     char sector;
     int x = 0, y = 0;
-    while ( fscanf(pipe_stream, ",%c", &sector) != EOF ) {
-        switch ( sector ) {
+    parse_dimensions();
+    while (true) {
+        if (fscanf(pipe_stream, ",%c", &sector) == EOF) {
+            std::cerr << strerror(errno)
+                      << "Error occured while parsing the pipe stream."
+                      << std::endl;
+            break;
+        }
+        switch (sector) {
         case 'r':
             draw_tank(x, y, Color::RED);
             break;
@@ -141,22 +168,24 @@ void NCursesClient::print_tanks() {
     }
 }
 
-void NCursesClient::keys() {
+void NCursesClient::keys()
+{
     char c = (char)getch();
     switch (c) {
-        case 'x':
-            kill(world_pid, SIGINT);
-            break;
-        case 'r':
-            kill(world_pid, SIGUSR1);
-            break;
-        case 'q':
-            exit(0);
-            break;
+    case 'x':
+        kill(world_pid, SIGINT);
+        break;
+    case 'r':
+        kill(world_pid, SIGUSR1);
+        break;
+    case 'q':
+        exit(0);
+        break;
     }
 }
 
-void NCursesClient::draw_tank(int x, int y, Color color) {
+void NCursesClient::draw_tank(int x, int y, Color color)
+{
     wattrset(nc_world, COLOR_PAIR(color));
     /* Compensate for border padding */
     mvwaddch(nc_world, y + 1, x + 1, ACS_BLOCK);
@@ -165,7 +194,8 @@ void NCursesClient::draw_tank(int x, int y, Color color) {
     wrefresh(nc_world);
 }
 
-void NCursesClient::undraw_tank(int x, int y) {
+void NCursesClient::undraw_tank(int x, int y)
+{
     /* COLOR_PAIR(0) sets the default color */
     wattrset(nc_world, COLOR_PAIR(0));
     /* Compensate for border padding */
@@ -173,4 +203,3 @@ void NCursesClient::undraw_tank(int x, int y) {
     wattroff(nc_world, COLOR_PAIR(0));
     wrefresh(nc_world);
 }
-

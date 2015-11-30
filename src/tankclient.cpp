@@ -1,32 +1,25 @@
 #include "tankclient.h"
 
 
-
+extern volatile int wasSigUsr2 = 0;
+extern volatile int wasExitSig = 0;
 
 TankOptions::TankOptions(int argc, char *argv[]) :
     mExit(false)
 
 {
     struct option longopts[] = {
-            { "area-size",     required_argument, NULL, 's' },
+            { "area-size",     required_argument, NULL, 'a' },
             { "help",          no_argument,       NULL, 'h' },
-            { "address",       required_argument, NULL, 'a' },
-            { "port",          required_argument, NULL, 'p' },
             { 0, 0, 0, 0 }
-            };
+        };
         int option_index = 0;
         int c;
-        while ((c = getopt_long(argc, argv, "ha:p:s:", longopts, NULL)) != -1) {
+        while ((c = getopt_long(argc, argv, "a:h", longopts, NULL)) != -1) {
             switch (c) {
-            case 's':
+            case 'a':
                 this->mMapWidth = atoi(argv[optind-1]);
                 this->mMapHeight = atoi(argv[optind]);
-                break;
-            case 'a':
-                this->mAddress = argv[optind-1];
-                break;
-            case 'p':
-                this->mPort = argv[optind-1];
                 break;
             case 'h':
                 this->print_help();
@@ -38,10 +31,10 @@ TankOptions::TankOptions(int argc, char *argv[]) :
         }
         // printf("X: %i, Y: %i\n", areaX, areaY);
         /* we need these opts */
-//        if(mMapHeight<=0 || mMapWidth<=0) {
-//           this->print_help();
-//            exit(-1);
-//        }
+        if(mMapHeight<=0 || mMapWidth<=0) {
+           this->print_help();
+            exit(-1);
+        }
 }
 
 void TankOptions::print_error()
@@ -62,6 +55,7 @@ void TankOptions::print_help()
     printf("-----------------------------------------------------\n");
     printf("                        USAGE                            \n");
     printf("  -h | --help           Show this help                   \n");
+    printf("  --area-size [n]x[m]   size of area   \n");
     printf("  --address   address to connect to   \n");
     printf("  --port      port. This implementation   \n");
     printf("              Every tank has it's own port in this'         \n");
@@ -71,13 +65,13 @@ void TankOptions::print_help()
     ;
 }
 
-TankClient::TankClient(TankOptions *utils) :
-    mUtils(utils),
-    lastCommand(NO_COMMAND),
-    lastCommandSuccess(true),
-    wasLastMove(false),
-    threadControl(true),
-    commandWanted(false)
+TankClient::TankClient(TankOptions& utils)
+    : mUtils(utils),
+      lastCommand(NO_COMMAND),
+      lastCommandSuccess(true),
+      wasLastMove(false),
+      threadControl(true),
+      commandWanted(false)
 {
     srand(time(NULL));
     keyThread = new std::thread(&TankClient::readKey, this);
@@ -85,7 +79,6 @@ TankClient::TankClient(TankOptions *utils) :
 
 TankClient::~TankClient()
 {
-    delete this->mUtils;
     this->threadControl = false;
     if(keyThread->joinable())
         keyThread->join();
@@ -204,7 +197,6 @@ void TankClient::nextMove()
     //so i am going to fire everywhere BADAAAAAAAAA
     //and move randomly to test ncurses
 
-
     switch (this->lastCommand)
     {
     case FIRE_UP:
@@ -235,10 +227,8 @@ void TankClient::nextMove()
 
 }
 
-
 bool TankClient::sendCommand(Command command)
 {
-    commandMutex.lock();
     switch (command)
     {
     case Command::MOVE_UP :
@@ -283,8 +273,6 @@ bool TankClient::sendCommand(Command command)
     if (send(sock, this->commandToSend, 2, 0) == -1) {
         return false;
     }
-
-
 
     return true;
 }
@@ -357,15 +345,15 @@ TankClient::Command TankClient::chrToCommand(char *chr)
 
 int main(int argc, char* argv[])
 {
+    TankOptions opts;
+    opts.parse(argc, argv);
 
-
-    TankOptions* utils = new TankOptions(argc, argv);
-    TankClient * tank = new TankClient(utils);
+    TankClient tank(opts);
 
     bool connected = false;
     while(true)
     {
-        connected = tank->connectTo();
+        connected = tank.connectTo();
         if(connected)
             break;
         std::cout << "Trying to reconnect" << std::endl;
@@ -377,3 +365,4 @@ int main(int argc, char* argv[])
         tank->waitForSignal(); //everything is here
     }
 }
+

@@ -21,7 +21,7 @@ public:
     DaemonWorld(int height, int width, std::string pipe) : World(height, width), pipe(pipe)
     {
          openlog("Internet of Tanks: World", LOG_PID, LOG_USER);
-         //pipefd = mkfifo(pipe.c_str(),0444);
+         pipefd = mkfifo(pipe.c_str(),0444);
     }
 
     ~DaemonWorld()
@@ -51,12 +51,6 @@ public:
     void play_round(WorldOptions u);
 
     /**
-     * @brief refreshes battlefield status at end of round for
-     *          correct output
-     */
-    void refresh_zone();
-
-    /**
      * @brief adds kills according to tanks hit; crashes count
      * since as long as a tank is destroyed, the other side benefits from it,
      * the reason why the tank is out of action is irrelevant
@@ -68,20 +62,6 @@ public:
      * @brief removes hit tanks from the board
      */
     void remove_hit_tanks();
-
-    /**
-     * @brief respawns tanks at end of round
-     * @param u Utils class instance holding necessary info
-     *  (how many tanks each side fields)
-     */
-    void respawn_tanks(WorldOptions u);
-
-    /**
-     * @brief cleans up world
-     * @param signal signal which is reacted upon
-     * @override World::quit_safe
-     */
-    void quit_safe(int signal);
 
     /**
      * @brief prints map info to cout
