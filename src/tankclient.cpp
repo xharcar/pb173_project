@@ -1,25 +1,32 @@
 #include "tankclient.h"
 
 
-extern volatile int wasSigUsr2 = 0;
-extern volatile int wasExitSig = 0;
+
 
 TankOptions::TankOptions(int argc, char *argv[]) :
     mExit(false)
 
 {
     struct option longopts[] = {
-            { "area-size",     required_argument, NULL, 'a' },
+            { "area-size",     required_argument, NULL, 's' },
             { "help",          no_argument,       NULL, 'h' },
+            { "address",       required_argument, NULL, 'a' },
+            { "port",          required_argument, NULL, 'p' },
             { 0, 0, 0, 0 }
-        };
+            };
         int option_index = 0;
         int c;
-        while ((c = getopt_long(argc, argv, "a:h", longopts, NULL)) != -1) {
+        while ((c = getopt_long(argc, argv, "ha:p:s:", longopts, NULL)) != -1) {
             switch (c) {
-            case 'a':
+            case 's':
                 this->mMapWidth = atoi(argv[optind-1]);
                 this->mMapHeight = atoi(argv[optind]);
+                break;
+            case 'a':
+                this->mAddress = argv[optind-1];
+                break;
+            case 'p':
+                this->mPort = argv[optind-1];
                 break;
             case 'h':
                 this->print_help();
@@ -31,10 +38,10 @@ TankOptions::TankOptions(int argc, char *argv[]) :
         }
         // printf("X: %i, Y: %i\n", areaX, areaY);
         /* we need these opts */
-        if(mMapHeight<=0 || mMapWidth<=0) {
-           this->print_help();
-            exit(-1);
-        }
+//        if(mMapHeight<=0 || mMapWidth<=0) {
+//           this->print_help();
+//            exit(-1);
+//        }
 }
 
 void TankOptions::print_error()
@@ -55,7 +62,10 @@ void TankOptions::print_help()
     printf("-----------------------------------------------------\n");
     printf("                        USAGE                            \n");
     printf("  -h | --help           Show this help                   \n");
-    printf("  --area-size [n]x[m]   size of area   \n");
+    printf("  --address   address to connect to   \n");
+    printf("  --port      port. This implementation   \n");
+    printf("              Every tank has it's own port in this'         \n");
+    printf("              implementation  \n");
     printf("=====================================================\n");
 
     ;
@@ -63,38 +73,138 @@ void TankOptions::print_help()
 
 TankClient::TankClient(TankOptions *utils) :
     mUtils(utils),
+    lastCommand(NO_COMMAND),
     lastCommandSuccess(true),
-    wasLastMove(false) //temporary
+    wasLastMove(false),
+    threadControl(true),
+    commandWanted(false)
 {
     srand(time(NULL));
+    keyThread = new std::thread(&TankClient::readKey, this);
 }
 
 TankClient::~TankClient()
 {
     delete this->mUtils;
+    this->threadControl = false;
+    if(keyThread->joinable())
+        keyThread->join();
+    delete keyThread;
 }
+
+//running in separate thread
+//we have the latest command every time
+void TankClient::readKey()
+{
+    char c;
+    std::string str;
+    std::cout << "reading commans.." << std::endl;
+    while(threadControl)
+    {
+        std::cin >> str;
+        c = str.at(0);
+        commandMutex.lock();
+        switch(c)
+        {
+        case 'a' :
+            this->lastCommand = MOVE_LEFT;
+            break;
+        case 'w' :
+            this->lastCommand = MOVE_UP;
+            break;
+        case 's' :
+            this->lastCommand = MOVE_DOWN;
+            break;
+        case 'd' :
+            this->lastCommand = MOVE_RIGHT;
+            break;
+        case 'i' :
+            this->lastCommand = FIRE_UP;
+            break;
+        case 'j' :
+            this->lastCommand = FIRE_LEFT;
+            break;
+        case 'k' :
+            this->lastCommand = FIRE_DOWN;
+            break;
+        case 'l' :
+            this->lastCommand = FIRE_RIGHT;
+            break;
+        case ' ' :
+            this->lastCommand = NO_COMMAND;
+        }
+        commandMutex.unlock();
+
+    }
+}
+
+
 
 void TankClient::waitForSignal()
 {
-    pause();    //waiting
-    if(wasSigUsr2 == 1)
-    {
-        wasSigUsr2 = 0;
-        this->nextMove();
+//    pause();    //waiting
+//    if(wasSigUsr2 == 1)
+//    {
+//        wasSigUsr2 = 0;
+//        this->nextMove();
+//    }
+//    else if(wasExitSig == 1)
+//    {
+//        delete this;
+//        exit(0);
+//    }
+
+
+    tmpSet = master;
+    if (select(sock+1, &tmpSet, NULL, NULL, NULL) == -1) {
+        perror("select");
+        return;
     }
-    else if(wasExitSig == 1)
-    {
-        delete this;
-        exit(0);
+    int readBytes;
+    if (FD_ISSET(sock, &tmpSet)) {
+        if ((readBytes = recv(sock, buffer, sizeof(buffer), 0)) <= 0) {
+            // Got error or connection closed by server
+            if (readBytes == 0) {
+                // Connection closed
+                printf("Connection closed by server\n");
+                return;
+            } else {
+                perror("recv");
+                return;
+            }
+        } else {
+            if (readBytes != 2)
+                std::cerr << "wrong size of data from server" << std::cerr;
+            // We got some data from the server
+            if(!commandWanted)
+            {
+                if(strcmp(buffer, requestFromServer) == 0)
+                    commandWanted = true;
+                else if(chrToCommand(buffer) != lastCommand)
+                    std::cerr << "Server acknowledged wrong command" << std::endl;
+            }
+
+            else
+            {
+                if(!this->sendCommand(this->lastCommand))
+                    std::cerr << "error sending command" << std::endl;
+            }
+        }
+
     }
+
 
 }
 
+
+//deprecated
 void TankClient::nextMove()
 {
     //as completly different process i don't know my initial position
     //so i am going to fire everywhere BADAAAAAAAAA
     //and move randomly to test ncurses
+
+
     switch (this->lastCommand)
     {
     case FIRE_UP:
@@ -125,8 +235,10 @@ void TankClient::nextMove()
 
 }
 
+
 bool TankClient::sendCommand(Command command)
 {
+    commandMutex.lock();
     switch (command)
     {
     case Command::MOVE_UP :
@@ -153,51 +265,115 @@ bool TankClient::sendCommand(Command command)
     case Command::FIRE_RIGHT :
         this->commandToSend = this->fireRight;
         break;
-    }
+    case Command::NO_COMMAND :
+        this->commandToSend = this->noCommand;
+        break;
+    default :
+        std::cerr << "wrong command, wtf" << std::endl;
 
-    if (write(STDOUT_FILENO, this->commandToSend, 2) < 2)
-    {
-        std::cerr << "something went wrong while writing to pipe (too lazy to syslog)" << std::endl;
+    }
+    commandMutex.unlock();
+
+//    if (write(STDOUT_FILENO, this->commandToSend, 2) < 2)
+//    {
+//        std::cerr << "something went wrong while writing to pipe (too lazy to syslog)" << std::endl;
+//        return false;
+//    }
+
+    if (send(sock, this->commandToSend, 2, 0) == -1) {
         return false;
     }
+
+
+
     return true;
 }
-void signal_handler(int sig)
+
+bool TankClient::connectTo()
 {
-    switch(sig)
+    memset (&remhint, 0, sizeof(remhint));
+    remhint.ai_family = AF_INET;
+    remhint.ai_socktype = SOCK_STREAM;
+
+    if(getaddrinfo(mUtils->get_address(), mUtils->get_port(), &remhint, &remaddr ) != 0)
     {
-    case SIGUSR2:
-        wasSigUsr2 = 1;
-        break;
-    case SIGINT :
-    case SIGTERM:
-    case SIGQUIT:
-        wasExitSig = 1;
-        break;
-    default:
-        break;
+        std::cerr << "Cannot get server info" << std::endl;
+        return false;
     }
+
+    sock = socket(remaddr->ai_family, remaddr->ai_socktype, remaddr->ai_protocol);
+    if (sock == -1)
+    {
+        std::cerr << "cannot create sockets" << std::endl;
+        return false;
+    }
+
+    if(connect(sock, remaddr->ai_addr, remaddr->ai_addrlen) == -1)
+    {
+        std::cerr << "cannot cnnect to server " << strerror(errno) << std::endl;
+        return false;
+    }
+    freeaddrinfo(remaddr);
+
+    FD_ZERO(&master);
+    FD_SET(sock, &master);
+    FD_SET(0, &master);
+    std::cout << "successfully connected to " << mUtils->get_address() << ":" << mUtils->get_port() << std::endl;
+
+    return true;
 }
 
-// void run_tank(TankOptions opt)
+TankClient::Command TankClient::chrToCommand(char *chr)
+{
+    if((strcmp(chr, noCommand) == 0))
+        return NO_COMMAND;
+    else if((strcmp(chr, moveUp) == 0))
+        return MOVE_UP;
+    else if((strcmp(chr, moveDown) == 0))
+        return MOVE_DOWN;
+    else if((strcmp(chr, moveLeft) == 0))
+        return MOVE_LEFT;
+    else if((strcmp(chr, moveRight) == 0))
+        return MOVE_RIGHT;
+    else if((strcmp(chr, fireUp) == 0))
+        return FIRE_UP;
+    else if((strcmp(chr, fireDown) == 0))
+        return FIRE_DOWN;
+    else if((strcmp(chr, fireLeft) == 0))
+        return FIRE_LEFT;
+    else if((strcmp(chr, fireRight) == 0))
+        return FIRE_RIGHT;
+    else if((strcmp(chr, requestFromServer) == 0))
+        return REQUEST;
+    else
+        return WRONG_COMMAND;
+}
+
+
+
+
+
+
+
 int main(int argc, char* argv[])
 {
-    struct sigaction action;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-    action.sa_handler = signal_handler;
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-    sigaction(SIGQUIT, &action, NULL);
-    sigaction(SIGUSR2, &action, NULL);
 
 
     TankOptions* utils = new TankOptions(argc, argv);
     TankClient * tank = new TankClient(utils);
 
+    bool connected = false;
     while(true)
     {
-        tank->waitForSignal();
+        connected = tank->connectTo();
+        if(connected)
+            break;
+        std::cout << "Trying to reconnect" << std::endl;
+        sleep(5);
+    }
+
+    while(true)
+    {
+        tank->waitForSignal(); //everything is here
     }
 }
-

@@ -1,12 +1,28 @@
 #ifndef TANK_H
 #define TANK_H
 
-#include "world_shared.h"
-#include "tank.h"
+//#include "world_shared.h"
+#include <iostream>
+#include <unistd.h>
+#include <getopt.h>
+#include <time.h>
+#include <signal.h>
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <cstring>
+
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <random>
 
 /**
  * @brief Represents a tank in-game
  */
+
+enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
 class Tank
 {
 private:
@@ -18,15 +34,14 @@ private:
     Color color;
     std::string action;
 public:
-
     /**
      * @brief Tank constructor, sets TID to 0(to indicate not yet initialized properly)
      *  and hit flag to false(when a tank rolls up onto a battlefield, it usually is in fighting condition)
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color) : tid(0), hit(false), x(x), y(y), color(color){}
-
+    Tank(uint x, uint y, Color color);
+    ~Tank();
     /**
      * @brief TID getter (for sending signals,...)
      * @return TID of tank thread
@@ -37,6 +52,8 @@ public:
      * @brief TID setter
      * @param x TID to be set
      */
+
+
     void setTID(pthread_t x);
 
     /**
@@ -138,6 +155,20 @@ public:
      * @brief waits for tank thread to end
      */
     void quit();
+private:
+    struct addrinfo *myaddr, myhints;
+    int listener, newSock, fdMax;
+    std::string myPort;
+    fd_set master, tmpSet;
+    bool clientConnected;
+
+    std::thread *serverThread;
+    bool threadControl;
+
+    bool createServer();
+    void serverLoop();
+    void getAddress(struct sockaddr *ai_addr, char **address);
+
 };
 
 void tank_sig_handler(int sig);
