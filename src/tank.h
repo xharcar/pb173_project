@@ -1,12 +1,12 @@
 #ifndef TANK_H
 #define TANK_H
 
-//#include "world_shared.h"
+#include "world_shared.h"
 #include <iostream>
 #include <unistd.h>
 #include <getopt.h>
-#include <time.h>
-#include <signal.h>
+#include <ctime>
+#include <csignal>
 #include <iostream>
 #include <thread>
 #include <mutex>
@@ -18,11 +18,17 @@
 #include <netdb.h>
 #include <random>
 
+struct TankShell
+{
+    Color color;
+    int x;
+    int y;
+};
+
 /**
  * @brief Represents a tank in-game
  */
 
-enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
 class Tank
 {
 private:
@@ -58,7 +64,7 @@ public:
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color) : tid(0), hit(false), x(x), y(y), color(color){}
+    Tank(int x, int y, Color color) : hit(false), x(x), y(y), color(color){}
 
     /**
      * @brief hit flag getter

@@ -39,7 +39,7 @@ void Tank::quit()
 
 bool Tank::createServer()
 {
-     = (pid_t)this->serverThread->get_id().; //TODO
+    // = (pid_t)this->serverThread->get_id().; //TODO
     srand((int)this->tid);
     myPort = rand() % 50000 + 1025;
 

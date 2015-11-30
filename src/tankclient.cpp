@@ -1,12 +1,11 @@
 #include "tankclient.h"
 
 
-extern volatile int wasSigUsr2 = 0;
-extern volatile int wasExitSig = 0;
-
-TankOptions::TankOptions(int argc, char *argv[]) :
+TankOptions::TankOptions() :
     mExit(false)
+{}
 
+void TankOptions::parse(int argc, char *argv[])
 {
     struct option longopts[] = {
             { "area-size",     required_argument, NULL, 'a' },
@@ -167,7 +166,7 @@ void TankClient::waitForSignal()
             }
         } else {
             if (readBytes != 2)
-                std::cerr << "wrong size of data from server" << std::cerr;
+                std::cerr << "wrong size of data from server" << std::endl;
             // We got some data from the server
             if(!commandWanted)
             {
@@ -183,12 +182,8 @@ void TankClient::waitForSignal()
                     std::cerr << "error sending command" << std::endl;
             }
         }
-
     }
-
-
 }
-
 
 //deprecated
 void TankClient::nextMove()
@@ -283,7 +278,7 @@ bool TankClient::connectTo()
     remhint.ai_family = AF_INET;
     remhint.ai_socktype = SOCK_STREAM;
 
-    if(getaddrinfo(mUtils->get_address(), mUtils->get_port(), &remhint, &remaddr ) != 0)
+    if(getaddrinfo(mUtils.get_address(), mUtils.get_port(), &remhint, &remaddr ) != 0)
     {
         std::cerr << "Cannot get server info" << std::endl;
         return false;
@@ -306,7 +301,7 @@ bool TankClient::connectTo()
     FD_ZERO(&master);
     FD_SET(sock, &master);
     FD_SET(0, &master);
-    std::cout << "successfully connected to " << mUtils->get_address() << ":" << mUtils->get_port() << std::endl;
+    std::cout << "successfully connected to " << mUtils.get_address() << ":" << mUtils.get_port() << std::endl;
 
     return true;
 }
@@ -360,9 +355,11 @@ int main(int argc, char* argv[])
         sleep(5);
     }
 
+    /*
     while(true)
     {
-        tank->waitForSignal(); //everything is here
+        tank.waitForSignal(); //everything is here
     }
+    */
 }
 
