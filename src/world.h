@@ -1,18 +1,18 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <utility>
-#include <sstream>
-#include <boost/range/join.hpp>
 #include <memory>
+#include <sstream>
+#include <utility>
+#include <boost/range/join.hpp>
 
 #include <errno.h>
-#include <syslog.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <sys/file.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <sys/inotify.h>
+#include <sys/stat.h>
+#include <syslog.h>
 
 #include "tank.h"
 
