@@ -8,7 +8,7 @@
 #include <fstream>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <string.h>
+#include <cstring>
 #include <getopt.h>
 
 struct Options {
@@ -17,7 +17,7 @@ struct Options {
 
 enum Color {
     RED = 1,
-    GREEN = 2,
+    GREEN = 2
 };
 
 void parse_args(int argc, char *argv[], Options& opts);
@@ -83,6 +83,11 @@ public:
      * @brief remove tank ftom the screen
      */
     void undraw_tank(int x, int y);
+
+    /**
+     * @brief parses dimensions received from world main process
+     */
+    void parse_dimensions();
 
     /*
     void refresh_stats(int green_kills, int red_kills) {

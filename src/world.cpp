@@ -1,5 +1,4 @@
 #include "world.h"
-#include "daemonworld.h"
 
 volatile std::sig_atomic_t World::world_signal_status = 0;
 
@@ -50,16 +49,16 @@ WorldOptions::WorldOptions(int argc, char* argv[])
             this->mDaemonize = true;
             break;
         case 'r':
-            this->mRedPath.append(optarg);
+            this->mRedPath.assign(optarg);
             break;
         case 'g' :
-            this->mGreenPath.append(optarg);
+            this->mGreenPath.assign(optarg);
             break;
         case 't':
             this->mRoundTime = atoi(optarg);
             break;
         case 'p':
-            this->fifoPath.append(optarg);
+            this->fifoPath.assign(optarg);
             break;
         case 'h':
             this->print_help();
@@ -100,7 +99,7 @@ void WorldOptions::print_error()
 }
 
 // WORLD
-void World::add_tank(Tank t, WorldOptions u)
+void World::add_tank(Tank t)
 {
     if(t.getColor() == Color::RED)
     {
@@ -146,43 +145,50 @@ Coord World::free_coord()
 
 void World::fire()
 {
-    for(Tank& t : boost::join(green_tanks, red_tanks))
+    for(uint i=0;i<green_tanks.size();++i)
     {
-        if (t.get_action().size() != 0 && t.get_action()[0] == 'f')
+        if (green_tanks[i].get_action().size() != 0 && green_tanks[i].get_action()[0] == 'f')
         {
-            fire_direction(t);
+            fire_direction(green_tanks[i]);
+        }
+    }
+	for(uint i=0;i<red_tanks.size();++i)
+    {
+        if (red_tanks[i].get_action().size() != 0 && red_tanks[i].get_action()[0] == 'f')
+        {
+            fire_direction(red_tanks[i]);
         }
     }
 }
 
-void World::fire_direction(Tank& t) {
+void World::fire_direction(Tank t) {
     auto& foe_tanks = t.getColor() == Color::GREEN ? red_tanks : green_tanks;
-    for (Tank& target : foe_tanks)
+    for (uint i=0;i<foe_tanks.size();++i)
     {
         switch(t.get_action()[1])
         {
         case 'u':
-            if (target.getY() < t.getY() && target.getX() == t.getX())
+            if (foe_tanks[i].getY() < t.getY() && foe_tanks[i].getX() == t.getX())
             {
-                target.hit_tank(t.getColor());
+                foe_tanks[i].hit_tank(t.getColor());
             }
             break;
         case 'd':
-            if (target.getY() > t.getY() && target.getX() == t.getX())
+            if (foe_tanks[i].getY() > t.getY() && foe_tanks[i].getX() == t.getX())
             {
-                target.hit_tank(t.getColor());
+                foe_tanks[i].hit_tank(t.getColor());
             }
             break;
         case 'l':
-            if (target.getY() == t.getY() && target.getX() < t.getX())
+            if (foe_tanks[i].getY() == t.getY() && foe_tanks[i].getX() < t.getX())
             {
-                target.hit_tank(t.getColor());
+                foe_tanks[i].hit_tank(t.getColor());
             }
             break;
         case 'r':
-            if (target.getY() == t.getY() && target.getX() < t.getX())
+            if (foe_tanks[i].getY() == t.getY() && foe_tanks[i].getX() < t.getX())
             {
-                target.hit_tank(t.getColor());
+                foe_tanks[i].hit_tank(t.getColor());
             }
             break;
         default:
@@ -193,31 +199,57 @@ void World::fire_direction(Tank& t) {
 
 void World::movetanks()
 {
-    for(Tank& t : boost::join(green_tanks, red_tanks))
+    for(uint i = 0;i<green_tanks.size();++i)
     {
-        if (t.get_action().size() != 0
-            && t.get_action()[0] == 'm'
-            && !t.getHit())
+        if (green_tanks[i].get_action().size() != 0
+            && green_tanks[i].get_action()[0] == 'm'
+            && !green_tanks[i].getHit())
         {
-            switch (t.get_action()[1])
+            switch (green_tanks[i].get_action()[1])
             {
             case 'u' :
-                t.moveup();
+                green_tanks[i].moveup();
                 break;
             case 'd' :
-                t.movedown();
+                green_tanks[i].movedown();
                 break;
             case 'l' :
-                t.moveleft();
+                green_tanks[i].moveleft();
                 break;
             case 'r' :
-                t.moveright();
+                green_tanks[i].moveright();
                 break;
             default:
                 assert(false);
             }
         }
     }
+    for(uint i = 0;i<red_tanks.size();++i)
+    {
+        if (red_tanks[i].get_action().size() != 0
+            && red_tanks[i].get_action()[0] == 'm'
+            && !red_tanks[i].getHit())
+        {
+            switch (red_tanks[i].get_action()[1])
+            {
+            case 'u' :
+                red_tanks[i].moveup();
+                break;
+            case 'd' :
+                red_tanks[i].movedown();
+                break;
+            case 'l' :
+                red_tanks[i].moveleft();
+                break;
+            case 'r' :
+                red_tanks[i].moveright();
+                break;
+            default:
+                assert(false);
+            }
+        }
+    }
+
 }
 
 void World::crash_tanks(std::vector<Tank> tanks1,
@@ -280,12 +312,12 @@ void World::respawn_tanks(WorldOptions u)
     while(red_tanks.size() < u.get_red_tanks()){
         Coord c = World::free_coord();
         Tank t = Tank(c.first, c.second, RED);
-        add_tank(t,u);
+        add_tank(t);
     }
     while(green_tanks.size() < u.get_green_tanks()){
         Coord c = World::free_coord();
         Tank t = Tank(c.first, c.second, GREEN);
-        add_tank(t,u);
+        add_tank(t);
     }
 }
 
@@ -336,9 +368,9 @@ void World::play_round(WorldOptions u)
     green_actions.resize(u.get_green_tanks());
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
-    pthread_cond_signal(&cvar);
+    pthread_cond_signal(&worldcvariable);
     usleep((useconds_t)u.getRoundTime()*1000);
-    process_commands(u,red_actions,green_actions);
+    //process_commands(u,red_actions,green_actions);
     std::cout << "FIRE EVERYTHING!" << std::endl;
     fire();
     std::cout << "Moving tanks" << std::endl;
@@ -367,7 +399,7 @@ void World::output_map()
     }
 }
 
-void World::close()
+void World::safe_quit()
 {
     std::cout << "Quitting safely" << std::endl;
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
@@ -394,10 +426,10 @@ void World::handle_signal(int sig)
     case SIGINT:
     case SIGQUIT:
     case SIGTERM:
-        close();
+        safe_quit();
         break;
     case SIGUSR1:
-        close();
+        safe_quit();
         execl("../world","../world,",argv_extra,(char*)NULL);
         break;
     }
@@ -450,52 +482,4 @@ void set_up_signal_handling()
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
-}
-
-int main(int argc, char *argv[])
-{
-    set_up_signal_handling();
-    int pid_fd = world_running("/var/run/world.pid");
-
-    // pthread_mutex_init(&mtx,NULL);
-    // pthread_cond_init(&cvar,NULL);
-    // argv_extra = argv;
-
-    WorldOptions opts(argc, argv);
-
-    // Checking if map space is sufficient
-    int map_space = opts.get_map_height()*opts.get_map_width();
-    int tank_count = opts.get_green_tanks()+ opts.get_red_tanks();
-    if(map_space < tank_count) {
-        std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
-        return 2;
-    }
-
-    World w = World(opts.get_map_height(), opts.get_map_width());
-    if (opts.get_daemonize()) {
-        /* fixme: supply fifo path from parsed arguments */
-        std::string open_pipe;
-        w = DaemonWorld(opts.get_map_height(), opts.get_map_width(), open_pipe);
-    }
-
-    for (uint i = 0; i < opts.get_green_tanks(); i++)
-    {
-        Coord c = w.free_coord();
-        Tank t = Tank(c.first, c.second, Color::GREEN);
-        w.add_tank(t,opts);
-    }
-    for (uint i = 0; i < opts.get_red_tanks(); i++)
-    {
-        Coord c = w.free_coord();
-        Tank t = Tank(c.first, c.second, Color::RED);
-        w.add_tank(t,opts);
-    }
-
-    while(true)
-    {
-        w.play_round(opts);
-    }
-
-    close(pid_fd);
-    return 0;
 }

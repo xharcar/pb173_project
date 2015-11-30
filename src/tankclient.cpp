@@ -1,8 +1,16 @@
 #include "tankclient.h"
 
+int wasSigUsr2;
+int wasExitSig;
 
-extern volatile int wasSigUsr2 = 0;
-extern volatile int wasExitSig = 0;
+const char TankClient::moveUp[3] = {'m','u','\0'};
+const char TankClient::moveDown[3] = {'m','d','\0'};
+const char TankClient::moveLeft[3] = {'m','l','\0'};
+const char TankClient::moveRight[3] = {'m','r','\0'};
+const char TankClient::fireUp[3] = {'f','u','\0'};
+const char TankClient::fireDown[3] = {'f','d','\0'};
+const char TankClient::fireLeft[3] = {'f','l','\0'};
+const char TankClient::fireRight[3] = {'f','r','\0'};
 
 TankOptions::TankOptions(int argc, char *argv[]) :
     mExit(false)
@@ -13,7 +21,6 @@ TankOptions::TankOptions(int argc, char *argv[]) :
             { "help",          no_argument,       NULL, 'h' },
             { 0, 0, 0, 0 }
         };
-        int option_index = 0;
         int c;
         while ((c = getopt_long(argc, argv, "a:h", longopts, NULL)) != -1) {
             switch (c) {
@@ -63,8 +70,9 @@ void TankOptions::print_help()
 
 TankClient::TankClient(TankOptions *utils) :
     mUtils(utils),
-    lastCommandSuccess(true),
-    wasLastMove(false) //temporary
+    wasLastMove(false),
+    lastCommandSuccess(true)
+     //temporary
 {
     srand(time(NULL));
 }

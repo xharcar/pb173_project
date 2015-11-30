@@ -13,5 +13,8 @@
 #include <pthread.h>
 
 enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
+// Utility type definitions
+typedef std::pair<int, int> Coord;
+typedef unsigned int uint;
 
 #endif // WORLD_SHARED_H

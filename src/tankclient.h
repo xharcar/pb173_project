@@ -3,8 +3,8 @@
 
 #include <unistd.h>
 #include <getopt.h>
-#include <time.h>
-#include <signal.h>
+#include <ctime>
+#include <csignal>
 #include <iostream>
 
 struct TankOptions {
@@ -42,14 +42,14 @@ public:
     bool sendCommand(Command command);
 
     const char * commandToSend;
-    const char moveUp[2] = {'m', 'u'};
-    const char moveDown[2] = {'m', 'd'};
-    const char moveLeft[2] = {'m', 'l'};
-    const char moveRight[2] = {'m', 'r'};
-    const char fireUp[2] = {'f', 'u'};
-    const char fireDown[2] = {'f', 'd'};
-    const char fireLeft[2] = {'f', 'l'};
-    const char fireRight[2] = {'f', 'r'};
+    static const char moveUp[3];
+    static const char moveDown[3];
+    static const char moveLeft[3];
+    static const char moveRight[3];
+    static const char fireUp[3];
+    static const char fireDown[3];
+    static const char fireLeft[3];
+    static const char fireRight[3];
 
 private:
     TankOptions *mUtils;

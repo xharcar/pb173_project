@@ -1,8 +1,8 @@
 #ifndef TANK_H
 #define TANK_H
 
-#include "world_shared.h"
-#include "tank.h"
+#include  "world_shared.h"
+
 
 /**
  * @brief Represents a tank in-game

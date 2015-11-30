@@ -26,16 +26,15 @@ public:
 
     ~DaemonWorld()
     {
-        close();
+        safe_quit();
     }
 
     /**
      * @brief Spawns a tank at given coordinates, which must be empty
      * @param t info about tank to spawn
-     * @param u Utils instance with tank binary path
      * @override World::add_tank
      */
-    void add_tank(Tank t, WorldOptions u);
+    void add_tank(Tank t);
 
     /**
      * @brief represents a round of gameplay;
@@ -89,7 +88,10 @@ public:
      */
     void output_map();
 
-    void close();
+    /**
+     * @brief deletes world safely
+     */
+    void safe_quit();
 
 };
 

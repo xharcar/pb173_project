@@ -5,7 +5,6 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
-#include <boost/range/join.hpp>
 
 #include <errno.h>
 #include <syslog.h>
@@ -17,16 +16,13 @@
 
 #include "tank.h"
 
-
-// Utility type definitions
-typedef std::pair<int, int> Coord;
-typedef unsigned int uint;
 // mutex for writing commands
-pthread_mutex_t mtx;
+static pthread_mutex_t worldmtxlock;
 // conditional variable to control writing messages
-pthread_cond_t cvar;
+static pthread_cond_t worldcvariable;
 // messages coming from tanks, to be processed
-std::vector<std::string> tank_messages;
+static std::vector<std::string> tank_messages;
+
 
 /**
  * @brief set_up_signal_handling uses sigaction function
@@ -141,15 +137,14 @@ public:
     }
 
     ~World() {
-        close();
+        safe_quit();
     }
 
     /**
      * @brief Spawns a tank at given coordinates, which must be empty
      * @param t info about tank to spawn
-     * @param u Utils instance with tank binary path
      */
-    void add_tank(Tank t, WorldOptions u);
+    void add_tank(Tank t);
 
     /**
      * @brief Checks if given map coordinate is free
@@ -200,9 +195,9 @@ public:
     void fire();
 
     /**
-     * @brief tank t fires in a specifis direction based on his action attribute
+     * @brief tank t fires in a specifis direction based on its action attribute
      */
-    void fire_direction(Tank& t);
+    void fire_direction(Tank t);
 
     /**
      * @brief moves tanks if they weren't hit and have received a move order
@@ -244,7 +239,7 @@ public:
     /**
      * @brief cleans up world
      */
-    void close();
+    void safe_quit();
 
     /**
      * @brief prints map info to cout
