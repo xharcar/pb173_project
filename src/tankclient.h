@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <time.h>
-#include <signal.h>
+#include <csignal>
 #include <iostream>
 
 struct TankOptions {
@@ -13,7 +13,8 @@ struct TankOptions {
     bool mExit;
 
 public:
-    TankOptions(int argc, char *argv[]);
+    TankOptions();
+    void parse(int argc, char *argv[]);
     void print_help();
     void print_error();
 

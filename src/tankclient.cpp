@@ -1,40 +1,41 @@
 #include "tankclient.h"
 
 
-extern volatile int wasSigUsr2 = 0;
-extern volatile int wasExitSig = 0;
+volatile std::sig_atomic_t wasSigUsr2 = 0;
+volatile std::sig_atomic_t wasExitSig = 0;
 
-TankOptions::TankOptions(int argc, char *argv[]) :
-    mExit(false)
+/* defaults for TankClient options */
+TankOptions::TankOptions() : mExit(false) {}
 
+void TankOptions::parse(int argc, char *argv[])
 {
     struct option longopts[] = {
-            { "area-size",     required_argument, NULL, 'a' },
-            { "help",          no_argument,       NULL, 'h' },
-            { 0, 0, 0, 0 }
-        };
-        int option_index = 0;
-        int c;
-        while ((c = getopt_long(argc, argv, "a:h", longopts, NULL)) != -1) {
-            switch (c) {
-            case 'a':
-                this->mMapWidth = atoi(argv[optind-1]);
-                this->mMapHeight = atoi(argv[optind]);
-                break;
-            case 'h':
-                this->print_help();
-                exit(0);
-            default:
-                this->print_error();
-                exit(-1);
-            }
-        }
-        // printf("X: %i, Y: %i\n", areaX, areaY);
-        /* we need these opts */
-        if(mMapHeight<=0 || mMapWidth<=0) {
-           this->print_help();
+        {"area-size", required_argument, NULL, 'a'},
+        {"help", no_argument, NULL, 'h'},
+        {0, 0, 0, 0}
+    };
+    int option_index = 0;
+    int c;
+    while ((c = getopt_long(argc, argv, "a:h", longopts, NULL)) != -1) {
+        switch (c) {
+        case 'a':
+            this->mMapWidth = atoi(argv[optind - 1]);
+            this->mMapHeight = atoi(argv[optind]);
+            break;
+        case 'h':
+            this->print_help();
+            exit(0);
+        default:
+            this->print_error();
             exit(-1);
         }
+    }
+    // printf("X: %i, Y: %i\n", areaX, areaY);
+    /* we need these opts */
+    if (mMapHeight <= 0 || mMapWidth <= 0) {
+        this->print_help();
+        exit(-1);
+    }
 }
 
 void TankOptions::print_error()
@@ -57,8 +58,6 @@ void TankOptions::print_help()
     printf("  -h | --help           Show this help                   \n");
     printf("  --area-size [n]x[m]   size of area   \n");
     printf("=====================================================\n");
-
-    ;
 }
 
 TankClient::TankClient(TankOptions *utils) :
