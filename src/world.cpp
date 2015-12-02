@@ -15,8 +15,8 @@ std::vector<std::string> tank_messages;
 WorldOptions::WorldOptions()
     // Set default values here
     : daemonize(false)
-    , green_tank_path("../bin/tank")
-    , red_tank_path("../bin/tank")
+    , green_tankclient_path("../bin/tankclient")
+    , red_tankclient_path("../bin/tankclient")
     , red_kills(0)
     , green_kills(0)
     , rounds_played(0)
@@ -56,10 +56,10 @@ void WorldOptions::parse_options(int argc, char* argv[])
             this->daemonize = true;
             break;
         case 'r':
-            this->red_tank_path.assign(optarg);
+            this->red_tankclient_path.assign(optarg);
             break;
         case 'g':
-            this->green_tank_path.assign(optarg);
+            this->green_tankclient_path.assign(optarg);
             break;
         case 't':
             this->mRoundTime = atoi(optarg);

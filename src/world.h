@@ -46,8 +46,8 @@ class WorldOptions
     uint mRoundTime;
     uint mMapHeight;
     uint mMapWidth;
-    std::string green_tank_path;
-    std::string red_tank_path;
+    std::string green_tankclient_path;
+    std::string red_tankclient_path;
     std::string fifo_path;
     uint mGreenTanks;
     uint mRedTanks;
@@ -72,9 +72,9 @@ public:
 
     uint get_map_width() { return this->mMapWidth; }
 
-    std::string getGreenPath() { return this->green_tank_path; }
+    std::string getGreenPath() { return this->green_tankclient_path; }
 
-    std::string getRedPath() { return this->red_tank_path; }
+    std::string getRedPath() { return this->red_tankclient_path; }
 
     uint get_green_tanks() { return this->mGreenTanks; }
 
