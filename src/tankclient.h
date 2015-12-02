@@ -3,7 +3,7 @@
 
 #include <unistd.h>
 #include <getopt.h>
-#include <ctime>
+#include <time.h>
 #include <csignal>
 #include <iostream>
 
