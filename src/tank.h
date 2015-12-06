@@ -27,6 +27,7 @@ private:
     // at the time of tank being hit or moved
     TankShell attacker;
     volatile std::sig_atomic_t tank_signal_status = 0;
+    std::condition_variable communicate;
 
 public:
     /**

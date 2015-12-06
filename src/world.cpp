@@ -5,12 +5,6 @@ volatile std::sig_atomic_t World::world_signal_status = 0;
 
 // extra var to pass ARGV through for restart
 char** argv_extra;
-// mutex for writing commands
-pthread_mutex_t mtx;
-// conditional variable to control writing messages
-pthread_cond_t cvar;
-// messages coming from tanks, to be processed
-std::vector<std::string> tank_messages;
 
 WorldOptions::WorldOptions()
     // Set default values here

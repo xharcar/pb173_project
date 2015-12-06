@@ -116,9 +116,6 @@ protected:
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
     uint height;
     uint width;
-    pthread_cond_t tank_cond_com;
-    pthread_mutex_t tank_mutex_com;
-    std::vector<int> tank_messages;
     static volatile sig_atomic_t world_signal_status;
 
 public:
