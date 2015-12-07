@@ -13,11 +13,12 @@ void Tank::request_command()
     pthread_kill(t_handle.native_handle(), SIGUSR2);
 }
 
-void Tank::hit_tank(Tank& attacker)
+void Tank::hit_tank(TankShell attacker)
 {
     if (attacker.get_color() != this->color)
     {
         this->hit = true;
+        this->attacker = attacker;
         this->attacker.color = attacker.get_color();
         this->attacker.x = attacker.get_x();
         this->attacker.y = attacker.get_y();

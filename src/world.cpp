@@ -157,25 +157,26 @@ void World::fire_direction(Tank& t)
 {
     auto& foe_tanks = t.get_color() == Color::GREEN ? red_tanks : green_tanks;
     for (Tank& target : foe_tanks) {
+        TankShell t_shell(t.get_x(), t.get_y(), t.get_color());
         switch (t.get_action()[1]) {
         case 'u':
             if (target.get_y() < t.get_y() && target.get_x() == t.get_x()) {
-                target.hit_tank(t);
+                target.hit_tank(t_shell);
             }
             break;
         case 'd':
             if (target.get_y() > t.get_y() && target.get_x() == t.get_x()) {
-                target.hit_tank(t);
+                target.hit_tank(t_shell);
             }
             break;
         case 'l':
             if (target.get_y() == t.get_y() && target.get_x() < t.get_x()) {
-                target.hit_tank(t);
+                target.hit_tank(t_shell);
             }
             break;
         case 'r':
             if (target.get_y() == t.get_y() && target.get_x() < t.get_x()) {
-                target.hit_tank(t);
+                target.hit_tank(t_shell);
             }
             break;
         default:

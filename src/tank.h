@@ -6,9 +6,10 @@
 
 struct TankShell
 {
-    Color color;
     int x;
     int y;
+    Color color;
+    TankShell(int x, int y, Color c) : x(x), y(y), color(c) {}
 };
 
 /**
