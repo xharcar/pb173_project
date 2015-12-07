@@ -30,8 +30,8 @@ private:
     bool hit;
 
     std::queue<std::string> command_buffer;
-    std::condition_variable com; ///< used to wait for socket communication thread if command_buffer is empty
-    std::mutex com_mut; ///< synchronizing acces to command_buffer
+    std::unique_ptr<std::condition_variable> com; ///< used to wait for socket communication thread if command_buffer is empty
+    std::unique_ptr<std::mutex> com_mut; ///< synchronizing acces to command_buffer
 
     //volatile std::sig_atomic_t signal_status = 0;
     int signal_status;
@@ -44,7 +44,7 @@ public:
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color) : x(x), y(y), color(color), hit(false) {}
+    Tank(uint x, uint y, Color color, std::string bin_path);
 
     /**
      * @brief hit flag getter

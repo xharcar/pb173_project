@@ -72,9 +72,9 @@ public:
 
     uint get_map_width() { return this->mMapWidth; }
 
-    std::string getGreenPath() { return this->green_tankclient_path; }
+    std::string get_green_path() { return this->green_tankclient_path; }
 
-    std::string getRedPath() { return this->red_tankclient_path; }
+    std::string get_red_path() { return this->red_tankclient_path; }
 
     uint get_green_tanks() { return this->mGreenTanks; }
 
@@ -138,9 +138,9 @@ public:
     /**
      * @brief Spawns a tank at given coordinates, which must be empty
      * @param t info about tank to spawn
-     * @param u Utils instance with tank binary path
      */
-    void add_tank(Tank& t, WorldOptions u);
+    //void add_tank(Tank& t);
+    void add_tank(Color color, std::string bin_path);
 
     /**
      * @brief Checks if given map coordinate is free
@@ -168,16 +168,6 @@ public:
      * @param u Utils class instance holding necessary data
      */
     void play_round(WorldOptions u);
-
-    /**
-     * @brief sends all tanks SIGUSR2 as a request for commands
-     */
-    void req_com();
-
-    /**
-     * @brief reads commands from tanks
-     */
-    void read_com();
 
     /**
      * @brief fires the main guns of all give tanks

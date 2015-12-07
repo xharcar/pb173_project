@@ -99,21 +99,21 @@ void WorldOptions::print_error()
     std::cerr << "Wrong arguments or something" << std::endl;
 }
 
-// WORLD
-void World::add_tank(Tank& t)
+void World::add_tank(Color color, std::string bin_path)
 {
-    this->zone[t.get_x()][t.get_y()] = t.get_color();
-    if(t.get_color() == Color::RED)
+    Coord c = free_coord();
+
+    this->zone[c.first][c.second] = color;
+
+    if(color == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
-        red_tanks.push_back(std::move(t));
-        // spawn_thread(t, u.getRedPath());
+        red_tanks.emplace_back(c.first, c.second, color, bin_path);
     }
     else
     {
         std::cout << "Adding green tank" << std::endl;
-        green_tanks.push_back(std::move(t));
-        // spawn_thread(t, u.getGreenPath());
+        green_tanks.emplace_back(c.first, c.second, color, bin_path);
     }
 }
 
@@ -266,14 +266,10 @@ void World::remove_hit_tanks()
 void World::respawn_tanks(WorldOptions opts)
 {
     while(red_tanks.size() < opts.get_red_tanks()){
-        Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, Color::RED);
-        this->add_tank(t, opts);
+        add_tank(Color::RED, opts.get_red_path());
     }
     while(green_tanks.size() < opts.get_green_tanks()){
-        Coord c = World::free_coord();
-        Tank t = Tank(c.first, c.second, Color::GREEN);
-        this->add_tank(t, opts);
+        add_tank(Color::GREEN, opts.get_green_path());
     }
 }
 
@@ -442,15 +438,11 @@ int main(int argc, char *argv[])
 
     for (uint i = 0; i < opts.get_green_tanks(); i++)
     {
-        Coord c = w->free_coord();
-        Tank t = Tank(c.first, c.second, Color::GREEN);
-        w->add_tank(t, opts);
+        w->add_tank(Color::GREEN, opts.get_green_path());
     }
     for (uint i = 0; i < opts.get_red_tanks(); i++)
     {
-        Coord c = w->free_coord();
-        Tank t = Tank(c.first, c.second, Color::RED);
-        w->add_tank(t, opts);
+        w->add_tank(Color::RED, opts.get_red_path());
     }
 
     while(true)
