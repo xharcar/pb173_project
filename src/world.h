@@ -129,7 +129,6 @@ public:
     World(uint height, uint width) : height(height), width(width)
     {
         std::vector<std::vector<Color> > zone(height,std::vector<Color>(width,EMPTY));
-        pthread_mutex_init(&this->tank_mutex_com, NULL);
     }
 
     ~World() {
@@ -234,8 +233,7 @@ public:
      */
     void output_map();
 
-    void process_commands(WorldOptions u, std::vector<std::string> ra,
-                          std::vector<std::string> ga);
+    void read_commands();
 
     /**
      * @brief set_world_signal_status handler to pass caught signal into a flag

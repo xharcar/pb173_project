@@ -28,7 +28,7 @@ using Coord = std::pair<int, int>;
 typedef void (*signal_handler_t)(int, siginfo_t *, void *);
 
 /* Process-wide signal handler dispatches signal to thread signal handlers */
-static void signal_handler(int signum, siginfo_t* info, void* context);
+//static void signal_handler(int signum, siginfo_t* info, void* context);
 
 void set_up_thread_hadler(signal_handler_t new_thread_handler);
 

@@ -18,22 +18,23 @@ class Tank
 {
 private:
     std::thread t_handle;
-    bool hit;
     int x;
     int y;
     Color color;
+    std::string tankclient_path; ///< Process to be spawned
     std::string action; ///< used to hold a copy of a last command
 
     // fixmme: attacker attribute could possibly be avoided by erasing tank
     // at the time of tank being hit or moved
     TankShell attacker;
-    std::string tankclient_path; ///< Process to be spawned
+    bool hit;
 
     std::queue<std::string> command_buffer;
     std::condition_variable com; ///< used to wait for socket communication thread if command_buffer is empty
     std::mutex com_mut; ///< synchronizing acces to command_buffer
 
-    volatile std::sig_atomic_t tank_signal_status = 0;
+    //volatile std::sig_atomic_t signal_status = 0;
+    int signal_status;
 
 public:
     /**
@@ -43,7 +44,7 @@ public:
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color) : hit(false), x(x), y(y), color(color) {}
+    Tank(uint x, uint y, Color color) : x(x), y(y), color(color), hit(false) {}
 
     /**
      * @brief hit flag getter

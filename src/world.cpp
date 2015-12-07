@@ -100,7 +100,7 @@ void WorldOptions::print_error()
 }
 
 // WORLD
-void World::add_tank(Tank& t, WorldOptions u)
+void World::add_tank(Tank& t)
 {
     this->zone[t.get_x()][t.get_y()] = t.get_color();
     if(t.get_color() == Color::RED)
@@ -277,40 +277,21 @@ void World::respawn_tanks(WorldOptions opts)
     }
 }
 
-/*
-void World::process_commands( WorldOptions u, std::vector< std::string > ra, std::vector< std::string > ga )
+void World::read_commands()
 {
-    for ( auto m = tank_messages.begin(); m != tank_messages.end(); ++m ) {
-        char* pch = strtok((char*)m->c_str()," ");
-        pthread_t a = (pthread_t)atoi(pch);
-        pch = strtok(NULL," ");
-        for(int i=0;i<u.getRedTanks();i++){
-            if(red_tanks[i].getTID()==a){
-                ra[i].assign(pch);
-                break;
-            }
-        }
-        for(int i=0;i<u.getGreenTanks();i++){
-            if(green_tanks[i].getTID()==a){
-                ga[i].assign(pch);
-                break;
-            }
-        }
+    for(Tank& t : boost::join(green_tanks, red_tanks)) {
+        t.read_command();
     }
 }
-*/
 
 void World::play_round(WorldOptions u)
 {
-    std::vector<std::string> red_actions;
-    std::vector<std::string> green_actions;
-    red_actions.resize(u.get_red_tanks());
-    green_actions.resize(u.get_green_tanks());
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
-    pthread_cond_signal(&cvar);
-    usleep((useconds_t)u.getRoundTime()*1000);
-    //process_commands(u,red_actions,green_actions);
+
+    /* Acquire commands from tankclients */
+    read_commands();
+
     std::cout << "FIRE EVERYTHING!" << std::endl;
     fire();
     std::cout << "Moving tanks" << std::endl;
