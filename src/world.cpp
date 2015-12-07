@@ -105,13 +105,13 @@ void World::add_tank(Tank t)
     {
         std::cout << "Adding red tank" << std::endl;
         red_tanks.push_back(t);
-        // spawn_thread(t, u.getRedPath());
+        t.spawn_thread();
     }
     else
     {
         std::cout << "Adding green tank" << std::endl;
         green_tanks.push_back(t);
-        // spawn_thread(t, u.getGreenPath());
+        t.spawn_thread();
     }
 }
 
@@ -337,7 +337,7 @@ void World::refresh_zone()
     }
 }
 
-/*
+
 void World::process_commands( WorldOptions u, std::vector< std::string > ra, std::vector< std::string > ga )
 {
     for ( auto m = tank_messages.begin(); m != tank_messages.end(); ++m ) {
@@ -357,8 +357,8 @@ void World::process_commands( WorldOptions u, std::vector< std::string > ra, std
             }
         }
     }
+    tank_messages.clear();
 }
-*/
 
 void World::play_round(WorldOptions u)
 {
@@ -370,6 +370,8 @@ void World::play_round(WorldOptions u)
     u.incRoundsPlayed();
     pthread_cond_signal(&worldcvariable);
     usleep((useconds_t)u.getRoundTime()*1000);
+    // waits for round time to pass : round time given in ms,
+    // sleep time in us, hence *1000
     //process_commands(u,red_actions,green_actions);
     std::cout << "FIRE EVERYTHING!" << std::endl;
     fire();
@@ -385,8 +387,6 @@ void World::play_round(WorldOptions u)
     refresh_zone();
     std::cout << "Round " << u.getRoundsPlayed() << std::endl;
     output_map();
-    // waits for round time to pass : round time given in ms,
-    // sleep time in us, hence *1000
 }
 
 void World::output_map()

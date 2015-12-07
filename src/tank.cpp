@@ -1,8 +1,9 @@
 #include "tank.h"
+#include <sys/socket.h>
+#include <netdb.h>
 
 // tank vars
 int tank_exit = 0;
-int tank_send = 0;
 
 
 pthread_t Tank::getTID()
@@ -49,26 +50,10 @@ void Tank::setTID(pthread_t x){
     this->tid = x;
 }
 
-void Tank::request_command()
+void Tank::hit_tank()
 {
-    pthread_kill(this->getTID(), SIGUSR2);
+    this->hit = true;
 }
-
-void Tank::read_command()
-{
-    char buf[4] = "\0";
-    read(this->getPipe(), buf, 3);
-    this->action = std::string(buf);
-}
-
-void Tank::hit_tank(Color c)
-{
-    if (c != this->color)
-    {
-        this->hit = true;
-    }
-}
-
 void Tank::moveleft()
 {
     this->x--;
@@ -101,46 +86,77 @@ void Tank::quit()
 
 void tank_sig_handler(int sig){
     switch (sig) {
-    case SIGUSR2:
-        tank_send = 1;
-        break;
-    case SIGTERM:
-        tank_exit = 1;
-        break;
+        case SIGTERM:
+            tank_exit = 1;
+            break;
     }
 }
 
 /**
  * @brief runs a tank
- * @param tankpipe pipe to send orders to world through
  */
-int run_tank(int* tankpipe){
-    std::srand(std::time(0));
-    int x = 0;
+int run_tank(){
+    int echk;
+    int port = 7020;
+    char* portstr = (char*)calloc(6,sizeof(char));
+    itoa(port,portstr,10);
+    struct addrinfo** res;
+    struct addrinfo* hints = (struct addrinfo*)malloc(sizeof(struct addrinfo));
+    hints->ai_socktype = SOCK_DGRAM;
+    hints->ai_flags = AI_ADDRCONFIG | AI_V4MAPPED;
+    hints->ai_family = AF_INET6;
+    hints->ai_protocol = 17;
+    do{
+        echk = getaddrinfo(NULL,portstr,&hints,&res;)
+        if(echk!=0){
+            freeaddrinfo(res);
+            port++;
+            free(portstr);
+            portstr = (char*)calloc(6,sizeof(char));
+            itoa(port,portstr,10);
+        }
+        if(port > 65536){
+            std::cerr << "Could not find suitable network address for tank with TID" << pthread_self() << std::endl;
+            pthread_exit(&port);
+        }
+    }while(echk!=0);
+    free(hints);
+    free(portstr);
+    int sfd;
     struct sigaction action;
     action.sa_flags=0;
     action.sa_handler = tank_sig_handler;
     sigaction(SIGTERM,&action,NULL);
-    // not gonna do AI in 20min
-    std::vector<std::string> commands {"fu","fd","fr","fl","mu","md","mr","ml"};
-    while(tank_exit==0){
-        x = std::rand() % 8;
-        if(tank_send){
-            write(tankpipe[1],commands[x].c_str(),3);
-        }
+    sfd = socket(AF_INET6,SOCK_DGRAM,17);
+    if(sfd == -1){
+        std::cerr << "Could not make socket for tank with TID " << pthread_self() << std::endl;
+        freeaddrinfo(res);
+        pthread_exit(*sfd);
     }
+    // Any connection using datagrams and UDP(Aisa's /etc/protocols specifies UDP as 17)
+    if(echk = bind(sfd,res[0]->ai_addr,res[0]->ai_addrlen) != 0){
+        std::cerr << "Could not bind port to tank with TID " << pthread_self() << std::endl;
+        freeaddrinfo(res);
+        pthread_exit(*echk);
+    }
+    // Exits if bind fails
+    while(tank_exit==0){
+        pthread_cond_wait(&worldcvariable,&worldmtxlock);
+        pthread_mutex_lock(&worldmtxlock);
+        portstr = calloc(4,sizeof(char));
+        recvfrom(sfd,portstr,3,0,res[0]->ai_addr,&res[0]->ai_addrlen);
+        std::stringstream ss;
+        ss << pthread_self << " " << std::string(portstr);
+        tank_messages.push_back(ss.str());
+        pthread_cond_signal(&worldcvariable);
+        pthread_mutex_unlock(&worldmtxlock);
+    }
+    freeaddrinfo(res);
     return 0;
 }
 
 void Tank::spawn_thread()
 {
-    /*
-    tankpath.clear();
-    pipe(t.getpfd());
-    pthread_t x = t.getTID();
-    t.setTID(x);
-    */
-    // TankOptions opts;
-    // pthread_create(&tid, NULL, run_tank, (void*) opts);
+    pthread_create(&tid, NULL, run_tank, (void*) NULL);
 }
 

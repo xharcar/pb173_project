@@ -6,7 +6,6 @@
 #include <iostream>
 #include <sstream>
 
-#include <errno.h>
 #include <syslog.h>
 #include <getopt.h>
 #include <sys/file.h>
@@ -15,13 +14,6 @@
 #include <sys/inotify.h>
 
 #include "tank.h"
-
-// mutex for writing commands
-static pthread_mutex_t worldmtxlock;
-// conditional variable to control writing messages
-static pthread_cond_t worldcvariable;
-// messages coming from tanks, to be processed
-static std::vector<std::string> tank_messages;
 
 
 /**
@@ -246,6 +238,19 @@ public:
      */
     void output_map();
 
+    /**
+     * @brief Processes tank commands:
+     * First, reads from tank_messages string vector;
+     * From the read string, determines TID of tank that issued the command;
+     * Then, assigns command to tank based on acquired TID
+     * by writing to the same position in the action vector as the tank's position in the tanks vector;
+     * AKA tank at red_tank_vector(i) has its command at red_action_vector(i);
+     * Loops until all commands have been processed;
+     * Finally, clears tank_messages.
+     * @param u WorldOptions instance from which red/green tank count is read
+     * @param ra red actions vector
+     * @param ga green actions vector
+     */
     void process_commands(WorldOptions u,std::vector<std::string> ra, std::vector<std::string> ga);
 
     /**
