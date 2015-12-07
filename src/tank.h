@@ -2,6 +2,7 @@
 #define TANK_H
 
 #include "world_shared.h"
+#include <queue>
 
 struct TankShell
 {
@@ -17,17 +18,23 @@ class Tank
 {
 private:
     std::thread t_handle;
-    int pfd [2];
+    int pfd [2]; //< obsolete
     bool hit;
     int x;
     int y;
     Color color;
-    std::string action;
+    std::string action; ///< used to hold a copy of a last command
+
     // fixmme: attacker attribute could possibly be avoided by erasing tank
     // at the time of tank being hit or moved
     TankShell attacker;
+    std::string tankclient_path; ///< Process to be spawned
+
+    std::queue<std::string> command_buffer;
+    std::condition_variable com; ///< used to wait for socket communication thread if command_buffer is empty
+    std::mutex com_mut; ///< synchronizing acces to command_buffer
+
     volatile std::sig_atomic_t tank_signal_status = 0;
-    std::condition_variable communicate;
 
 public:
     /**
@@ -133,6 +140,18 @@ public:
      * @brief print_destroy print tank's info after destruction and attackers info
      */
     void print_destroy();
+
+    /**
+     * @brief deposit_command_from_client is called from a socket communication's thread
+     * @param command to be deposited
+     */
+    void deposit_command_from_client(std::string command);
+
+    /**
+     * @brief Tank::read_command is called from a main thread to obtain a command
+     * @return last command
+     */
+    std::string read_command();
 };
 
 void tank_sig_handler(int sig);

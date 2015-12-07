@@ -2,6 +2,8 @@
 #define WORLD_SHARED_H
 
 #include <chrono>
+#include <condition_variable>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <thread>
