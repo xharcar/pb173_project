@@ -117,6 +117,8 @@ protected:
     uint height;
     uint width;
     static volatile sig_atomic_t world_signal_status;
+    std::string pipe;
+    int pipefd;
 
 public:
     /**
@@ -129,11 +131,9 @@ public:
      *  and sets the whole world to empty (no tanks on battlefield)
      * @param height height of the world (Y-axis)
      * @param width width of the world (X-axis)
+     * @param pipe pipe to write events to
      */
-    World(uint height, uint width) : height(height), width(width)
-    {
-        std::vector<std::vector<Color> > zone(height,std::vector<Color>(width,EMPTY));
-    }
+    World(uint height, uint width, std::string pipe);
 
     ~World() {
         close();

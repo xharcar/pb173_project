@@ -48,7 +48,6 @@ void DaemonWorld::play_round(WorldOptions u)
 void DaemonWorld::close()
 {
     syslog(LOG_INFO,"Quitting safely\n");
-    ::close(pipefd);
     closelog();
     World::close();
 }

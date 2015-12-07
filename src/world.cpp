@@ -99,6 +99,13 @@ void WorldOptions::print_error()
     std::cerr << "Wrong arguments or something" << std::endl;
 }
 
+World::World(uint height, uint width, std::string pipe)
+    : height(height), width(width), pipe(pipe)
+{
+    std::vector<std::vector<Color>> zone(height, std::vector<Color>(width, EMPTY));
+    pipefd = mkfifo(pipe.c_str(), 0444);
+}
+
 void World::add_tank(Color color, std::string bin_path)
 {
     Coord c = free_coord();
@@ -320,7 +327,7 @@ void World::output_map()
             ss << ',' << zone[i][j];
         }
     }
-    // write(pipefd,ss.str().c_str(),(height*width*2)+4);
+    write(pipefd,ss.str().c_str(),(height*width*2)+4);
 }
 
 void World::close()
@@ -337,6 +344,7 @@ void World::close()
     red_tanks.clear();
     green_tanks.clear();
     zone.clear();
+    ::close(pipefd);
 }
 
 void World::set_world_signal_status(int sig, siginfo_t* info, void* context) {
@@ -417,8 +425,6 @@ int main(int argc, char *argv[])
 
     int pid_fd = world_running("/var/run/world.pid");
 
-    // pthread_mutex_init(&mtx,NULL);
-    // pthread_cond_init(&cvar,NULL);
     // argv_extra = argv;
 
     WorldOptions opts;
@@ -432,7 +438,7 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width()));
+    std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
     if (opts.get_daemonize()) {
         w.reset(new DaemonWorld(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
     }
