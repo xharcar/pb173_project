@@ -21,16 +21,11 @@ void DaemonWorld::remove_hit_tanks()
 
 void DaemonWorld::play_round(WorldOptions u)
 {
-    std::vector<std::string> red_actions;
-    std::vector<std::string> green_actions;
-    red_actions.resize(u.get_red_tanks());
-    green_actions.resize(u.get_green_tanks());
     // re-inited at every round start for easier management
     u.incRoundsPlayed();
     syslog(LOG_INFO,"Round %d\n",u.getRoundsPlayed());
-    //pthread_cond_signal(&cvar);
-    usleep((useconds_t)u.getRoundTime()*1000);
-    //process_commands(u,red_actions,green_actions);
+
+    read_commands();
     syslog(LOG_INFO, "FIRE EVERYTHING!\n");
     fire();
     syslog(LOG_INFO,"Moving tanks");

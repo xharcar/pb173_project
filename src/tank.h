@@ -4,6 +4,16 @@
 #include "world_shared.h"
 #include <queue>
 
+struct TankShell
+{
+    int x;
+    int y;
+    Color color;
+    TankShell(int x, int y, Color c) : x(x), y(y), color(c) {}
+    TankShell() = default;
+};
+
+
 /**
  * @brief Represents a tank in-game
  */
@@ -126,15 +136,6 @@ public:
      */
     //std::string read_command();
     void read_command();
-};
-
-struct TankShell
-{
-    int x;
-    int y;
-    Color color;
-    TankShell(int x, int y, Color c) : x(x), y(y), color(c) {}
-    TankShell() = default;
 };
 
 void tank_sig_handler(int sig);
