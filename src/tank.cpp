@@ -15,13 +15,10 @@ void Tank::request_command()
 
 void Tank::hit_tank(TankShell attacker)
 {
-    if (attacker.get_color() != this->color)
+    if (attacker.color != this->color)
     {
         this->hit = true;
         this->attacker = attacker;
-        this->attacker.color = attacker.get_color();
-        this->attacker.x = attacker.get_x();
-        this->attacker.y = attacker.get_y();
     }
 }
 

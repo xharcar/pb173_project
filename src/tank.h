@@ -10,6 +10,7 @@ struct TankShell
     int y;
     Color color;
     TankShell(int x, int y, Color c) : x(x), y(y), color(c) {}
+    TankShell() = default;
 };
 
 /**
@@ -104,7 +105,7 @@ public:
      * @brief set tank to be hit if fired upon by foe and remember the attacker
      * @param attacker the shooting tank
      */
-    void hit_tank(Tank& attacker);
+    void hit_tank(TankShell attacker);
 
     /**
      * @brief sends SIFTERM to the thread handle of tank

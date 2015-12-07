@@ -222,8 +222,8 @@ void World::crash_tanks()
                 continue;
             }
             else if (t.get_position() == u.get_position()) {
-                t.hit_tank(u);
-                u.hit_tank(t);
+                t.hit_tank(TankShell(u.get_x(), u.get_y(), u.get_color()));
+                u.hit_tank(TankShell(t.get_x(), t.get_y(), t.get_color()));
             }
         }
     }
