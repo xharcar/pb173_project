@@ -34,4 +34,6 @@ void set_up_thread_hadler(signal_handler_t new_thread_handler);
 
 void process_signal_handling();
 
+void spawn_process(std::string command);
+
 #endif // WORLD_SHARED_H

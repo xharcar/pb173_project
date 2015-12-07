@@ -10,13 +10,6 @@ void Tank::request_command()
     pthread_kill(t_handle.native_handle(), SIGUSR2);
 }
 
-void Tank::read_command()
-{
-    char buf[4] = "\0";
-    read(this->getPipe(), buf, 3);
-    this->action = std::string(buf);
-}
-
 void Tank::hit_tank(Tank& attacker)
 {
     if (attacker.get_color() != this->color)
@@ -85,21 +78,10 @@ void Tank::print_destroy() {
 // fixme: add argument for socket passing
 void Tank::spawn_thread()
 {
-    /* Spawn the process of a tankclient which generates the commands for the tank */
-    switch (fork()) {
-    /* child process */
-    case 0:
-        execl(command.c_str(), command.c_str(), (char*)NULL);
-        assert(false);
-    case -1:
-        /* fork failiure */
-        assert(false);
-    }
+    spawn_process(tankclient_path);
 
     /* Spawn a thread to communicate with tankclient asynchronously */
     this->t_handle = std::thread([&](){
-        std::unique_lock<std::mutex> lock(com_mut);
-        communicate.wait(com_mut);
     });
 }
 
@@ -111,12 +93,15 @@ void Tank::deposit_command_from_client(std::string command)
     com.notify_one();
 }
 
-std::string Tank::read_command()
+//std::string Tank::read_command()
+void Tank::read_command()
 {
     std::unique_lock<std::mutex> lock(com_mut);
     com.wait(lock, [this] { return !command_buffer.empty(); });
     std::string command;
-    std::swap(command, command_buffer.front());
+    //std::swap(command, command_buffer.front());
+    std::swap(action, command_buffer.front());
     command_buffer.pop();
-    return command;
+    //return command;
 }
+

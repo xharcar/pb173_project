@@ -18,7 +18,6 @@ class Tank
 {
 private:
     std::thread t_handle;
-    int pfd [2]; //< obsolete
     bool hit;
     int x;
     int y;
@@ -75,17 +74,6 @@ public:
      */
     Color get_color() const { return this->color; }
 
-    /**
-     * @brief pipe read end getter for commands
-     */
-    int getPipe(){
-        return this->pfd[0];
-    }
-
-    int* getpfd(){
-        return this->pfd;
-    }
-
     std::string get_action() const {
         return this->action;
     }
@@ -116,11 +104,6 @@ public:
     void request_command();
 
     /**
-     * @brief communicates with spawned tank
-     */
-    void read_command();
-
-    /**
      * @brief set tank to be hit if fired upon by foe and remember the attacker
      * @param attacker the shooting tank
      */
@@ -149,9 +132,11 @@ public:
 
     /**
      * @brief Tank::read_command is called from a main thread to obtain a command
+     * command is then copied to the this->action
      * @return last command
      */
-    std::string read_command();
+    //std::string read_command();
+    void read_command();
 };
 
 void tank_sig_handler(int sig);
