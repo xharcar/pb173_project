@@ -135,13 +135,7 @@ public:
         close();
     }
 
-    /**
-     * @brief Spawns a tank at given coordinates, which must be empty
-     * @param t info about tank to spawn
-     */
-    //void add_tank(Tank& t);
-    void add_tank(Color color, std::string bin_path);
-
+private:
     /**
      * @brief Checks if given map coordinate is free
      * @param x x coordinate
@@ -155,6 +149,14 @@ public:
      * @return coordinates to spawn new tank at
      */
     Coord free_coord();
+
+public:
+    /**
+     * @brief add_tank spawns tank on free coordinates
+     * @param color of the new tank
+     * @param bin_path path to the binary that is supposed to spawn tankclient
+     */
+    void add_tank(Color color, std::string bin_path);
 
     /**
      * @brief represents a round of gameplay;
@@ -223,6 +225,9 @@ public:
      */
     void output_map();
 
+    /**
+     * @brief read_commands fetch commands for all tanks
+     */
     void read_commands();
 
     /**

@@ -30,6 +30,7 @@ private:
     bool hit;
 
     std::queue<std::string> command_buffer;
+    /* indirection required for moveing tanks to vectors */
     std::unique_ptr<std::condition_variable> com; ///< used to wait for socket communication thread if command_buffer is empty
     std::unique_ptr<std::mutex> com_mut; ///< synchronizing acces to command_buffer
 
