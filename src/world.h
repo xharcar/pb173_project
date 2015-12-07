@@ -119,7 +119,11 @@ protected:
     static volatile sig_atomic_t world_signal_status;
 
 public:
+    /**
+     * @brief World remove the copy constructor
+     */
     World(const World&) = delete;
+
     /**
      * @brief World constructor, also gets a pseudorandom seed
      *  and sets the whole world to empty (no tanks on battlefield)

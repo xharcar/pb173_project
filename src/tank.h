@@ -95,12 +95,6 @@ public:
     void spawn_thread();
 
     /**
-     * @brief handles newly created tank thread
-     * @param pipeptr pointer pipe from which world reads tank commands
-     */
-    void* handle_thread(void* pipeptr);
-
-    /**
      * @brief request a command through a SIGUSR2 signal to tank
      */
     void request_command();
