@@ -111,8 +111,8 @@ public:
 class World
 {
 protected:
-    std::vector<Tank> green_tanks;
-    std::vector<Tank> red_tanks;
+    std::vector<std::unique_ptr<Tank>> green_tanks;
+    std::vector<std::unique_ptr<Tank>> red_tanks;
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
     uint height;
     uint width;

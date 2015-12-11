@@ -50,6 +50,11 @@ public:
      */
     Tank(uint x, uint y, Color color, std::string bin_path);
 
+    Tank(const Tank&) = delete;
+    Tank& operator=(const Tank&) = delete;
+    Tank(Tank&&) noexcept = default;
+    Tank& operator=(Tank&&) noexcept = default;
+
     /**
      * @brief hit flag getter
      * @return true if tank has been hit, else false
