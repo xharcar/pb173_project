@@ -88,17 +88,17 @@ void Tank::spawn_thread()
 
 void Tank::deposit_command_from_client(std::string command)
 {
-    std::unique_lock<std::mutex> lock(*com_mut);
+    std::unique_lock<std::mutex> lock(com_mut);
     command_buffer.push(command);
     lock.unlock();
-    com->notify_one();
+    com.notify_one();
 }
 
 //std::string Tank::read_command()
 void Tank::read_command()
 {
-    std::unique_lock<std::mutex> lock(*com_mut);
-    com->wait(lock, [this] { return !command_buffer.empty(); });
+    std::unique_lock<std::mutex> lock(com_mut);
+    com.wait(lock, [this] { return !command_buffer.empty(); });
     std::string command;
     //std::swap(command, command_buffer.front());
     std::swap(action, command_buffer.front());
