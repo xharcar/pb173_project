@@ -31,7 +31,7 @@ WorldOptions::WorldOptions(int argc, char* argv[])
     };
 
     int c;
-    while ((c = getopt_long(argc, argv, "d:c:v:g:r:t:a:p:h", longopts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "dc:v:g:r:t:a:p:h", longopts, NULL)) != -1)
     {
         switch (c)
         {
