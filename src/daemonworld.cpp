@@ -20,12 +20,12 @@ void DaemonWorld::add_kills(WorldOptions u)
 {
     syslog(LOG_INFO,"Adding kills, old counts: \nRed: %d\nGreen: %d\n",u.getRedKills(),u.getGreenKills());
     for (uint i=0;i<red_tanks.size();++i) {
-        if (red_tanks[i].getHit()) {
+        if (red_tanks[i].isHit()) {
             u.incGreenKills();
         }
     }
     for (uint i=0; i<green_tanks.size();++i) {
-        if (green_tanks[i].getHit()) {
+        if (green_tanks[i].isHit()) {
             u.incRedKills();
         }
     }
@@ -36,13 +36,13 @@ void DaemonWorld::remove_hit_tanks()
 {
     syslog(LOG_INFO,"Removing hit tanks\n");
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        if(t->getHit()){
+        if(t->isHit()){
             pthread_kill(t->getTID(),SIGTERM);
             red_tanks.erase(t);
         }
     }
     for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
-        if(t->getHit()){
+        if(t->isHit()){
             pthread_kill(t->getTID(),SIGTERM);
             green_tanks.erase(t);
         }

@@ -161,34 +161,65 @@ void World::fire()
     }
 }
 
-void World::fire_direction(Tank t) {
-    auto& foe_tanks = t.getColor() == Color::GREEN ? red_tanks : green_tanks;
-    for (uint i=0;i<foe_tanks.size();++i)
+void World::fire_direction(Tank t){    
+    for (uint i=0;i<green_tanks.size();++i)
     {
         switch(t.get_action()[1])
         {
         case 'u':
-            if (foe_tanks[i].getY() < t.getY() && foe_tanks[i].getX() == t.getX())
+            if (green_tanks[i].getY() < t.getY() && green_tanks[i].getX() == t.getX())
             {
-                foe_tanks[i].hit_tank(t.getColor());
+                green_tanks[i].hit_tank();
             }
             break;
         case 'd':
-            if (foe_tanks[i].getY() > t.getY() && foe_tanks[i].getX() == t.getX())
+            if (green_tanks[i].getY() > t.getY() && green_tanks[i].getX() == t.getX())
             {
-                foe_tanks[i].hit_tank(t.getColor());
+                green_tanks[i].hit_tank();
             }
             break;
         case 'l':
-            if (foe_tanks[i].getY() == t.getY() && foe_tanks[i].getX() < t.getX())
+            if (green_tanks[i].getY() == t.getY() && green_tanks[i].getX() < t.getX())
             {
-                foe_tanks[i].hit_tank(t.getColor());
+                green_tanks[i].hit_tank();
             }
             break;
         case 'r':
-            if (foe_tanks[i].getY() == t.getY() && foe_tanks[i].getX() < t.getX())
+            if (green_tanks[i].getY() == t.getY() && green_tanks[i].getX() < t.getX())
             {
-                foe_tanks[i].hit_tank(t.getColor());
+               green_tanks[i].hit_tank();
+            }
+            break;
+        default:
+            assert(false);
+        }
+    }
+  for (uint i=0;i<red_tanks.size();++i)
+    {
+        switch(t.get_action()[1])
+        {
+        case 'u':
+            if (red_tanks[i].getY() < t.getY() && red_tanks[i].getX() == t.getX())
+            {
+                red_tanks[i].hit_tank();
+            }
+            break;
+        case 'd':
+            if (red_tanks[i].getY() > t.getY() && red_tanks[i].getX() == t.getX())
+            {
+                red_tanks[i].hit_tank();
+            }
+            break;
+        case 'l':
+            if (red_tanks[i].getY() == t.getY() && red_tanks[i].getX() < t.getX())
+            {
+                red_tanks[i].hit_tank();
+            }
+            break;
+        case 'r':
+            if (red_tanks[i].getY() == t.getY() && red_tanks[i].getX() < t.getX())
+            {
+                red_tanks[i].hit_tank();
             }
             break;
         default:
@@ -203,7 +234,7 @@ void World::movetanks()
     {
         if (green_tanks[i].get_action().size() != 0
             && green_tanks[i].get_action()[0] == 'm'
-            && !green_tanks[i].getHit())
+            && !green_tanks[i].isHit())
         {
             switch (green_tanks[i].get_action()[1])
             {
@@ -228,7 +259,7 @@ void World::movetanks()
     {
         if (red_tanks[i].get_action().size() != 0
             && red_tanks[i].get_action()[0] == 'm'
-            && !red_tanks[i].getHit())
+            && !red_tanks[i].isHit())
         {
             switch (red_tanks[i].get_action()[1])
             {
@@ -261,9 +292,9 @@ void World::crash_tanks(std::vector<Tank> tanks1,
                // prevents a tank crashing into itself
                tanks1[i].getX() == tanks2[j].getX() &&
                tanks1[i].getY() == tanks2[j].getY() &&
-               !tanks1[i].getHit() && !tanks2[j].getHit()){
-                    tanks1[i].setHit(true);
-                    tanks2[j].setHit(true);
+               !tanks1[i].isHit() && !tanks2[j].isHit()){
+                    tanks1[i].hit_tank();
+                    tanks2[j].hit_tank();
             }
         }
     }
@@ -275,10 +306,10 @@ void World::add_kills(WorldOptions u)
     << "Red: " << u.getRedKills() << std::endl
     << "Green: " << u.getGreenKills() << std::endl;
     for(std::size_t i=0;i<red_tanks.size();++i){
-        if(red_tanks[i].getHit()) u.incGreenKills();
+        if(red_tanks[i].isHit()) u.incGreenKills();
     }
     for(std::size_t i=0;i<green_tanks.size();++i){
-        if(green_tanks[i].getHit()) u.incRedKills();
+        if(green_tanks[i].isHit()) u.incRedKills();
     }
     std::cout << "New kill counts: " << std::endl
     << "Red: " << u.getRedKills() << std::endl
@@ -289,7 +320,7 @@ void World::remove_hit_tanks()
 {
     std::cout << "Removing hit tanks" << std::endl;
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        if(t->getHit()){
+        if(t->isHit()){
             std::cout << "Red tank with TID " << t->getTID() << " at "
             << t->getX() << "," << t->getY() << " has been hit, removing" << std::endl;
             t->kill_thread();
@@ -297,7 +328,7 @@ void World::remove_hit_tanks()
         }
     }
     for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
-        if(t->getHit()){
+        if(t->isHit()){
             std::cout << "Green tank with TID " << t->getTID() << " at "
             << t->getX() << "," << t->getY() << " has been hit, removing" << std::endl;
             t->kill_thread();
@@ -340,17 +371,17 @@ void World::refresh_zone()
 
 void World::process_commands( WorldOptions u, std::vector< std::string > ra, std::vector< std::string > ga )
 {
-    for ( auto m = tank_messages.begin(); m != tank_messages.end(); ++m ) {
-        char* pch = strtok((char*)m->c_str()," ");
+    for ( uint i = 0;i<tank_messages.size();i++ ) {
+        char* pch = strtok((char*)((tank_messages[i]).c_str())," ");
         pthread_t a = (pthread_t)atoi(pch);
         pch = strtok(NULL," ");
-        for(int i=0;i<u.getRedTanks();i++){
+        for(uint i=0;i<u.get_red_tanks();i++){
             if(red_tanks[i].getTID()==a){
                 ra[i].assign(pch);
                 break;
             }
         }
-        for(int i=0;i<u.getGreenTanks();i++){
+        for(uint i=0;i<u.get_green_tanks();i++){
             if(green_tanks[i].getTID()==a){
                 ga[i].assign(pch);
                 break;

@@ -2,8 +2,12 @@
 #define TANK_H
 
 #include  "world_shared.h"
+#include <netdb.h>
+#include <iostream>
+#include <sys/socket.h>
+#include <sstream>
 
-
+static pthread_mutex_t worldmtxlock;
 /**
  * @brief Represents a tank in-game
  */
@@ -43,13 +47,7 @@ public:
      * @brief hit flag getter
      * @return true if tank has been hit, else false
      */
-    bool getHit();
-
-    /**
-     * @brief hit flag setter (used only when tank has been hit)
-     * @param shot indicates whether tank has been hit(~true)
-     */
-    void setHit(bool shot);
+    bool isHit();
 
     /**
      * @brief X coordinate getter
@@ -78,13 +76,6 @@ public:
      */
     Color getColor();
 
-    /**
-     * @brief pipe read end getter for commands
-     */
-    int getPipe(){
-        return this->pfd[0];
-    }
-
     int* getpfd(){
         return this->pfd;
     }
@@ -100,26 +91,15 @@ public:
     void spawn_thread();
 
     /**
-     * @brief handles newly created tank thread
-     * @param pipeptr pointer pipe from which world reads tank commands
-     */
-    void* handle_thread(void* pipeptr);
-
-    /**
      * @brief request a command through a SIGUSR2 signal to tank
      */
     void request_command();
 
     /**
-     * @brief communicates with spawned tank
-     */
-    void read_command();
-
-    /**
      * @brief set tank to be hit if fired upon by foe
      * @param c color of the shooting tank
      */
-    void hit_tank(Color c);
+    void hit_tank();
 
     /**
      * @brief change tank coordinates
