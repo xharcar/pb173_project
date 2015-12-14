@@ -58,7 +58,7 @@ WorldOptions::WorldOptions(int argc, char* argv[])
             this->mRoundTime = atoi(optarg);
             break;
         case 'p':
-            this->fifoPath.assign(optarg);
+            this->fifo_path.assign(optarg);
             break;
         case 'h':
             this->print_help();
@@ -99,6 +99,20 @@ void WorldOptions::print_error()
 }
 
 // WORLD
+World::World(WorldOptions& opts)
+    : height(opts.get_map_height()), width(opts.get_map_width()), pipe(opts.get_fifo_path())
+{
+    std::vector<std::vector<Color>> zone(height, std::vector<Color>(width, EMPTY));
+    pipefd = mkfifo(pipe.c_str(), 0444);
+    red_tanks.reserve(opts.get_red_tanks());
+    green_tanks.reserve(opts.get_green_tanks());
+    if (opts.get_daemonize()) {
+        /* Redirect std::cout to syslog */
+        std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
+    }
+    pthread_mutex_init(&this->tank_mutex_com, NULL);
+}
+
 void World::add_tank(Tank t)
 {
     if(t.getColor() == Color::RED)
@@ -513,4 +527,47 @@ void set_up_signal_handling()
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
+}
+
+int main(int argc, char *argv[])
+{
+    set_up_signal_handling();
+    int pid_fd = world_running("/var/run/world.pid");
+
+     pthread_mutex_init(&worldmtxlock,NULL);
+     pthread_cond_init(&worldcvariable,NULL);
+    // argv_extra = argv;
+
+    WorldOptions opts(argc, argv);
+
+    // Checking if map space is sufficient
+    int map_space = opts.get_map_height()*opts.get_map_width();
+    int tank_count = opts.get_green_tanks()+ opts.get_red_tanks();
+    if(map_space < tank_count) {
+        std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
+        return 2;
+    }
+
+    World w = World(opts);
+
+    for (uint i = 0; i < opts.get_green_tanks(); i++)
+    {
+        Coord c = w.free_coord();
+        Tank t = Tank(c.first, c.second, Color::GREEN);
+        w.add_tank(t);
+    }
+    for (uint i = 0; i < opts.get_red_tanks(); i++)
+    {
+        Coord c = w.free_coord();
+        Tank t = Tank(c.first, c.second, Color::RED);
+        w.add_tank(t);
+    }
+
+    while(true)
+    {
+        w.play_round(opts);
+    }
+
+    close(pid_fd);
+    return 0;
 }

@@ -46,7 +46,7 @@ class WorldOptions
     uint mMapWidth;
     std::string mGreenPath;
     std::string mRedPath;
-    std::string fifoPath;
+    std::string fifo_path;
     uint mGreenTanks;
     uint mRedTanks;
     uint red_kills;
@@ -80,7 +80,7 @@ public:
 
     uint getRoundsPlayed() { return this->rounds_played; }
 
-    std::string getFifoPath() { return this->fifoPath; }
+    std::string get_fifo_path() { return this->fifo_path; }
 
     void incRedKills()
     {
@@ -113,19 +113,15 @@ protected:
     pthread_cond_t tank_cond_com;
     pthread_mutex_t tank_mutex_com;
     static volatile sig_atomic_t world_signal_status;
+    std::string pipe;
+    int pipefd;
 
 public:
     /**
      * @brief World constructor, also gets a pseudorandom seed
      *  and sets the whole world to empty (no tanks on battlefield)
-     * @param height height of the world (Y-axis)
-     * @param width width of the world (X-axis)
      */
-    World(uint height, uint width) : height(height), width(width)
-    {
-        std::vector<std::vector<Color> > zone(height,std::vector<Color>(width,EMPTY));
-        pthread_mutex_init(&this->tank_mutex_com, NULL);
-    }
+    World(WorldOptions& opts);
 
     ~World() {
         safe_quit();
