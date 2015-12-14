@@ -182,8 +182,7 @@ public:
     void handle_signal(int sig);
 
     /**
-     * @brief refreshes battlefield status at end of round for
-     *          correct output
+     * @brief refreshes battlefield status at end of round for correct output
      */
     void refresh_zone();
     void take_actions();
