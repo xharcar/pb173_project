@@ -11,10 +11,11 @@ add_executable(world
     src/world_shared.cpp
     src/tank.h
     src/tank.cpp
+    src/world_options.h
+    src/world_options.cpp
     src/world.h
     src/world.cpp
-    src/daemonworld.h
-    src/daemonworld.cpp
+    #src/randutils.hpp
 )
 
 add_executable(worldclient

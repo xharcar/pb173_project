@@ -8,16 +8,13 @@
 
 #include <errno.h>
 #include <syslog.h>
-#include <getopt.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/inotify.h>
 
+#include "world_options.h"
 #include "tank.h"
-
-// Utility type definitions
-typedef unsigned int uint;
 
 /**
  * @brief process_signal_handling uses sigaction function
@@ -38,94 +35,24 @@ int world_running( std::string pid_filepath );
 void watch_pid( std::string pid_filepath );
 
 /**
- * @brief Utility class for holding important data
- */
-class WorldOptions
-{
-    bool daemonize;
-    uint mRoundTime;
-    uint mMapHeight;
-    uint mMapWidth;
-    std::string green_tankclient_path;
-    std::string red_tankclient_path;
-    std::string fifo_path;
-    uint mGreenTanks;
-    uint mRedTanks;
-    uint red_kills;
-    uint green_kills;
-    uint rounds_played;
-
-public:
-    WorldOptions();
-
-    void parse_options(int argc, char* argv[]);
-
-    void print_help();
-
-    void print_error();
-
-    bool get_daemonize() { return this->daemonize; }
-
-    uint getRoundTime() { return this->mRoundTime; }
-
-    uint get_map_height() { return this->mMapHeight; }
-
-    uint get_map_width() { return this->mMapWidth; }
-
-    std::string get_green_path() { return this->green_tankclient_path; }
-
-    std::string get_red_path() { return this->red_tankclient_path; }
-
-    uint get_green_tanks() { return this->mGreenTanks; }
-
-    uint get_red_tanks() { return this->mRedTanks; }
-
-    uint getRedKills() { return this->red_kills; }
-
-    uint getGreenKills() { return this->green_kills; }
-
-    uint getRoundsPlayed() { return this->rounds_played; }
-
-    std::string get_fifo_path() { return this->fifo_path; }
-
-    void incRedKills()
-    {
-        this->red_kills++;
-    }
-
-    void incGreenKills()
-    {
-        this->green_kills++;
-    }
-
-    void incRoundsPlayed()
-    {
-        this->rounds_played++;
-    }
-
-};
-
-/**
  * @brief Represents an in-game basic world
  */
 class World
 {
-protected:
+private:
     std::vector<std::unique_ptr<Tank>> green_tanks;
     std::vector<std::unique_ptr<Tank>> red_tanks;
+    //std::vector<Tank> green_tanks;
+    //std::vector<Tank> red_tanks;
+
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
-    uint height;
-    uint width;
+    unsigned height;
+    unsigned width;
     static volatile sig_atomic_t world_signal_status;
     std::string pipe;
     int pipefd;
 
 public:
-    /**
-     * @brief World remove the copy constructor
-     */
-    World(const World&) = delete;
-
     /**
      * @brief World constructor, also gets a pseudorandom seed
      *  and sets the whole world to empty (no tanks on battlefield)
@@ -133,7 +60,13 @@ public:
      * @param width width of the world (X-axis)
      * @param pipe pipe to write events to
      */
-    World(uint height, uint width, std::string pipe);
+    //World(uint height, uint width, std::string pipe);
+    World(WorldOptions& opts);
+
+    /**
+     * @brief World remove the copy constructor
+     */
+    World(const World&) = delete;
 
     ~World() {
         close();
@@ -158,9 +91,8 @@ public:
     /**
      * @brief add_tank spawns tank on free coordinates
      * @param color of the new tank
-     * @param bin_path path to the binary that is supposed to spawn tankclient
      */
-    void add_tank(Color color, std::string bin_path);
+    void add_tank(Color color);
 
     /**
      * @brief represents a round of gameplay;
@@ -183,14 +115,15 @@ public:
     /**
      * @brief tank t fires in a specifis direction based on his action attribute
      */
-    void fire_direction(Tank& t);
+    void fire_direction(Tank&);
+    //void fire_direction(std::unique_ptr<Tank> t);
 
     /**
      * @brief moves tanks if they weren't hit and have received a move order
      * @param tanks tanks possibly ordered to move
-     * @param actions orders to said tanks, fire orders now ignored
      */
-    void movetanks();
+    void movetank(Tank&);
+    //void movetank(std::unique_ptr<Tank> t);
 
     /**
      * @brief checks for tanks running into each other,
@@ -210,7 +143,7 @@ public:
     /**
      * @brief removes hit tanks from the board
      */
-    void remove_hit_tanks();
+    void remove_dead_tanks();
 
     /**
      * @brief respawns tanks at end of round
@@ -253,6 +186,11 @@ public:
      *          correct output
      */
     void refresh_zone();
+    void take_actions();
+    void process_commands();
+    bool check_bounds(int, int);
+    bool check_bounds(Coord);
+    void remove_tank(Tank& t);
 };
 
 #endif // WORLD_H

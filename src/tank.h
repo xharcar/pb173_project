@@ -3,16 +3,9 @@
 
 #include "world_shared.h"
 #include <queue>
+#include <functional>
 
-struct TankShell
-{
-    int x;
-    int y;
-    Color color;
-    TankShell(int x, int y, Color c) : x(x), y(y), color(c) {}
-    TankShell() = default;
-};
-
+void tank_sig_handler(int sig);
 
 /**
  * @brief Represents a tank in-game
@@ -24,54 +17,52 @@ private:
     int x;
     int y;
     Color color;
+    bool dead;
     std::string tankclient_path; ///< Process to be spawned
-    std::string action; ///< used to hold a copy of a last command
+    std::string command; ///< used to hold a copy of a last command
 
     // fixmme: attacker attribute could possibly be avoided by erasing tank
     // at the time of tank being hit or moved
-    TankShell attacker;
-    bool hit;
+    //TankShell attacker;
 
     std::queue<std::string> command_buffer;
-    /* indirection required for moveing tanks to vectors */
     std::condition_variable com; ///< used to wait for socket communication thread if command_buffer is empty
     std::mutex com_mut; ///< synchronizing acces to command_buffer
 
     //volatile std::sig_atomic_t signal_status = 0;
     int signal_status;
+    std::function<bool ()> action;
+    //std::function<void (const Tank&)> destroyed;
+    //std::function<void (const Tank&)> crashed;
 
 public:
+
     /**
-     * @brief Tank constructor, sets TID to 0(to indicate not yet initialized
-     * properly) and hit flag to false(when a tank rolls up onto a battlefield,
-     * it usually is in fighting condition)
+     * @brief Tank constructor and hit flag to false (when a tank rolls up onto
+     * a battlefield, it is in fighting condition)
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color, std::string bin_path);
+    Tank(uint x, uint y, Color color);
 
-    Tank(const Tank&) = delete;
-    Tank& operator=(const Tank&) = delete;
-    Tank(Tank&&) noexcept = default;
-    Tank& operator=(Tank&&) noexcept = default;
+    Tank(Coord position, Color color);
 
-    /**
-     * @brief hit flag getter
-     * @return true if tank has been hit, else false
-     */
-    bool get_hit() const { return this->hit; }
+    //Tank(const Tank&) = delete;
+    //Tank& operator=(const Tank&) = delete;
+    //Tank(Tank&&) noexcept = default;
+    //Tank& operator=(Tank&&) noexcept = default;
 
     /**
      * @brief X coordinate getter
      * @return tank x coordinate
      */
-    uint get_x() const { return this->x; }
+    int get_x() const { return this->x; }
 
     /**
      * @brief Y coordinate getter
      * @return tank y coordinate
      */
-    uint get_y() const { return this->y; }
+    int get_y() const { return this->y; }
 
     /**
      * @brief getPosition
@@ -84,17 +75,28 @@ public:
      */
     Color get_color() const { return this->color; }
 
-    std::string get_action() const {
-        return this->action;
-    }
+    std::string get_command() const { return this->command; }
 
     /**
      * @brief change tank's coordinates
      */
+    bool move(int height, int width, Coord c);
+
+    /*
     void moveleft() { this->x--; }
     void moveright() { this->x++; }
     void moveup() { this->y++; }
     void movedown() { this->y--; }
+    */
+
+    bool check_bounds(int height, int width)
+    {
+        return (x < 0 || x > width || y < 0 || y > height);
+    }
+
+    void make_dead() { dead = true; }
+
+    bool is_dead() { return dead; }
 
     /**
      * @brief spawns a new tank thread, initialized TID of tank
@@ -111,7 +113,7 @@ public:
      * @brief set tank to be hit if fired upon by foe and remember the attacker
      * @param attacker the shooting tank
      */
-    void hit_tank(TankShell attacker);
+    //void hit_tank(TankShell attacker);
 
     /**
      * @brief sends SIFTERM to the thread handle of tank
@@ -123,10 +125,6 @@ public:
      */
     void quit();
 
-    /**
-     * @brief print_destroy print tank's info after destruction and attackers info
-     */
-    void print_destroy();
 
     /**
      * @brief deposit_command_from_client is called from a socket communication's thread
@@ -141,8 +139,29 @@ public:
      */
     //std::string read_command();
     void read_command();
-};
 
-void tank_sig_handler(int sig);
+    bool take_action();
+
+    /**
+     * @brief subscribe_action saves one action that is to be performed after
+     * all tank's commands are processed
+     * @param action to be saved
+     */
+    void subscribe_action(std::function<bool ()> action);
+    //void set_crash(std::function<void ()> action);
+
+    friend std::ostream& operator<<(std::ostream&, const Tank&);
+
+    /**
+     * @brief print_crashed prints collided tank's infos
+     * @param t tank that has been crashed into
+     */
+    void print_crashed(const Tank& t);
+
+    /**
+     * @brief print_destroy print tank's info after destruction and attackers info
+     */
+    void print_destroyed(const Tank& attacker);
+};
 
 #endif // TANK_H

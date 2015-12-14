@@ -1,228 +1,218 @@
 #include "world.h"
-#include "daemonworld.h"
 
 volatile std::sig_atomic_t World::world_signal_status = 0;
 
 // extra var to pass ARGV through for restart
 char** argv_extra;
 
-WorldOptions::WorldOptions()
-    // Set default values here
-    : daemonize(false)
-    , green_tankclient_path("../bin/tankclient")
-    , red_tankclient_path("../bin/tankclient")
-    , red_kills(0)
-    , green_kills(0)
-    , rounds_played(0)
-{}
-
-void WorldOptions::parse_options(int argc, char* argv[])
-{
-    struct option longopts[] =
-    {
-        { "daemonize",   no_argument,       NULL, 'd' },
-        { "green-tanks", required_argument, NULL, 'c' },
-        { "red-tanks",   required_argument, NULL, 'v' },
-        { "green-tank",  required_argument, NULL, 'g' },
-        { "red-tank",    required_argument, NULL, 'r' },
-        { "round-time",  required_argument, NULL, 't' },
-        { "area-size",   required_argument, NULL, 'a' },
-        { "pipe",        required_argument, NULL, 'p' },
-        { "help",        no_argument,       NULL, 'h' },
-        { 0, 0, 0, 0 }
-    };
-
-    int c;
-    while ((c = getopt_long(argc, argv, "d:c:v:g:r:t:a:p:h", longopts, NULL)) != -1)
-    {
-        switch (c) {
-        case 'a':
-            this->mMapWidth = atoi(argv[optind - 1]);
-            this->mMapHeight = atoi(argv[optind]);
-            break;
-        case 'c':
-            this->mGreenTanks = atoi(optarg);
-            break;
-        case 'v':
-            this->mRedTanks = atoi(optarg);
-            break;
-        case 'd':
-            this->daemonize = true;
-            break;
-        case 'r':
-            this->red_tankclient_path.assign(optarg);
-            break;
-        case 'g':
-            this->green_tankclient_path.assign(optarg);
-            break;
-        case 't':
-            this->mRoundTime = atoi(optarg);
-            break;
-        case 'p':
-            this->fifo_path.assign(optarg);
-            break;
-        case 'h':
-            this->print_help();
-            exit(0);
-        default:
-            this->print_error();
-            exit(-1);
-        }
-    }
-    if(mMapHeight<=0 || mMapWidth<=0 || mRoundTime <=0)
-    {
-        this->print_help();
-        exit(-1);
-    }
-}
-
-void WorldOptions::print_help()
-{
-    std::cout <<"=====================================================" << std::endl
-              <<"|         PB173 Internet Of Tanks presents:  WORLD  |" << std::endl
-              <<"-----------------------------------------------------" << std::endl
-              <<"                    USAGE                            " << std::endl
-              <<"  -h | --help           Show this help               " << std::endl
-              <<"  --daemonize           run as daemon                " << std::endl
-              <<"  --green-tanks [n]     create n green tanks         " << std::endl
-              <<"  --red-tanks [n]       create n red tanks           " << std::endl
-              <<"  --green-tank [s]      path to green tank bin       " << std::endl
-              <<"  --red-tank [s]        path to red tank bin         " << std::endl
-              <<"  --area-size [n] [m]   size of area NxM             " << std::endl
-              <<"  --round-time [n]      time of one round in ms      " << std::endl
-              <<"  -p | --pipe [file]    path to a named FIFO to output map to in daemon mode" << std::endl
-              <<"=====================================================" << std::endl;
-}
-
-void WorldOptions::print_error()
-{
-    std::cerr << "Wrong arguments or something" << std::endl;
-}
-
-World::World(uint height, uint width, std::string pipe)
-    : height(height), width(width), pipe(pipe)
+// World::World(uint height, uint width, std::string pipe)
+//     : height(height), width(width), pipe(pipe)
+World::World(WorldOptions& opts)
+    : height(opts.get_map_height()), width(opts.get_map_width()), pipe(opts.get_fifo_path())
 {
     std::vector<std::vector<Color>> zone(height, std::vector<Color>(width, EMPTY));
     pipefd = mkfifo(pipe.c_str(), 0444);
+    red_tanks.reserve(opts.get_red_tanks());
+    green_tanks.reserve(opts.get_green_tanks());
 }
 
-void World::add_tank(Color color, std::string bin_path)
+void World::add_tank(Color color)
 {
-    Coord c = free_coord();
+    Coord pos = free_coord();
 
-    this->zone[c.first][c.second] = color;
+    this->zone[pos.first][pos.second] = color;
 
     if(color == Color::RED)
     {
         std::cout << "Adding red tank" << std::endl;
-        //red_tanks.emplace_back(c.first, c.second, color, bin_path);
-        red_tanks.push_back(std::unique_ptr<Tank>(new Tank(c.first, c.second, color, bin_path)));
+        red_tanks.emplace_back(new Tank(pos, color));
+        //red_tanks.push_back(std::unique_ptr<Tank>(new Tank(c.first, c.second, color, bin_path)));
     }
     else
     {
         std::cout << "Adding green tank" << std::endl;
-        //green_tanks.emplace_back(c.first, c.second, color, bin_path);
-        green_tanks.push_back(std::unique_ptr<Tank>(new Tank(c.first, c.second, color, bin_path)));
+        green_tanks.emplace_back(new Tank(pos, color));
+        //green_tanks.push_back(std::unique_ptr<Tank>(new Tank(c.first, c.second, color, bin_path)));
     }
 }
 
 bool World::is_free(int x, int y)
 {
-    if(this->zone[x][y] == EMPTY)
-    {
-        return true;
-    }
-    return false;
+    return zone[x][y] == EMPTY;
 }
 
 Coord World::free_coord()
 {
-    // fixme: initialize seed in a class/global scope
-    std::srand(std::time(0));
     int x;
     int y;
-    // only loops if first try failed,ends as soon as
-    // a free field is found
+    std::uniform_int_distribution<int> width_rand(0, width);
+    std::uniform_int_distribution<int> height_rand(0, height);
+    // only loops if first try failed,ends as soon as a free field is found
     do {
-        x = std::rand() % this->width;
-        y = std::rand() % this->height;
-    } while (this->is_free(x, y));
+        x = rng.uniform(0u, width);
+        y = rng.uniform(0u, height);
+        //x = width_rand(rng);
+        //y = height_rand(rng);
+    } while (is_free(x, y));
     return Coord(x, y);
 }
 
-
-void World::fire()
+void World::play_round(WorldOptions u)
 {
-    for(const auto& t : boost::join(green_tanks, red_tanks))
-    {
-        if (t->get_action().size() != 0 && t->get_action()[0] == 'f')
-        {
-            fire_direction(*t);
+    // re-inited at every round start for easier management
+    u.incRoundsPlayed();
+
+    /* Acquire commands from tankclients */
+    read_commands();
+    /* Create appropriate callbacks for each tank based on it's command */
+    process_commands();
+    /* Execute given all tanks' callbacks -> change tanks' state */
+    take_actions();
+
+    add_kills(u);
+    std::cout << "Score:" << std::endl
+              << "Red: " << u.getRedKills() << std::endl
+              << "Green: " << u.getGreenKills() << std::endl;
+    respawn_tanks(u);
+    std::cout << "Round " << u.getRoundsPlayed() << std::endl;
+    output_map();
+    // waits for round time to pass : round time given in ms,
+    // sleep time in us, hence *1000
+}
+
+void World::process_commands()
+{
+    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
+        Tank& t = *box_t.get();
+        if (t.get_command()[0] == 'f') {
+            fire_direction(t);
+        }
+        else if (t.get_command()[0] == 'm') {
+            movetank(t);
         }
     }
 }
 
+void World::take_actions()
+{
+    /*
+    for(auto& t : boost::join(green_tanks, red_tanks)) {
+        t.take_action();
+    }
+    */
+    for (auto t = red_tanks.begin(); t != red_tanks.end(); t++) {
+        //if (t->take_action())
+        //if (t->check_bounds(height, width)) {
+        //}
+    }
+    for (auto t = green_tanks.begin(); t != green_tanks.end(); t++) {
+        //if (t->take_action())
+    }
+}
+
+//void World::fire_direction(std::unique_ptr<Tank> t)
 void World::fire_direction(Tank& t)
 {
-    auto& foe_tanks = t.get_color() == Color::GREEN ? red_tanks : green_tanks;
-    for (auto& target : foe_tanks) {
-        TankShell t_shell(t.get_x(), t.get_y(), t.get_color());
-        switch (t.get_action()[1]) {
+    //auto& foe_tanks = t.get_color() == Color::GREEN ? red_tanks : green_tanks;
+    //for (auto& box_target : foe_tanks) {
+    for (auto& box_target : boost::join(green_tanks, red_tanks)) {
+        Tank& target = *box_target.get();
+        std::function<bool(int, int)> x_op;
+        std::function<bool(int, int)> y_op;
+        switch (t.get_command()[1]) {
         case 'u':
-            if (target->get_y() < t.get_y() && target->get_x() == t.get_x()) {
-                target->hit_tank(t_shell);
-            }
+            //x_op = [](int a, int b) { return a == b; };
+            //y_op = [](int a, int b) { return a < b; };
+            x_op = std::equal_to<int>();
+            y_op = std::less<int>();
             break;
         case 'd':
-            if (target->get_y() > t.get_y() && target->get_x() == t.get_x()) {
-                target->hit_tank(t_shell);
-            }
+            //x_op = [](int a, int b) { return a == b; };
+            //y_op = [](int a, int b) { return a > b; };
+            x_op = std::equal_to<int>();
+            y_op =  std::greater<int>();
             break;
         case 'l':
-            if (target->get_y() == t.get_y() && target->get_x() < t.get_x()) {
-                target->hit_tank(t_shell);
-            }
+            //x_op = [](int a, int b) { return a < b; };
+            //y_op = [](int a, int b) { return a == b; };
+            x_op = std::less<int>();
+            y_op = std::equal_to<int>();
             break;
         case 'r':
-            if (target->get_y() == t.get_y() && target->get_x() < t.get_x()) {
-                target->hit_tank(t_shell);
-            }
+            //x_op = [](int a, int b) { return a > b; };
+            //y_op = [](int a, int b) { return a == b; };
+            x_op =  std::greater<int>();
+            y_op = std::equal_to<int>();
+            break;
+        default:
+            /* Invalid command */
+            assert(false);
+        }
+
+        if (y_op(target.get_y(), t.get_y()) &&
+            x_op(target.get_x(), t.get_x()) && !t.is_dead())
+        {
+            t.print_destroyed(target);
+            t.make_dead();
+        }
+    }
+}
+
+//void World::movetank(std::unique_ptr<Tank> t)
+void World::movetank(Tank& t)
+{
+    for (auto& box_obstacle : boost::join(green_tanks, red_tanks)) {
+        Tank& obstacle = *box_obstacle.get();
+        int x_direction = 0;
+        int y_direction = 0;
+        switch (t.get_command()[1]) {
+        case 'u':
+            //action = std::bind(&Tank::moveup, t);
+            y_direction++;
+            break;
+        case 'd':
+            //action = std::bind(&Tank::movedown, t);
+            y_direction--;
+            break;
+        case 'l':
+            //action = std::bind(&Tank::moveleft, t);
+            x_direction--;
+            break;
+        case 'r':
+            //action = std::bind(&Tank::moveright, t);
+            x_direction++;
             break;
         default:
             assert(false);
         }
-    }
-}
-
-void World::movetanks()
-{
-    for(auto& t : boost::join(green_tanks, red_tanks))
-    {
-        if (t->get_action().size() != 0
-            && t->get_action()[0] == 'm'
-            && !t->get_hit())
-        {
-            switch (t->get_action()[1])
-            {
-            case 'u' :
-                t->moveup();
-                break;
-            case 'd' :
-                t->movedown();
-                break;
-            case 'l' :
-                t->moveleft();
-                break;
-            case 'r' :
-                t->moveright();
-                break;
-            default:
-                assert(false);
-            }
+        Coord new_pos = Coord(t.get_x() + x_direction, t.get_y() + y_direction);
+        if (&t != &obstacle && new_pos == obstacle.get_position()) {
+            /* crash tanks */
+            t.subscribe_action([&] {
+                std::cout << "Crash tanks: " << t.get_color() << " " << obstacle.get_color() << std::endl;
+                return true;
+            });
+        } else {
+            /* move tank to new position */
+            t.subscribe_action(std::bind(&Tank::move, &t, height, width, new_pos));
         }
     }
 }
 
+/*
+bool World::check_bounds(int x, int y)
+{
+    return (x < 0 || x > width || y < 0 || y > height);
+}
+
+bool World::check_bounds(Coord c)
+{
+    return check_bounds(c.first, c.second);
+}
+*/
+
+
+/*
 void World::crash_tanks()
 {
     for (auto& t : boost::join(green_tanks, red_tanks)) {
@@ -237,87 +227,62 @@ void World::crash_tanks()
         }
     }
 }
+*/
 
 void World::add_kills(WorldOptions u)
 {
     for (auto& t : red_tanks) {
-        if (t->get_hit()) {
+        if (t->is_dead()) {
             u.incGreenKills();
         }
     }
     for (auto& t : green_tanks) {
-        if (t->get_hit()) {
+        if (t->is_dead()) {
             u.incRedKills();
         }
     }
 }
 
-void World::remove_hit_tanks()
+void World::remove_dead_tanks()
 {
-    std::cout << "Removing hit tanks" << std::endl;
     for (auto t = red_tanks.begin(); t != red_tanks.end(); t++) {
-        if ((*t)->get_hit()) {
-            this->zone[(*t)->get_x()][(*t)->get_x()] = Color::EMPTY;
-            (*t)->print_destroy();
-            (*t)->kill_thread();
+        if ((*t)->is_dead()) {
+            //this->zone[(*t)->get_x()][(*t)->get_x()] = Color::EMPTY;
+            //(*t)->kill_thread();
+            remove_tank(**t);
             red_tanks.erase(t);
         }
     }
     for (auto t = green_tanks.begin(); t != green_tanks.end(); t++) {
-        if ((*t)->get_hit()) {
-            this->zone[(*t)->get_x()][(*t)->get_x()] = Color::EMPTY;
-            (*t)->print_destroy();
-            (*t)->kill_thread();
+        if ((*t)->is_dead()) {
+            remove_tank(**t);
             green_tanks.erase(t);
         }
     }
 }
 
+void World::remove_tank(Tank& t)
+{
+    this->zone[t.get_x()][t.get_x()] = Color::EMPTY;
+    t.kill_thread();
+}
+
 void World::respawn_tanks(WorldOptions opts)
 {
     while(red_tanks.size() < opts.get_red_tanks()){
-        add_tank(Color::RED, opts.get_red_path());
+        add_tank(Color::RED);
     }
     while(green_tanks.size() < opts.get_green_tanks()){
-        add_tank(Color::GREEN, opts.get_green_path());
+        add_tank(Color::GREEN);
     }
 }
 
 void World::read_commands()
 {
-    for(auto& t : boost::join(green_tanks, red_tanks)) {
-        t->read_command();
+    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
+        Tank& t = *box_t.get();
+        t.read_command();
     }
-}
-
-void World::play_round(WorldOptions u)
-{
-    // re-inited at every round start for easier management
-    u.incRoundsPlayed();
-
-    /* Acquire commands from tankclients */
-    read_commands();
-
-    std::cout << "FIRE EVERYTHING!" << std::endl;
-    fire();
-    std::cout << "Moving tanks" << std::endl;
-    movetanks();
-    std::cout << "Checking for tank crashes" << std::endl;
-    crash_tanks();
-    std::cout << "Adding kills, old counts: " << std::endl
-    << "Red: " << u.getRedKills() << std::endl
-    << "Green: " << u.getGreenKills() << std::endl;
-    add_kills(u);
-    std::cout << "New kill counts: " << std::endl
-    << "Red: " << u.getRedKills() << std::endl
-    << "Green: " << u.getGreenKills() << std::endl;
-    remove_hit_tanks();
-    std::cout << "Respawning tanks" << std::endl;
-    respawn_tanks(u);
-    std::cout << "Round " << u.getRoundsPlayed() << std::endl;
-    output_map();
-    // waits for round time to pass : round time given in ms,
-    // sleep time in us, hence *1000
 }
 
 void World::output_map()
@@ -376,11 +341,13 @@ void World::refresh_zone()
             zone[i][j] = EMPTY;
         }
     }
-    for (auto& t : red_tanks) {
-        zone[t->get_x()][t->get_y()] = Color::RED;
+    for (auto& box_t : red_tanks) {
+        Tank& t = *box_t.get();
+        zone[t.get_x()][t.get_y()] = Color::RED;
     }
-    for (auto& t : green_tanks) {
-        zone[t->get_x()][t->get_y()] = Color::GREEN;
+    for (auto& box_t : green_tanks) {
+        Tank& t = *box_t.get();
+        zone[t.get_x()][t.get_y()] = Color::GREEN;
     }
 }
 
@@ -422,8 +389,8 @@ void watch_pid( std::string pid_filepath )
 
 int main(int argc, char *argv[])
 {
-    process_signal_handling();
-    set_up_thread_hadler(World::set_world_signal_status);
+    //process_signal_handling();
+    //set_up_thread_hadler(World::set_world_signal_status);
 
     int pid_fd = world_running("/var/run/world.pid");
 
@@ -440,18 +407,16 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
-    if (opts.get_daemonize()) {
-        w.reset(new DaemonWorld(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
-    }
+    //std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
+    std::unique_ptr<World> w(new World(opts));
 
     for (uint i = 0; i < opts.get_green_tanks(); i++)
     {
-        w->add_tank(Color::GREEN, opts.get_green_path());
+        w->add_tank(Color::GREEN);
     }
     for (uint i = 0; i < opts.get_red_tanks(); i++)
     {
-        w->add_tank(Color::RED, opts.get_red_path());
+        w->add_tank(Color::RED);
     }
 
     while(true)
