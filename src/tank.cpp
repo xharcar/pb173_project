@@ -111,24 +111,3 @@ void Tank::read_command()
     command_buffer.pop();
     //return command;
 }
-
-bool Tank::take_action()
-{
-    bool destroy = false;
-    if (action) {
-        if ( action() )
-            destroy = true;
-    }
-    action = nullptr;
-    return destroy;
-}
-
-void Tank::subscribe_action(std::function<bool ()> action)
-{
-    /*
-    if (!this->action) {
-        this->action = action;
-    }
-    */
-    this->action = action;
-}

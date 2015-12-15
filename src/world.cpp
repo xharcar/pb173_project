@@ -14,6 +14,7 @@ World::World(WorldOptions& opts)
     pipefd = mkfifo(pipe.c_str(), 0444);
     red_tanks.reserve(opts.get_red_tanks());
     green_tanks.reserve(opts.get_green_tanks());
+    std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
 }
 
 void World::add_tank(Color color)
@@ -26,13 +27,11 @@ void World::add_tank(Color color)
     {
         std::cout << "Adding red tank" << std::endl;
         red_tanks.emplace_back(new Tank(pos, color));
-        //red_tanks.push_back(std::unique_ptr<Tank>(new Tank(c.first, c.second, color, bin_path)));
     }
     else
     {
         std::cout << "Adding green tank" << std::endl;
         green_tanks.emplace_back(new Tank(pos, color));
-        //green_tanks.push_back(std::unique_ptr<Tank>(new Tank(c.first, c.second, color, bin_path)));
     }
 }
 
@@ -49,10 +48,10 @@ Coord World::free_coord()
     std::uniform_int_distribution<int> height_rand(0, height);
     // only loops if first try failed,ends as soon as a free field is found
     do {
-        x = rng.uniform(0u, width);
-        y = rng.uniform(0u, height);
-        //x = width_rand(rng);
-        //y = height_rand(rng);
+        //x = rng.uniform(0u, width);
+        //y = rng.uniform(0u, height);
+        x = width_rand(rng);
+        y = height_rand(rng);
     } while (is_free(x, y));
     return Coord(x, y);
 }
@@ -93,56 +92,24 @@ void World::process_commands()
     }
 }
 
-void World::take_actions()
-{
-    /*
-    for(auto& t : boost::join(green_tanks, red_tanks)) {
-        t.take_action();
-    }
-    */
-    for (auto t = red_tanks.begin(); t != red_tanks.end(); t++) {
-        //if (t->take_action())
-        //if (t->check_bounds(height, width)) {
-        //}
-    }
-    for (auto t = green_tanks.begin(); t != green_tanks.end(); t++) {
-        //if (t->take_action())
-    }
-}
-
-//void World::fire_direction(std::unique_ptr<Tank> t)
 void World::fire_direction(Tank& t)
 {
-    //auto& foe_tanks = t.get_color() == Color::GREEN ? red_tanks : green_tanks;
-    //for (auto& box_target : foe_tanks) {
     for (auto& box_target : boost::join(green_tanks, red_tanks)) {
         Tank& target = *box_target.get();
-        std::function<bool(int, int)> x_op;
-        std::function<bool(int, int)> y_op;
+        std::function<bool(int, int)> x_op = std::equal_to<int>();
+        std::function<bool(int, int)> y_op = std::equal_to<int>();
         switch (t.get_command()[1]) {
         case 'u':
-            //x_op = [](int a, int b) { return a == b; };
-            //y_op = [](int a, int b) { return a < b; };
-            x_op = std::equal_to<int>();
             y_op = std::less<int>();
             break;
         case 'd':
-            //x_op = [](int a, int b) { return a == b; };
-            //y_op = [](int a, int b) { return a > b; };
-            x_op = std::equal_to<int>();
-            y_op =  std::greater<int>();
+            y_op = std::greater<int>();
             break;
         case 'l':
-            //x_op = [](int a, int b) { return a < b; };
-            //y_op = [](int a, int b) { return a == b; };
             x_op = std::less<int>();
-            y_op = std::equal_to<int>();
             break;
         case 'r':
-            //x_op = [](int a, int b) { return a > b; };
-            //y_op = [](int a, int b) { return a == b; };
             x_op =  std::greater<int>();
-            y_op = std::equal_to<int>();
             break;
         default:
             /* Invalid command */
@@ -165,36 +132,31 @@ void World::movetank(Tank& t)
         Tank& obstacle = *box_obstacle.get();
         int x_direction = 0;
         int y_direction = 0;
+
         switch (t.get_command()[1]) {
         case 'u':
-            //action = std::bind(&Tank::moveup, t);
             y_direction++;
             break;
         case 'd':
-            //action = std::bind(&Tank::movedown, t);
             y_direction--;
             break;
         case 'l':
-            //action = std::bind(&Tank::moveleft, t);
             x_direction--;
             break;
         case 'r':
-            //action = std::bind(&Tank::moveright, t);
             x_direction++;
             break;
         default:
             assert(false);
         }
+
         Coord new_pos = Coord(t.get_x() + x_direction, t.get_y() + y_direction);
         if (&t != &obstacle && new_pos == obstacle.get_position()) {
             /* crash tanks */
-            t.subscribe_action([&] {
-                std::cout << "Crash tanks: " << t.get_color() << " " << obstacle.get_color() << std::endl;
-                return true;
-            });
+            t.print_crashed(obstacle);
+            t.make_dead();
         } else {
             /* move tank to new position */
-            t.subscribe_action(std::bind(&Tank::move, &t, height, width, new_pos));
         }
     }
 }
@@ -316,21 +278,6 @@ void World::close()
 
 void World::set_world_signal_status(int sig, siginfo_t* info, void* context) {
     World::world_signal_status = sig;
-}
-
-void World::handle_signal(int sig)
-{
-    switch(sig) {
-    case SIGINT:
-    case SIGQUIT:
-    case SIGTERM:
-        close();
-        break;
-    case SIGUSR1:
-        close();
-        execl("../world","../world,",argv_extra,(char*)NULL);
-        break;
-    }
 }
 
 void World::refresh_zone()

@@ -32,8 +32,8 @@ using Coord = std::pair<int, int>;
 /**
  * @brief rng easy to use random number generator
  */
-thread_local static randutils::mt19937_rng rng;
-//thread_local static std::mt19937 rng;
+//thread_local static randutils::mt19937_rng rng;
+thread_local static std::mt19937 rng;
 
 /* Simplify by defining the signal handler function type, assume SA_SIGINFO */
 typedef void (*signal_handler_t)(int, siginfo_t *, void *);

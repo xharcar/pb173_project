@@ -5,35 +5,27 @@
 #include <queue>
 #include <functional>
 
-void tank_sig_handler(int sig);
-
 /**
  * @brief Represents a tank in-game
  */
 class Tank
 {
 private:
-    std::thread t_handle;
     int x;
     int y;
     Color color;
+
     bool dead;
-    std::string tankclient_path; ///< Process to be spawned
     std::string command; ///< used to hold a copy of a last command
+    Coord new_position;
 
-    // fixmme: attacker attribute could possibly be avoided by erasing tank
-    // at the time of tank being hit or moved
-    //TankShell attacker;
-
+    std::thread t_handle;
     std::queue<std::string> command_buffer;
     std::condition_variable com; ///< used to wait for socket communication thread if command_buffer is empty
     std::mutex com_mut; ///< synchronizing acces to command_buffer
 
     //volatile std::sig_atomic_t signal_status = 0;
     int signal_status;
-    std::function<bool ()> action;
-    //std::function<void (const Tank&)> destroyed;
-    //std::function<void (const Tank&)> crashed;
 
 public:
 
@@ -43,14 +35,9 @@ public:
      * @param x x coordinate of tank
      * @param y y coordinate of tank
      */
-    Tank(uint x, uint y, Color color);
+    Tank(int x, int y, Color color);
 
     Tank(Coord position, Color color);
-
-    //Tank(const Tank&) = delete;
-    //Tank& operator=(const Tank&) = delete;
-    //Tank(Tank&&) noexcept = default;
-    //Tank& operator=(Tank&&) noexcept = default;
 
     /**
      * @brief X coordinate getter
@@ -81,13 +68,6 @@ public:
      * @brief change tank's coordinates
      */
     bool move(int height, int width, Coord c);
-
-    /*
-    void moveleft() { this->x--; }
-    void moveright() { this->x++; }
-    void moveup() { this->y++; }
-    void movedown() { this->y--; }
-    */
 
     bool check_bounds(int height, int width)
     {
