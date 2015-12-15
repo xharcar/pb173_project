@@ -58,25 +58,27 @@ Coord World::free_coord()
 
 void World::play_round(WorldOptions u)
 {
-    // re-inited at every round start for easier management
-    u.incRoundsPlayed();
+    while(true) {
+        // re-inited at every round start for easier management
+        u.incRoundsPlayed();
 
-    /* Acquire commands from tankclients */
-    read_commands();
-    /* Create appropriate callbacks for each tank based on it's command */
-    process_commands();
-    /* Execute given all tanks' callbacks -> change tanks' state */
-    take_actions();
+        /* Acquire commands from tankclients */
+        read_commands();
+        /* Create appropriate callbacks for each tank based on it's command */
+        process_commands();
+        /* Execute given all tanks' callbacks -> change tanks' state */
+        take_actions();
 
-    add_kills(u);
-    std::cout << "Score:" << std::endl
-              << "Red: " << u.getRedKills() << std::endl
-              << "Green: " << u.getGreenKills() << std::endl;
-    respawn_tanks(u);
-    std::cout << "Round " << u.getRoundsPlayed() << std::endl;
-    output_map();
-    // waits for round time to pass : round time given in ms,
-    // sleep time in us, hence *1000
+        add_kills(u);
+        std::cout << "Score:" << std::endl
+                  << "Red: " << u.getRedKills() << std::endl
+                  << "Green: " << u.getGreenKills() << std::endl;
+        respawn_tanks(u);
+        std::cout << "Round " << u.getRoundsPlayed() << std::endl;
+        output_map();
+        // waits for round time to pass : round time given in ms,
+        // sleep time in us, hence *1000
+    }
 }
 
 void World::process_commands()
@@ -366,10 +368,7 @@ int main(int argc, char *argv[])
         w->add_tank(Color::RED);
     }
 
-    while(true)
-    {
-        w->play_round(opts);
-    }
+    w->play_round(opts);
 
     close(pid_fd);
     return 0;
