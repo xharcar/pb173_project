@@ -273,6 +273,27 @@ void World::set_world_signal_status(int sig, siginfo_t* info, void* context) {
     World::world_signal_status = sig;
 }
 
+bool World::handle_signals() {
+    bool ret = true;
+    //fixme: Should acces to world_signal)status be atomic?
+    switch (world_signal_status) {
+    case SIGUSR1:
+        /* restart game */
+        break;
+    case SIGQUIT:
+    case SIGINT:
+    case SIGTERM:
+        /* World will go out of scope */
+        /* No need to call close explicitly */
+        // close();
+        break;
+    default:
+        ret = false;
+        break;
+    }
+    return ret;
+}
+
 void World::refresh_zone()
 {
     for (int i = 0; i < height; i++) {
