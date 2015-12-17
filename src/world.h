@@ -110,12 +110,9 @@ public:
     void take_actions();
 
     /**
-     * @brief adds kills according to tanks hit; crashes count
-     * since as long as a tank is destroyed, the other side benefits from it,
-     * the reason why the tank is out of action is irrelevant
-     * @param u Utils class instance into which kill counts are written
+     * @brief compute score based on shot down tanks
      */
-    void add_kills(WorldOptions u);
+    void sum_score(WorldOptions);
 
     /**
      * @brief prints map info to cout

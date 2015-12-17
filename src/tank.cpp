@@ -40,21 +40,6 @@ void Tank::print_out_of_map() const {
         std::cout << *this << " rolled out of battlefield" << std::endl;
 }
 
-/*
-void Tank::move(int height, int width, Coord new_pos)
-{
-    if (!check_bounds(height, width)) {
-        std::cout << "Tank out of map: " << get_color() << " " << std::endl;
-    }
-    else {
-        x = new_pos.first;
-        y = new_pos.second;
-        std::cout << *this << "moved to [" << new_pos.first << ", "
-                  << new_pos.second << "]" << std::endl;
-    }
-}
-*/
-
 void Tank::deposit_command_from_client(std::string command)
 {
     std::unique_lock<std::mutex> lock(com_mut);
@@ -63,14 +48,10 @@ void Tank::deposit_command_from_client(std::string command)
     com.notify_one();
 }
 
-//std::string Tank::read_command()
 void Tank::read_command()
 {
     std::unique_lock<std::mutex> lock(com_mut);
     com.wait(lock, [this] { return !command_buffer.empty(); });
-    std::string command;
-    //std::swap(command, command_buffer.front());
     std::swap(command, command_buffer.front());
     command_buffer.pop();
-    //return command;
 }

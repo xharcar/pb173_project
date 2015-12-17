@@ -26,16 +26,19 @@ void World::play_round(WorldOptions u)
         read_commands();
         process_shots();
         process_moves();
-        take_actions();
-        refresh_zone();
 
-        add_kills(u);
+        sum_score(u);
         std::cout << "Score:" << std::endl
                   << "Red: " << u.getRedKills() << std::endl
                   << "Green: " << u.getGreenKills() << std::endl;
         std::cout << "Round " << u.getRoundsPlayed() << std::endl;
+
+        take_actions();
+        refresh_zone();
         output_map();
-        handle_signal();
+        if (handle_signals()) {
+            break;
+        }
         // waits for round time to pass : round time given in ms,
     }
 }
@@ -211,15 +214,17 @@ Coord World::free_coord()
 }
 
 
-void World::add_kills(WorldOptions u)
+void World::sum_score(WorldOptions u)
 {
-    for (auto& t : red_tanks) {
-        if (t->is_shot()) {
+    for (auto& box_t : red_tanks) {
+        Tank& t = *box_t.get();
+        if (t.is_shot()) {
             u.incGreenKills();
         }
     }
-    for (auto& t : green_tanks) {
-        if (t->is_shot()) {
+    for (auto& box_t : green_tanks) {
+        Tank& t = *box_t.get();
+        if (t.is_shot()) {
             u.incRedKills();
         }
     }
