@@ -40,6 +40,14 @@ void Tank::print_out_of_map() const {
         std::cout << *this << " rolled out of battlefield" << std::endl;
 }
 
+void Tank::move()
+{
+    std::cout << *this << "moved to [" << new_position.first << ", "
+              << new_position.second << "]" << std::endl;
+    x = new_position.first;
+    y = new_position.second;
+}
+
 void Tank::deposit_command_from_client(std::string command)
 {
     std::unique_lock<std::mutex> lock(com_mut);

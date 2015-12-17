@@ -70,11 +70,6 @@ public:
 
     std::string get_command() const { return this->command; }
 
-    bool check_bounds(int height, int width)
-    {
-        return (x < 0 || x > width || y < 0 || y > height);
-    }
-
     void get_shot() { state = TankState::shot; }
 
     void get_crashed() { state = TankState::crashed; }
@@ -85,13 +80,10 @@ public:
 
     void set_new_position(Coord new_position) { this->new_position = new_position; }
 
-    void move()
-    {
-        std::cout << *this << "moved to [" << new_position.first << ", "
-                  << new_position.second << "]" << std::endl;
-        x = new_position.first;
-        y = new_position.second;
-    }
+    /**
+     * @brief move tank to new_coordinates and print it out
+     */
+    void move();
 
     /**
      * @brief spawns a new tank thread, initialized TID of tank
