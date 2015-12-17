@@ -14,13 +14,13 @@
 #include <random>
 
 #include <cassert>
-#include <ctime> // time(0)
+#include <ctime>
 #include <cstring>
 #include <cstdlib>
 #include <csignal>
 
 #include <unistd.h>
-#include <sys/types.h> // mkfifo
+#include <sys/types.h>
 #include <pthread.h>
 
 #include "randutils.hpp"

@@ -5,6 +5,12 @@
 #include <queue>
 #include <functional>
 
+enum class TankState {
+    alive,
+    shot,
+    crashed,
+};
+
 /**
  * @brief Represents a tank in-game
  */
@@ -15,7 +21,7 @@ private:
     int y;
     Color color;
 
-    bool dead;
+    TankState state;
     std::string command; ///< used to hold a copy of a last command
     Coord new_position;
 
@@ -64,30 +70,49 @@ public:
 
     std::string get_command() const { return this->command; }
 
-    /**
-     * @brief change tank's coordinates
-     */
-    bool move(int height, int width, Coord c);
-
     bool check_bounds(int height, int width)
     {
         return (x < 0 || x > width || y < 0 || y > height);
     }
 
-    void make_dead() { dead = true; }
+    void get_shot() { state = TankState::shot; }
 
-    bool is_dead() { return dead; }
+    void get_crashed() { state = TankState::crashed; }
+
+    bool is_shot() const { return state == TankState::shot; }
+
+    bool is_alive() const { return state == TankState::alive; }
+
+    void set_new_position(Coord new_position) { this->new_position = new_position; }
+
+    void move()
+    {
+        std::cout << *this << "moved to [" << new_position.first << ", "
+                  << new_position.second << "]" << std::endl;
+        x = new_position.first;
+        y = new_position.second;
+    }
 
     /**
      * @brief spawns a new tank thread, initialized TID of tank
      * @param tankpath path to tank binary to be executed
      */
-    void spawn_thread();
+    // fixme: add argument for socket passing
+    void spawn_thread()
+    {
+        /* Spawn a thread to communicate with tankclient asynchronously */
+        this->t_handle = std::thread([&]() {});
+    }
 
     /**
      * @brief request a command through a SIGUSR2 signal to tank
      */
-    void request_command();
+    void request_command()
+    {
+        /* fixme: rewrite using conditional_variable or make specific thread
+         * handles */
+        pthread_kill(t_handle.native_handle(), SIGUSR2);
+    }
 
     /**
      * @brief set tank to be hit if fired upon by foe and remember the attacker
@@ -98,13 +123,15 @@ public:
     /**
      * @brief sends SIFTERM to the thread handle of tank
      */
-    void kill_thread();
+    void kill_thread()
+    {
+        pthread_kill(t_handle.native_handle(), SIGTERM);
+    }
 
     /**
      * @brief waits for tank thread to end
      */
-    void quit();
-
+    void quit() { t_handle.join(); }
 
     /**
      * @brief deposit_command_from_client is called from a socket communication's thread
@@ -136,12 +163,14 @@ public:
      * @brief print_crashed prints collided tank's infos
      * @param t tank that has been crashed into
      */
-    void print_crashed(const Tank& t);
+    void print_crashed(const Tank& t) const;
 
     /**
      * @brief print_destroy print tank's info after destruction and attackers info
      */
-    void print_destroyed(const Tank& attacker);
+    void print_destroyed(const Tank& attacker) const;
+
+    void print_out_of_map() const;
 };
 
 #endif // TANK_H

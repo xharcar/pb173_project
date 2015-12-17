@@ -2,58 +2,17 @@
 
 volatile std::sig_atomic_t World::world_signal_status = 0;
 
-// extra var to pass ARGV through for restart
-char** argv_extra;
-
-// World::World(uint height, uint width, std::string pipe)
-//     : height(height), width(width), pipe(pipe)
 World::World(WorldOptions& opts)
-    : height(opts.get_map_height()), width(opts.get_map_width()), pipe(opts.get_fifo_path())
+    : height(opts.get_map_height()),
+      width(opts.get_map_width()),
+      pipe(opts.get_fifo_path())
 {
-    std::vector<std::vector<Color>> zone(height, std::vector<Color>(width, EMPTY));
+    std::vector<std::vector<Color>> zone(height,
+                                         std::vector<Color>(width, EMPTY));
     pipefd = mkfifo(pipe.c_str(), 0444);
     red_tanks.reserve(opts.get_red_tanks());
     green_tanks.reserve(opts.get_green_tanks());
     std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
-}
-
-void World::add_tank(Color color)
-{
-    Coord pos = free_coord();
-
-    this->zone[pos.first][pos.second] = color;
-
-    if(color == Color::RED)
-    {
-        std::cout << "Adding red tank" << std::endl;
-        red_tanks.emplace_back(new Tank(pos, color));
-    }
-    else
-    {
-        std::cout << "Adding green tank" << std::endl;
-        green_tanks.emplace_back(new Tank(pos, color));
-    }
-}
-
-bool World::is_free(int x, int y)
-{
-    return zone[x][y] == EMPTY;
-}
-
-Coord World::free_coord()
-{
-    int x;
-    int y;
-    std::uniform_int_distribution<int> width_rand(0, width);
-    std::uniform_int_distribution<int> height_rand(0, height);
-    // only loops if first try failed,ends as soon as a free field is found
-    do {
-        //x = rng.uniform(0u, width);
-        //y = rng.uniform(0u, height);
-        x = width_rand(rng);
-        y = height_rand(rng);
-    } while (is_free(x, y));
-    return Coord(x, y);
 }
 
 void World::play_round(WorldOptions u)
@@ -62,33 +21,48 @@ void World::play_round(WorldOptions u)
         // re-inited at every round start for easier management
         u.incRoundsPlayed();
 
+        respawn_tanks(u);
         /* Acquire commands from tankclients */
         read_commands();
-        /* Create appropriate callbacks for each tank based on it's command */
-        process_commands();
-        /* Execute given all tanks' callbacks -> change tanks' state */
+        process_shots();
+        process_moves();
         take_actions();
+        refresh_zone();
 
         add_kills(u);
         std::cout << "Score:" << std::endl
                   << "Red: " << u.getRedKills() << std::endl
                   << "Green: " << u.getGreenKills() << std::endl;
-        respawn_tanks(u);
         std::cout << "Round " << u.getRoundsPlayed() << std::endl;
         output_map();
+        handle_signal();
         // waits for round time to pass : round time given in ms,
-        // sleep time in us, hence *1000
     }
 }
 
-void World::process_commands()
+void World::read_commands()
+{
+    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
+        Tank& t = *box_t.get();
+        t.read_command();
+    }
+}
+
+void World::process_shots()
 {
     for(auto& box_t : boost::join(green_tanks, red_tanks)) {
         Tank& t = *box_t.get();
         if (t.get_command()[0] == 'f') {
             fire_direction(t);
         }
-        else if (t.get_command()[0] == 'm') {
+    }
+}
+
+void World::process_moves()
+{
+    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
+        Tank& t = *box_t.get();
+        if (t.get_command()[0] == 'm') {
             movetank(t);
         }
     }
@@ -98,6 +72,8 @@ void World::fire_direction(Tank& t)
 {
     for (auto& box_target : boost::join(green_tanks, red_tanks)) {
         Tank& target = *box_target.get();
+        /* Pick the right operation for finding targets relative to this tank's
+         * position */
         std::function<bool(int, int)> x_op = std::equal_to<int>();
         std::function<bool(int, int)> y_op = std::equal_to<int>();
         switch (t.get_command()[1]) {
@@ -119,116 +95,134 @@ void World::fire_direction(Tank& t)
         }
 
         if (y_op(target.get_y(), t.get_y()) &&
-            x_op(target.get_x(), t.get_x()) && !t.is_dead())
+            x_op(target.get_x(), t.get_x()))
         {
+            t.get_shot();
             t.print_destroyed(target);
-            t.make_dead();
         }
     }
 }
 
-//void World::movetank(std::unique_ptr<Tank> t)
 void World::movetank(Tank& t)
 {
     for (auto& box_obstacle : boost::join(green_tanks, red_tanks)) {
         Tank& obstacle = *box_obstacle.get();
-        int x_direction = 0;
-        int y_direction = 0;
+        int x_shift = 0;
+        int y_shift = 0;
 
         switch (t.get_command()[1]) {
         case 'u':
-            y_direction++;
+            y_shift++;
             break;
         case 'd':
-            y_direction--;
+            y_shift--;
             break;
         case 'l':
-            x_direction--;
+            x_shift--;
             break;
         case 'r':
-            x_direction++;
+            x_shift++;
             break;
         default:
             assert(false);
         }
 
-        Coord new_pos = Coord(t.get_x() + x_direction, t.get_y() + y_direction);
-        if (&t != &obstacle && new_pos == obstacle.get_position()) {
+        /* Set new coordinates only for tanks that haven't been shot or crashed */
+        Coord new_pos = Coord(t.get_x() + x_shift, t.get_y() + y_shift);
+        if (&t != &obstacle &&
+            new_pos == obstacle.get_position() &&
+            !obstacle.is_shot() &&
+            !t.is_shot())
+        {
             /* crash tanks */
+            t.get_crashed();
+            obstacle.get_crashed();
             t.print_crashed(obstacle);
-            t.make_dead();
+        } else if (out_of_bounds(new_pos)) {
+            t.get_crashed();
+            t.print_out_of_map();
         } else {
-            /* move tank to new position */
+            /* Set new cooradinates for tank */
+            t.set_new_position(new_pos);
         }
     }
 }
 
-/*
-bool World::check_bounds(int x, int y)
+bool World::out_of_bounds(Coord pos)
 {
-    return (x < 0 || x > width || y < 0 || y > height);
+    return (pos.first < 0 || pos.first > width || pos.second < 0 ||
+            pos.second > height);
 }
 
-bool World::check_bounds(Coord c)
+void World::take_actions()
 {
-    return check_bounds(c.first, c.second);
-}
-*/
-
-
-/*
-void World::crash_tanks()
-{
-    for (auto& t : boost::join(green_tanks, red_tanks)) {
-        for (auto& u : boost::join(green_tanks, red_tanks)) {
-            if (&t == &u || t->get_hit() || u->get_hit()) {
-                continue;
-            }
-            else if (t->get_position() == u->get_position()) {
-                t->hit_tank(TankShell(u->get_x(), u->get_y(), u->get_color()));
-                u->hit_tank(TankShell(t->get_x(), t->get_y(), t->get_color()));
-            }
-        }
+    for (auto it_box_t = red_tanks.begin(); it_box_t != red_tanks.end(); it_box_t++) {
+        take_action_tank(it_box_t);
+    }
+    for (auto it_box_t = green_tanks.begin(); it_box_t != green_tanks.end(); it_box_t++) {
+        take_action_tank(it_box_t);
     }
 }
-*/
+
+void World::take_action_tank(std::vector<std::unique_ptr<Tank>>::iterator& it_box_t)
+{
+    Tank& t = *it_box_t->get();
+    auto& tanks = t.get_color() == Color::RED ? red_tanks : green_tanks;
+    if (!t.is_alive()) {
+        //this->zone[t.get_x()][t.get_x()] = Color::EMPTY;
+        t.kill_thread();
+        tanks.erase(it_box_t);
+    } else {
+        t.move();
+    }
+}
+
+void World::add_tank(Color color)
+{
+    Coord pos = free_coord();
+
+    this->zone[pos.first][pos.second] = color;
+
+    if (color == Color::RED) {
+        red_tanks.emplace_back(new Tank(pos, color));
+    }
+    else {
+        green_tanks.emplace_back(new Tank(pos, color));
+    }
+}
+
+bool World::is_free(int x, int y)
+{
+    return zone[x][y] == EMPTY;
+}
+
+Coord World::free_coord()
+{
+    int x;
+    int y;
+    std::uniform_int_distribution<int> width_rand(0, width);
+    std::uniform_int_distribution<int> height_rand(0, height);
+    // only loops if first try failed,ends as soon as a free field is found
+    do {
+        x = width_rand(rng);
+        y = height_rand(rng);
+    } while (is_free(x, y));
+    return Coord(x, y);
+}
+
 
 void World::add_kills(WorldOptions u)
 {
     for (auto& t : red_tanks) {
-        if (t->is_dead()) {
+        if (t->is_shot()) {
             u.incGreenKills();
         }
     }
     for (auto& t : green_tanks) {
-        if (t->is_dead()) {
+        if (t->is_shot()) {
             u.incRedKills();
         }
     }
-}
-
-void World::remove_dead_tanks()
-{
-    for (auto t = red_tanks.begin(); t != red_tanks.end(); t++) {
-        if ((*t)->is_dead()) {
-            //this->zone[(*t)->get_x()][(*t)->get_x()] = Color::EMPTY;
-            //(*t)->kill_thread();
-            remove_tank(**t);
-            red_tanks.erase(t);
-        }
-    }
-    for (auto t = green_tanks.begin(); t != green_tanks.end(); t++) {
-        if ((*t)->is_dead()) {
-            remove_tank(**t);
-            green_tanks.erase(t);
-        }
-    }
-}
-
-void World::remove_tank(Tank& t)
-{
-    this->zone[t.get_x()][t.get_x()] = Color::EMPTY;
-    t.kill_thread();
 }
 
 void World::respawn_tanks(WorldOptions opts)
@@ -241,24 +235,16 @@ void World::respawn_tanks(WorldOptions opts)
     }
 }
 
-void World::read_commands()
-{
-    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
-        Tank& t = *box_t.get();
-        t.read_command();
-    }
-}
-
 void World::output_map()
 {
     std::stringstream ss;
     ss << width << ',' << height;
-    for(uint i=0;i<height;i++){
-        for(uint j=0;j<width;j++){
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
             ss << ',' << zone[i][j];
         }
     }
-    write(pipefd,ss.str().c_str(),(height*width*2)+4);
+    write(pipefd, ss.str().c_str(), (height * width * 2) + 4);
 }
 
 void World::close()
@@ -284,9 +270,8 @@ void World::set_world_signal_status(int sig, siginfo_t* info, void* context) {
 
 void World::refresh_zone()
 {
-    std::cout << "Refreshing map" << std::endl;
-    for(uint i=0;i<height;i++){
-        for(uint j=0;j<width;i++){
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; i++) {
             zone[i][j] = EMPTY;
         }
     }
@@ -358,15 +343,6 @@ int main(int argc, char *argv[])
 
     //std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
     std::unique_ptr<World> w(new World(opts));
-
-    for (uint i = 0; i < opts.get_green_tanks(); i++)
-    {
-        w->add_tank(Color::GREEN);
-    }
-    for (uint i = 0; i < opts.get_red_tanks(); i++)
-    {
-        w->add_tank(Color::RED);
-    }
 
     w->play_round(opts);
 

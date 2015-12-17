@@ -1,11 +1,17 @@
 #include "tank.h"
 
-// tank vars
-int tank_exit = 0;
-int tank_send = 0;
+void tank_sig_handlerr(int signum, siginfo_t* info, void* context)
+{
+    switch (signum) {
+    case SIGUSR2:
+        break;
+    case SIGTERM:
+        break;
+    }
+}
 
-Tank::Tank(uint x, uint y, Color color)
-    : x(x), y(y), color(color), dead(false)
+Tank::Tank(int x, int y, Color color)
+    : x(x), y(y), color(color), state(TankState::alive)
 {
     std::cout << "Spawning " << *this << std::endl;
 }
@@ -20,21 +26,24 @@ std::ostream& operator<<(std::ostream& os, const Tank& t)
     return os;
 }
 
-void Tank::print_destroyed(const Tank& t)
+void Tank::print_destroyed(const Tank& t) const
 {
     std::cout << *this << "destroyed by " << t << std::endl;
 }
 
-void Tank::print_crashed(const Tank& t)
+void Tank::print_crashed(const Tank& t) const
 {
     std::cout << *this << "crashed into " << t << std::endl;
 }
 
-bool Tank::move(int height, int width, Coord new_pos)
+void Tank::print_out_of_map() const {
+        std::cout << *this << " rolled out of battlefield" << std::endl;
+}
+
+/*
+void Tank::move(int height, int width, Coord new_pos)
 {
-    bool ret = false;
     if (!check_bounds(height, width)) {
-        ret = true;
         std::cout << "Tank out of map: " << get_color() << " " << std::endl;
     }
     else {
@@ -43,54 +52,8 @@ bool Tank::move(int height, int width, Coord new_pos)
         std::cout << *this << "moved to [" << new_pos.first << ", "
                   << new_pos.second << "]" << std::endl;
     }
-    return ret;
-}
-
-void Tank::request_command()
-{
-    /* fixme: rewrite using conditional_variable or make specific thread handles */
-    pthread_kill(t_handle.native_handle(), SIGUSR2);
-}
-
-/*
-void Tank::hit_tank(TankShell attacker)
-{
-    if (attacker.color != this->color)
-    {
-        this->dead = true;
-        this->attacker = attacker;
-    }
 }
 */
-
-void Tank::kill_thread()
-{
-    pthread_kill(t_handle.native_handle(), SIGTERM);
-}
-
-void Tank::quit()
-{
-    t_handle.join();
-}
-
-void tank_sig_handler(int sig){
-    switch (sig) {
-    case SIGUSR2:
-        tank_send = 1;
-        break;
-    case SIGTERM:
-        tank_exit = 1;
-        break;
-    }
-}
-
-// fixme: add argument for socket passing
-void Tank::spawn_thread()
-{
-    /* Spawn a thread to communicate with tankclient asynchronously */
-    this->t_handle = std::thread([&](){
-    });
-}
 
 void Tank::deposit_command_from_client(std::string command)
 {

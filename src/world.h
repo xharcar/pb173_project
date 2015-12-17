@@ -42,12 +42,11 @@ class World
 private:
     std::vector<std::unique_ptr<Tank>> green_tanks;
     std::vector<std::unique_ptr<Tank>> red_tanks;
-    //std::vector<Tank> green_tanks;
-    //std::vector<Tank> red_tanks;
 
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
-    unsigned height;
-    unsigned width;
+    int height;
+    int width;
+
     static volatile sig_atomic_t world_signal_status;
     std::string pipe;
     int pipefd;
@@ -72,6 +71,57 @@ public:
         close();
     }
 
+    /**
+     * @brief represents a round of gameplay;
+     * 1) Tanks are spawned on the map
+     * 2) All recieved actions are read
+     * 3) Firing is processed, flag is set on shot tanks
+     *    (this emulates all guns firing at the same time)
+     * 4) Remaining tanks move:
+     *      4.1) flag is set for crashed tanks and tanks out of map boundary
+     *      4.2) remaining tanks obtain new coordinates
+     * 5) Destroyed tanks are removed and remaining tanks are moved to new coordinates
+     */
+    void play_round(WorldOptions);
+
+    /**
+     * @brief respawn_tanks respawns dead tanks
+     */
+    void respawn_tanks(WorldOptions);
+
+    /**
+     * @brief read_commands fetch commands for all tanks
+     */
+    void read_commands();
+
+    /**
+     * @brief process_shots process fire commands
+     */
+    void process_shots();
+
+    /**
+     * @brief process_moves process move commands
+     */
+    void process_moves();
+
+    /**
+     * @brief take_actions move tanks to new positions and remove dead tanks
+     */
+    void take_actions();
+
+    /**
+     * @brief adds kills according to tanks hit; crashes count
+     * since as long as a tank is destroyed, the other side benefits from it,
+     * the reason why the tank is out of action is irrelevant
+     * @param u Utils class instance into which kill counts are written
+     */
+    void add_kills(WorldOptions u);
+
+    /**
+     * @brief prints map info to cout
+     */
+    void output_map();
+
 private:
     /**
      * @brief Checks if given map coordinate is free
@@ -87,85 +137,32 @@ private:
      */
     Coord free_coord();
 
-public:
     /**
      * @brief add_tank spawns tank on free coordinates
      * @param color of the new tank
      */
-    void add_tank(Color color);
+    void add_tank(Color);
 
     /**
-     * @brief represents a round of gameplay;
-     *  first, all actions sent are read;
-     *  second, firing is processed: every fire command is executed;
-     *  next, depending on tank positioning, hit flags are set
-     *  (this emulates all guns firing at the same time);
-     *  then, whatever hasn't got hit and has been ordered to move, moves;
-     *  finally, all hits are accounted for(tanks deleted off the map)
-     *  and respawns occur
-     * @param u Utils class instance holding necessary data
+     * @brief take_action_tank auxiliary method for take_actions()
      */
-    void play_round(WorldOptions u);
+    void take_action_tank(std::vector<std::unique_ptr<Tank>>::iterator&);
 
     /**
-     * @brief fires the main guns of all give tanks
+     * @brief out_of_bounds check wether giver coordinates are outside of map
+     * @return true iff outside of map
      */
-    void fire();
+    bool out_of_bounds(Coord);
 
     /**
-     * @brief tank t fires in a specifis direction based on his action attribute
+     * @brief tank fires in a specified direction based on his command
      */
     void fire_direction(Tank&);
-    //void fire_direction(std::unique_ptr<Tank> t);
 
     /**
-     * @brief moves tanks if they weren't hit and have received a move order
-     * @param tanks tanks possibly ordered to move
+     * @brief movetank moves tank if it hasn't been shot and have received a move order
      */
     void movetank(Tank&);
-    //void movetank(std::unique_ptr<Tank> t);
-
-    /**
-     * @brief checks for tanks running into each other,
-     *          healthy tanks running into hit ones do not crash
-     * note: allied tanks can crash into each other
-     */
-    void crash_tanks();
-
-    /**
-     * @brief adds kills according to tanks hit; crashes count
-     * since as long as a tank is destroyed, the other side benefits from it,
-     * the reason why the tank is out of action is irrelevant
-     * @param u Utils class instance into which kill counts are written
-     */
-    void add_kills(WorldOptions u);
-
-    /**
-     * @brief removes hit tanks from the board
-     */
-    void remove_dead_tanks();
-
-    /**
-     * @brief respawns tanks at end of round
-     * @param u Utils class instance holding necessary info
-     *  (how many tanks each side fields)
-     */
-    void respawn_tanks(WorldOptions u);
-
-    /**
-     * @brief cleans up world's resources
-     */
-    void close();
-
-    /**
-     * @brief prints map info to cout
-     */
-    void output_map();
-
-    /**
-     * @brief read_commands fetch commands for all tanks
-     */
-    void read_commands();
 
     /**
      * @brief set_world_signal_status handler to pass caught signal into a flag
@@ -177,19 +174,19 @@ public:
     /**
      * @brief handle_signal is used to check flag World::world_signal_status
      * for any caught signals and act upon them
-     * @param sig causing the interuption
      */
-    void handle_signal(int sig);
+    bool handle_signals();
 
     /**
      * @brief refreshes battlefield status at end of round for correct output
      */
     void refresh_zone();
-    void take_actions();
-    void process_commands();
-    bool check_bounds(int, int);
-    bool check_bounds(Coord);
-    void remove_tank(Tank& t);
+
+    /**
+     * @brief cleans up world's resources
+     */
+    void close();
+
 };
 
 #endif // WORLD_H
