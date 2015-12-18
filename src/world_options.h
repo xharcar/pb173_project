@@ -10,11 +10,10 @@ class WorldOptions
     unsigned mRoundTime;
     unsigned mMapHeight;
     unsigned mMapWidth;
-    std::string green_tankclient_path;
-    std::string red_tankclient_path;
     std::string fifo_path;
     unsigned mGreenTanks;
     unsigned mRedTanks;
+
     unsigned red_kills;
     unsigned green_kills;
     unsigned rounds_played;
@@ -35,10 +34,6 @@ public:
     uint get_map_height() const { return this->mMapHeight; }
 
     uint get_map_width() const { return this->mMapWidth; }
-
-    std::string get_green_path() const { return this->green_tankclient_path; }
-
-    std::string get_red_path() const { return this->red_tankclient_path; }
 
     uint get_green_tanks() const { return this->mGreenTanks; }
 
