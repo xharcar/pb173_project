@@ -139,6 +139,9 @@ public:
     //std::string read_command();
     void read_command();
 
+    /* FOR TESING */
+    void mock_read_command();
+
     bool take_action();
 
     /**

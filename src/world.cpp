@@ -9,7 +9,12 @@ World::World(WorldOptions& opts)
 {
     std::vector<std::vector<Color>> zone(height,
                                          std::vector<Color>(width, EMPTY));
+    /* fixme!: Handle error when given pipe name already exists*/
     pipefd = mkfifo(pipe.c_str(), 0444);
+    if (pipefd) {
+        std::cout << "DEBUG: " << pipefd << std::endl;
+        std::cout << "DEBUG: " << strerror(errno) << std::endl;
+    }
     red_tanks.reserve(opts.get_red_tanks());
     green_tanks.reserve(opts.get_green_tanks());
     std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
@@ -315,7 +320,13 @@ int world_running(std::string pid_filepath)
 {
     // Possibly handle other errors when calling open()
     int pid_fd = open(pid_filepath.c_str(), O_CREAT | O_RDWR, 0666);
-    while (flock(pid_fd, LOCK_EX | LOCK_NB)) {
+    int locked;
+    if (!pid_fd) {
+        std::cout << "Failed to open pid file: " << strerror(errno) << std::endl;
+        exit(-1);
+    }
+
+    while ((locked = flock(pid_fd, LOCK_EX | LOCK_NB))) {
         switch (errno) {
         // Another instance is running
         case EWOULDBLOCK:
@@ -323,9 +334,9 @@ int world_running(std::string pid_filepath)
                       << std::endl;
             std::cerr << "Waiting for its end." << std::endl;
             watch_pid(pid_filepath);
-            continue;
-        default:
-            assert(false);
+            break;
+        //default:
+            //assert(false);
         }
     }
     return pid_fd;
@@ -352,7 +363,7 @@ int main(int argc, char *argv[])
     //process_signal_handling();
     //set_up_thread_hadler(World::set_world_signal_status);
 
-    int pid_fd = world_running("/var/run/world.pid");
+    int pid_fd = world_running("world.pid");
 
     // argv_extra = argv;
 

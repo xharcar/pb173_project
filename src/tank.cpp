@@ -58,8 +58,18 @@ void Tank::deposit_command_from_client(std::string command)
 
 void Tank::read_command()
 {
+    /*
     std::unique_lock<std::mutex> lock(com_mut);
     com.wait(lock, [this] { return !command_buffer.empty(); });
     std::swap(command, command_buffer.front());
     command_buffer.pop();
+    */
+    mock_read_command();
+}
+
+void Tank::mock_read_command()
+{
+    std::uniform_int_distribution<int> r_op(0,2);
+    std::uniform_int_distribution<int> r_dir(0,4);
+    command = std::string("am")[r_op(rng)] + std::string("lurd")[r_dir(rng)];
 }
