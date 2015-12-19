@@ -327,7 +327,10 @@ int main(int argc, char *argv[])
     //process_signal_handling();
     //set_up_thread_hadler(World::set_world_signal_status);
 
-    RunningInstance("world.pid");
+    RunningInstance instance("world.pid");
+    if (instance.acquire() <= 0) {
+        return EXIT_FAILURE;
+    }
 
     WorldOptions opts;
     if (opts.parse_options(argc, argv)) {
@@ -336,14 +339,15 @@ int main(int argc, char *argv[])
     if (opts.check_valid()) {
         return EXIT_FAILURE;
     }
+
     UnixPipe map_fifo(opts.get_fifo_path());
     if (0 <= map_fifo.open()) {
         return EXIT_FAILURE;
     }
 
-    std::unique_ptr<World> w(new World(opts, map_fifo.get_fd()));
+    World w(opts, map_fifo.get_fd());
 
-    w->play_round(opts);
+    w.play_round(opts);
 
     return EXIT_SUCCESS;
 }

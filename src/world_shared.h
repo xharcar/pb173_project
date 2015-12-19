@@ -115,7 +115,7 @@ public:
         }
     }
 
-    int open()
+    int acquire()
     {
         pid_fd = ::open(pid_filepath.c_str(), O_CREAT | O_RDWR, 0666);
         if (!pid_fd) {
@@ -149,7 +149,7 @@ private:
         }
         if (inotify_add_watch( inotify_instance, pid_filepath.c_str(), IN_CLOSE)) {
             std::cerr << "Failed to add file in to inotify instance" << std::endl;
-            std::abort();
+            assert(false);
         }
 
         /* Blocking call waiting for the end of a different world */
