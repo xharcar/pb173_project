@@ -21,7 +21,19 @@
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <pthread.h>
+
+#include <utility>
+#include <sstream>
+#include <boost/range/join.hpp>
+#include <memory>
+
+#include <errno.h>
+#include <syslog.h>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <sys/inotify.h>
 
 #include "randutils.hpp"
 
@@ -62,6 +74,88 @@ private:
     int facility;
     int priority;
     char ident[50];
+};
+
+class UnixPipe {
+    std::string filepath;
+    int fd;
+
+public:
+    UnixPipe(std::string filepath) : filepath(filepath) {}
+
+    ~UnixPipe() {
+        if (fd > 0) {
+            // close/unlink file descriptor
+        }
+    }
+
+    /**
+     * @brief open
+     * @return file descriptor to given pipe
+     */
+    int open() {
+        fd = mkfifo(filepath.c_str(), 0444);
+        return fd;
+    }
+
+    int get_fd() const { return fd; }
+};
+
+class RunningInstance {
+    int pid_fd;
+    std::string pid_filepath;
+
+public:
+    RunningInstance(std::string pid_filepath) : pid_filepath(pid_filepath) {}
+
+    ~RunningInstance()
+    {
+        if (pid_fd > 0) {
+            close(pid_fd);
+        }
+    }
+
+    int open()
+    {
+        pid_fd = ::open(pid_filepath.c_str(), O_CREAT | O_RDWR, 0666);
+        if (!pid_fd) {
+            std::cout << "Failed to open " << pid_filepath << ": "
+                      << strerror(errno) << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        int locked;
+        while ((locked = flock(pid_fd, LOCK_EX | LOCK_NB))) {
+            switch (errno) {
+            // Another instance is running
+            case EWOULDBLOCK:
+                std::cerr << "Another instance of world is already running."
+                          << std::endl;
+                std::cerr << "Waiting for its end." << std::endl;
+                watch_pid(pid_filepath);
+                break;
+            }
+        }
+        return pid_fd;
+    }
+
+private:
+    void watch_pid( std::string pid_filepath )
+    {
+        int inotify_instance = inotify_init();
+        if ( inotify_instance == -1 ) {
+            std::cerr << "Failed to create inotify instance" << std::endl;
+            assert(false);
+        }
+        if (inotify_add_watch( inotify_instance, pid_filepath.c_str(), IN_CLOSE)) {
+            std::cerr << "Failed to add file in to inotify instance" << std::endl;
+            std::abort();
+        }
+
+        /* Blocking call waiting for the end of a different world */
+        select(inotify_instance, NULL, NULL, NULL, NULL);
+    }
+
 };
 
 #endif // WORLD_SHARED_H
