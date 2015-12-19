@@ -12,6 +12,7 @@ World::World(WorldOptions& opts, int fd_map_pipe)
     green_tanks.reserve(opts.get_green_tanks());
 
     if (opts.get_daemonize()) {
+        /* Replace std::cout with custom syslog stream */
         std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
     }
 }
@@ -31,8 +32,8 @@ void World::play_round(WorldOptions u)
         sum_score(u);
         std::cout << "Score:" << std::endl
                   << "Red: " << u.getRedKills() << std::endl
-                  << "Green: " << u.getGreenKills() << std::endl;
-        std::cout << "Round " << u.getRoundsPlayed() << std::endl;
+                  << "Green: " << u.getGreenKills() << std::endl
+                  << "Round " << u.getRoundsPlayed() << std::endl;
 
         take_actions();
         refresh_zone();
@@ -331,6 +332,8 @@ int main(int argc, char *argv[])
 
     UnixPipe map_fifo(opts.get_fifo_path());
     if (0 <= map_fifo.open()) {
+        std::cout << "Failed to open " << opts.get_fifo_path() << ": "
+                  << strerror(errno) << std::endl;
         return EXIT_FAILURE;
     }
 

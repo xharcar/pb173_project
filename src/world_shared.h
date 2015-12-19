@@ -57,9 +57,6 @@ void set_up_thread_hadler(signal_handler_t new_thread_handler);
 
 void process_signal_handling();
 
-void spawn_process(std::string command);
-
-
 class Log : public std::basic_streambuf<char, std::char_traits<char> > {
 public:
     explicit Log(std::string ident_, int facility_, int priority_);
