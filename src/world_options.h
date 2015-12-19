@@ -45,7 +45,7 @@ public:
 
     uint getGreenKills() const { return this->green_kills; }
 
-    uint getRoundsPlayed() const { return this->rounds_played; }
+    uint get_rounds_played() const { return this->rounds_played; }
 
     std::string get_fifo_path() const { return this->fifo_path; }
 

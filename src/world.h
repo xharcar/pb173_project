@@ -4,6 +4,9 @@
 #include "world_options.h"
 #include "tank.h"
 
+#include <sstream>
+#include <boost/range/join.hpp>
+
 /**
  * @brief process_signal_handling uses sigaction function
  * to set up World::set_world_signal_status(int sig) as signal handler

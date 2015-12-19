@@ -17,23 +17,23 @@ World::World(WorldOptions& opts, int fd_map_pipe)
     }
 }
 
-void World::play_round(WorldOptions u)
+void World::play_round(WorldOptions opts)
 {
     while(true) {
         // re-inited at every round start for easier management
-        u.incRoundsPlayed();
+        opts.incRoundsPlayed();
 
-        respawn_tanks(u);
+        respawn_tanks(opts);
         /* Acquire commands from tankclients */
         read_commands();
         process_shots();
         process_moves();
 
-        sum_score(u);
+        sum_score(opts);
         std::cout << "Score:" << std::endl
-                  << "Red: " << u.getRedKills() << std::endl
-                  << "Green: " << u.getGreenKills() << std::endl
-                  << "Round " << u.getRoundsPlayed() << std::endl;
+                  << "Red: " << opts.getRedKills() << std::endl
+                  << "Green: " << opts.getGreenKills() << std::endl
+                  << "Round " << opts.get_rounds_played() << std::endl;
 
         take_actions();
         refresh_zone();
@@ -41,7 +41,8 @@ void World::play_round(WorldOptions u)
         if (handle_signals()) {
             break;
         }
-        // waits for round time to pass : round time given in ms,
+        // waits for round time to pass
+        std::this_thread::sleep_for(std::chrono::seconds(opts.get_rounds_played()));
     }
 }
 

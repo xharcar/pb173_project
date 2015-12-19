@@ -2,40 +2,26 @@
 #define WORLD_SHARED_H
 
 #include <chrono>
-#include <condition_variable>
-#include <mutex>
-#include <string>
-#include <vector>
-#include <thread>
 #include <iostream>
-#include <streambuf>
-#include <syslog.h>
-#include <cstring>
+#include <memory>
 #include <random>
+#include <streambuf>
+#include <utility>
+#include <vector>
 
 #include <cassert>
-#include <ctime>
-#include <cstring>
-#include <cstdlib>
 #include <csignal>
-
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <pthread.h>
-
-#include <utility>
-#include <sstream>
-#include <boost/range/join.hpp>
-#include <memory>
+#include <cstdlib>
+#include <cstring>
 
 #include <errno.h>
-#include <syslog.h>
-#include <sys/file.h>
 #include <fcntl.h>
 #include <sys/inotify.h>
-
-#include "randutils.hpp"
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <syslog.h>
+#include <unistd.h>
 
 enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
 
@@ -44,7 +30,6 @@ using Coord = std::pair<int, int>;
 /**
  * @brief rng easy to use random number generator
  */
-//thread_local static randutils::mt19937_rng rng;
 thread_local static std::mt19937 rng;
 
 /* Simplify by defining the signal handler function type, assume SA_SIGINFO */

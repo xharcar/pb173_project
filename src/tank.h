@@ -2,8 +2,14 @@
 #define TANK_H
 
 #include "world_shared.h"
-#include <queue>
+
+#include <condition_variable>
 #include <functional>
+#include <mutex>
+#include <thread>
+#include <queue>
+
+#include <pthread.h>
 
 enum class TankState {
     alive,
