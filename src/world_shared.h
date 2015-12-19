@@ -68,6 +68,7 @@ public:
     ~UnixPipe() {
         if (fd > 0) {
             // close/unlink file descriptor
+            ::close(fd);
         }
     }
 
@@ -83,6 +84,9 @@ public:
     int get_fd() const { return fd; }
 };
 
+/**
+ * @brief checks whether an instance of world is already running
+ */
 class RunningInstance {
     int pid_fd;
     std::string pid_filepath;
@@ -122,6 +126,10 @@ public:
     }
 
 private:
+    /**
+     * @brief blocking call which waits for the end of other world instances
+     * @param pid_filepath location of pid file to check
+     */
     void watch_pid( std::string pid_filepath )
     {
         int inotify_instance = inotify_init();

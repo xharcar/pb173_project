@@ -176,7 +176,7 @@ void World::take_action_tank(std::vector<std::unique_ptr<Tank>>::iterator& it_bo
     auto& tanks = t.get_color() == Color::RED ? red_tanks : green_tanks;
     if (!t.is_alive()) {
         //this->zone[t.get_x()][t.get_x()] = Color::EMPTY;
-        t.kill_thread();
+        t.quit();
         tanks.erase(it_box_t);
     } else {
         t.move();
@@ -258,17 +258,14 @@ void World::output_map()
 void World::close()
 {
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
-        (*t)->kill_thread();
         (*t)->quit();
     }
     for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
-        (*t)->kill_thread();
         (*t)->quit();
     }
     red_tanks.clear();
     green_tanks.clear();
     zone.clear();
-    ::close(pipefd);
 }
 
 void World::refresh_zone()

@@ -14,18 +14,6 @@
 void process_signal_handling();
 
 /**
- * @brief checks whether an instance of world is already running
- * @param pid_filepath location of pid file to check
- */
-int world_running( std::string pid_filepath );
-
-/**
- * @brief blocking call which waits for the end of other world instances
- * @param pid_filepath location of pid file to check
- */
-void watch_pid( std::string pid_filepath );
-
-/**
  * @brief Represents an in-game basic world
  */
 class World
@@ -39,7 +27,6 @@ private:
     int width;
 
     static volatile sig_atomic_t world_signal_status;
-    std::string pipe;
     int pipefd;
 
 public:
@@ -57,9 +44,7 @@ public:
      */
     World(const World&) = delete;
 
-    ~World() {
-        close();
-    }
+    ~World() { close(); }
 
     /**
      * @brief represents a round of gameplay;
@@ -173,7 +158,6 @@ private:
      * @brief cleans up world's resources
      */
     void close();
-
 };
 
 #endif // WORLD_H
