@@ -118,7 +118,7 @@ public:
     int acquire()
     {
         pid_fd = ::open(pid_filepath.c_str(), O_CREAT | O_RDWR, 0666);
-        if (!pid_fd) {
+        if (pid_fd <= 0) {
             std::cout << "Failed to open " << pid_filepath << ": "
                       << strerror(errno) << std::endl;
             return EXIT_FAILURE;
@@ -129,9 +129,9 @@ public:
             switch (errno) {
             // Another instance is running
             case EWOULDBLOCK:
-                std::cerr << "Another instance of world is already running."
+                std::cout << "Another instance of world is already running."
                           << std::endl;
-                std::cerr << "Waiting for its end." << std::endl;
+                std::cout << "Waiting for its end." << std::endl;
                 watch_pid(pid_filepath);
                 break;
             }

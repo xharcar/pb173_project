@@ -8,15 +8,9 @@ World::World(WorldOptions& opts, int fd_map_pipe)
       pipefd(fd_map_pipe)
 {
     zone = std::vector<std::vector<Color>>(height, std::vector<Color>(width, EMPTY));
-
-    /* fixme!: Handle error when given pipe name already exists*/
-    pipefd = mkfifo(pipe.c_str(), 0444);
-    if (pipefd) {
-        std::cout << "DEBUG: " << pipefd << std::endl;
-        std::cout << "DEBUG: " << strerror(errno) << std::endl;
-    }
     red_tanks.reserve(opts.get_red_tanks());
     green_tanks.reserve(opts.get_green_tanks());
+
     if (opts.get_daemonize()) {
         std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
     }
@@ -203,7 +197,6 @@ void World::add_tank(Color color)
 
 bool World::is_free(int x, int y)
 {
-    std::cout << "DEBUG: zone:" << zone[x][y] << std::endl;
     return zone[x][y] == Color::EMPTY;
 }
 
@@ -217,9 +210,6 @@ Coord World::free_coord()
     do {
         x = width_rand(rng);
         y = height_rand(rng);
-        std::cout << "DEBUG: Coords:  " << x << ", " << y << std::endl;
-        //std::cout << "DEBUG: zone size: " << zone.size() << ", " << zone[0].size() << std::endl;
-        std::cout << "DEBUG: access:  " << zone[x][y] << std::endl;
     } while (is_free(x, y));
     return Coord(x, y);
 }
@@ -265,7 +255,6 @@ void World::output_map()
 
 void World::close()
 {
-    std::cout << "Quitting safely" << std::endl;
     for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
         (*t)->kill_thread();
         (*t)->quit();
@@ -278,6 +267,23 @@ void World::close()
     green_tanks.clear();
     zone.clear();
     ::close(pipefd);
+}
+
+void World::refresh_zone()
+{
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; i++) {
+            zone[i][j] = EMPTY;
+        }
+    }
+    for (auto& box_t : red_tanks) {
+        Tank& t = *box_t.get();
+        zone[t.get_x()][t.get_y()] = Color::RED;
+    }
+    for (auto& box_t : green_tanks) {
+        Tank& t = *box_t.get();
+        zone[t.get_x()][t.get_y()] = Color::GREEN;
+    }
 }
 
 void World::set_world_signal_status(int sig, siginfo_t* info, void* context) {
@@ -303,23 +309,6 @@ bool World::handle_signals() {
         break;
     }
     return ret;
-}
-
-void World::refresh_zone()
-{
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; i++) {
-            zone[i][j] = EMPTY;
-        }
-    }
-    for (auto& box_t : red_tanks) {
-        Tank& t = *box_t.get();
-        zone[t.get_x()][t.get_y()] = Color::RED;
-    }
-    for (auto& box_t : green_tanks) {
-        Tank& t = *box_t.get();
-        zone[t.get_x()][t.get_y()] = Color::GREEN;
-    }
 }
 
 int main(int argc, char *argv[])
