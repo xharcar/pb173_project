@@ -7,7 +7,7 @@
 class WorldOptions
 {
     bool daemonize;
-    unsigned mRoundTime;
+    unsigned round_time;
     unsigned mMapHeight;
     unsigned mMapWidth;
     std::string fifo_path;
@@ -21,15 +21,17 @@ class WorldOptions
 public:
     WorldOptions();
 
-    void parse_options(int argc, char* argv[]);
+    int parse_options(int argc, char* argv[]);
 
-    void print_help();
+    int check_valid() const;
 
-    void print_error();
+    void print_help() const;
+
+    void print_error() const;
 
     bool get_daemonize() const { return this->daemonize; }
 
-    uint getRoundTime() const { return this->mRoundTime; }
+    uint getRoundTime() const { return this->round_time; }
 
     uint get_map_height() const { return this->mMapHeight; }
 
