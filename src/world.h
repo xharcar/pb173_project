@@ -1,18 +1,6 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <utility>
-#include <sstream>
-#include <boost/range/join.hpp>
-#include <memory>
-
-#include <errno.h>
-#include <syslog.h>
-#include <sys/file.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/inotify.h>
-
 #include "world_options.h"
 #include "tank.h"
 
@@ -59,8 +47,7 @@ public:
      * @param width width of the world (X-axis)
      * @param pipe pipe to write events to
      */
-    //World(uint height, uint width, std::string pipe);
-    World(WorldOptions& opts);
+    World(WorldOptions& opts, int fd_map_pipe);
 
     /**
      * @brief World remove the copy constructor

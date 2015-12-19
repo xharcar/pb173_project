@@ -2,13 +2,13 @@
 
 volatile std::sig_atomic_t World::world_signal_status = 0;
 
-World::World(WorldOptions& opts)
+World::World(WorldOptions& opts, int fd_map_pipe)
     : height(opts.get_map_height()),
       width(opts.get_map_width()),
-      pipe(opts.get_fifo_path())
+      pipefd(fd_map_pipe)
 {
-    std::vector<std::vector<Color>> zone(height,
-                                         std::vector<Color>(width, EMPTY));
+    zone = std::vector<std::vector<Color>>(height, std::vector<Color>(width, EMPTY));
+
     /* fixme!: Handle error when given pipe name already exists*/
     pipefd = mkfifo(pipe.c_str(), 0444);
     if (pipefd) {
@@ -17,7 +17,9 @@ World::World(WorldOptions& opts)
     }
     red_tanks.reserve(opts.get_red_tanks());
     green_tanks.reserve(opts.get_green_tanks());
-    std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
+    if (opts.get_daemonize()) {
+        std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
+    }
 }
 
 void World::play_round(WorldOptions u)
@@ -201,19 +203,23 @@ void World::add_tank(Color color)
 
 bool World::is_free(int x, int y)
 {
-    return zone[x][y] == EMPTY;
+    std::cout << "DEBUG: zone:" << zone[x][y] << std::endl;
+    return zone[x][y] == Color::EMPTY;
 }
 
 Coord World::free_coord()
 {
     int x;
     int y;
-    std::uniform_int_distribution<int> width_rand(0, width);
-    std::uniform_int_distribution<int> height_rand(0, height);
+    std::uniform_int_distribution<int> width_rand(0, width - 1);
+    std::uniform_int_distribution<int> height_rand(0, height - 1);
     // only loops if first try failed,ends as soon as a free field is found
     do {
         x = width_rand(rng);
         y = height_rand(rng);
+        std::cout << "DEBUG: Coords:  " << x << ", " << y << std::endl;
+        //std::cout << "DEBUG: zone size: " << zone.size() << ", " << zone[0].size() << std::endl;
+        std::cout << "DEBUG: access:  " << zone[x][y] << std::endl;
     } while (is_free(x, y));
     return Coord(x, y);
 }
@@ -316,73 +322,28 @@ void World::refresh_zone()
     }
 }
 
-int world_running(std::string pid_filepath)
-{
-    // Possibly handle other errors when calling open()
-    int pid_fd = open(pid_filepath.c_str(), O_CREAT | O_RDWR, 0666);
-    int locked;
-    if (!pid_fd) {
-        std::cout << "Failed to open pid file: " << strerror(errno) << std::endl;
-        exit(-1);
-    }
-
-    while ((locked = flock(pid_fd, LOCK_EX | LOCK_NB))) {
-        switch (errno) {
-        // Another instance is running
-        case EWOULDBLOCK:
-            std::cerr << "Another instance of world is already running."
-                      << std::endl;
-            std::cerr << "Waiting for its end." << std::endl;
-            watch_pid(pid_filepath);
-            break;
-        //default:
-            //assert(false);
-        }
-    }
-    return pid_fd;
-}
-
-void watch_pid( std::string pid_filepath )
-{
-    int inotify_instance = inotify_init();
-    if ( inotify_instance == -1 ) {
-        std::cerr << "Failed to create inotify instance" << std::endl;
-        assert(false);
-    }
-    if (inotify_add_watch( inotify_instance, pid_filepath.c_str(), IN_CLOSE)) {
-        std::cerr << "Failed to add file in to inotify instance" << std::endl;
-        std::abort();
-    }
-
-    /* Blocking call waiting for the end of a different world */
-    select(inotify_instance, NULL, NULL, NULL, NULL);
-}
-
 int main(int argc, char *argv[])
 {
     //process_signal_handling();
     //set_up_thread_hadler(World::set_world_signal_status);
 
-    int pid_fd = world_running("world.pid");
-
-    // argv_extra = argv;
+    RunningInstance("world.pid");
 
     WorldOptions opts;
-    opts.parse_options(argc, argv);
-
-    // Checking if map space is sufficient
-    int map_space = opts.get_map_height() * opts.get_map_width();
-    int tank_count = opts.get_green_tanks() + opts.get_red_tanks();
-    if(map_space < tank_count) {
-        std::cerr << "Not enough space on map for tanks, exiting" << std::endl;
-        return 2;
+    if (opts.parse_options(argc, argv)) {
+        return EXIT_FAILURE;
+    }
+    if (opts.check_valid()) {
+        return EXIT_FAILURE;
+    }
+    UnixPipe map_fifo(opts.get_fifo_path());
+    if (0 <= map_fifo.open()) {
+        return EXIT_FAILURE;
     }
 
-    //std::unique_ptr<World> w(new World(opts.get_map_height(), opts.get_map_width(), opts.get_fifo_path()));
-    std::unique_ptr<World> w(new World(opts));
+    std::unique_ptr<World> w(new World(opts, map_fifo.get_fd()));
 
     w->play_round(opts);
 
-    close(pid_fd);
-    return 0;
+    return EXIT_SUCCESS;
 }
