@@ -1,8 +1,8 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include "world_options.h"
 #include "tank.h"
+#include "world_options.h"
 
 #include <sstream>
 #include <boost/range/join.hpp>
@@ -22,9 +22,9 @@ private:
     std::vector<std::unique_ptr<Tank>> green_tanks;
     std::vector<std::unique_ptr<Tank>> red_tanks;
 
-    std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
     int height;
     int width;
+    std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
 
     static volatile sig_atomic_t world_signal_status;
     int pipefd;

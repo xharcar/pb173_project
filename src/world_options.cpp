@@ -43,7 +43,7 @@ int WorldOptions::parse_options(int argc, char* argv[])
             round_time = atoi(optarg);
             break;
         case 'p':
-            fifo_path.assign(optarg);
+            fifo_path = optarg;
             break;
         case 'h':
             print_help();

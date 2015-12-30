@@ -28,7 +28,7 @@ enum Color {EMPTY = 0, RED = 'r', GREEN = 'g'};
 using Coord = std::pair<int, int>;
 
 /**
- * @brief rng easy to use random number generator
+ * @brief rng holds the state of a random number generator
  */
 thread_local static std::mt19937 rng;
 

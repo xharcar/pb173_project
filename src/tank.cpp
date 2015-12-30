@@ -69,7 +69,13 @@ void Tank::read_command()
 
 void Tank::mock_read_command()
 {
-    std::uniform_int_distribution<int> r_op(0,2);
-    std::uniform_int_distribution<int> r_dir(0,4);
-    command = std::string("am")[r_op(rng)] + std::string("lurd")[r_dir(rng)];
+    std::uniform_int_distribution<int> r_op(0,1);
+    std::uniform_int_distribution<int> r_dir(0,3);
+    //command[0] = std::string("am")[r_op(rng)];
+    //command[1] = std::string("lurd")[r_dir(rng)];
+
+    //command = std::string("am"[r_op(rng)]) + std::string("lurd"[r_dir(rng)]);
+    command = std::string() + "am"[r_op(rng)] + "lurd"[r_dir(rng)];
+    //std::cout << "DEBUG: " << command << std::endl;
+    //std::cout << "DEBUG: " << command[0] << command[1] << std::endl;
 }
