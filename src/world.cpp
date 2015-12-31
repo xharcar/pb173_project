@@ -3,11 +3,11 @@
 
 volatile std::sig_atomic_t World::world_signal_status = 0;
 
-World::World(WorldOptions& opts, int fd_map_pipe)
+World::World(WorldOptions& opts)
     : height(opts.get_map_height()),
       width(opts.get_map_width()),
       zone(height, std::vector<Color>(width, Color::EMPTY)),
-      pipefd(fd_map_pipe)
+      map_fifo(opts.get_fifo_path())
 {
     red_tanks.reserve(opts.get_red_tanks());
     green_tanks.reserve(opts.get_green_tanks());
@@ -67,15 +67,15 @@ void World::process_shots()
 
 void World::process_moves()
 {
-    std::cout << "DEBUG P1 reach" << std::endl;
+    //std::cout << "DEBUG P1 reach" << std::endl;
     for(auto& box_t : boost::join(green_tanks, red_tanks)) {
         Tank& t = *box_t.get();
-        std::cout << "DEBUG P2 reach" << std::endl;
-        std::cout << "DEBUG command[0]: " << t.get_command()[0] << std::endl;
-        std::cout << "DEBUG command[1]: " << t.get_command()[1] << std::endl;
-        std::cout << "DEBUG command: " << t.get_command() << std::endl;
+        //std::cout << "DEBUG P2 reach" << std::endl;
+        //std::cout << "DEBUG command[0]: " << t.get_command()[0] << std::endl;
+        //std::cout << "DEBUG command[1]: " << t.get_command()[1] << std::endl;
+        //std::cout << "DEBUG command: " << t.get_command() << std::endl;
         if (t.get_command()[0] == 'm') {
-            std::cout << "DEBUG P2 reach" << std::endl;
+            //std::cout << "DEBUG P2 reach" << std::endl;
             movetank(t);
         }
     }
@@ -123,7 +123,6 @@ void World::movetank(Tank& t)
         int x_shift = 0;
         int y_shift = 0;
 
-        std::cout << "DEBUG R1 reach" << std::endl;
         switch (t.get_command()[1]) {
         case 'u':
             y_shift++;
@@ -141,11 +140,9 @@ void World::movetank(Tank& t)
             /* malformed command format */
             assert(false);
         }
-        std::cout << "DEBUG R2 reach" << std::endl;
 
         /* Set new coordinates only for tanks that haven't been shot or crashed */
         Coord new_pos = Coord(t.get_x() + x_shift, t.get_y() + y_shift);
-        std::cout << "DEBUG New position: " << new_pos.first << ", " << new_pos.second << std::endl;
         if (&t != &obstacle &&
             new_pos == obstacle.get_position() &&
             !obstacle.is_shot() &&
@@ -256,14 +253,12 @@ void World::respawn_tanks(WorldOptions opts)
 
 void World::output_map()
 {
-    std::stringstream ss;
-    ss << width << ',' << height;
+    map_fifo << width << ',' << height;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            ss << ',' << zone[i][j];
+            map_fifo << ',' << zone[i][j];
         }
     }
-    write(pipefd, ss.str().c_str(), (height * width * 2) + 4);
 }
 
 void World::close()
@@ -274,9 +269,6 @@ void World::close()
     for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
         (*t)->quit();
     }
-    red_tanks.clear();
-    green_tanks.clear();
-    zone.clear();
 }
 
 void World::refresh_zone()
@@ -296,11 +288,6 @@ void World::refresh_zone()
     for (auto& box_t : green_tanks) {
         Tank& t = *box_t.get();
         zone[t.get_x()][t.get_y()] = Color::GREEN;
-    }
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            //std::cout << "DEBUG: zone: [" << i << ", " << j << "] " << zone[j][i] << std::endl;
-        }
     }
 }
 
@@ -347,13 +334,13 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    UnixPipe map_fifo(opts.get_fifo_path());
-    if (0 <= map_fifo.open()) {
+    NamedFifo map_fifo(opts.get_fifo_path());
+    if (map_fifo.open() != 0) {
         std::cout << "Failed to open " << opts.get_fifo_path() << ": "
                   << strerror(errno) << std::endl;
         return EXIT_FAILURE;
     }
-    World w(opts, map_fifo.get_fd());
+    World w(opts);
 
     w.play_round(opts);
 

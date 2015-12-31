@@ -58,30 +58,27 @@ private:
     char ident[50];
 };
 
-class UnixPipe {
+class NamedFifo {
     std::string filepath;
-    int fd;
+    int sucess;
 
 public:
-    UnixPipe(std::string filepath) : filepath(filepath) {}
+    NamedFifo(std::string filepath) : filepath(filepath) {}
 
-    ~UnixPipe() {
-        if (fd > 0) {
-            // close/unlink file descriptor
-            ::close(fd);
+    ~NamedFifo() {
+        if (sucess == 0) {
+            std::remove(filepath.c_str());
         }
     }
 
     /**
      * @brief open
-     * @return file descriptor to given pipe
+     * @return success
      */
     int open() {
-        fd = mkfifo(filepath.c_str(), 0444);
-        return fd;
+        sucess = mkfifo(filepath.c_str(), 0444);
+        return sucess;
     }
-
-    int get_fd() const { return fd; }
 };
 
 /**

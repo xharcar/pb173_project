@@ -4,7 +4,7 @@
 #include "tank.h"
 #include "world_options.h"
 
-#include <sstream>
+#include <fstream>
 #include <boost/range/join.hpp>
 
 /**
@@ -27,7 +27,7 @@ private:
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
 
     static volatile sig_atomic_t world_signal_status;
-    int pipefd;
+    std::ofstream map_fifo;
 
 public:
     /**
@@ -37,7 +37,7 @@ public:
      * @param width width of the world (X-axis)
      * @param pipe pipe to write events to
      */
-    World(WorldOptions& opts, int fd_map_pipe);
+    World(WorldOptions& opts);
 
     /**
      * @brief World remove the copy constructor

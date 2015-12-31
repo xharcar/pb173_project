@@ -118,7 +118,7 @@ public:
      */
     void quit() {
         send_request(SIGTERM);
-        t_handle.join();
+        //t_handle.join();
     }
 
     /**
