@@ -6,6 +6,7 @@
 
 #include <fstream>
 #include <boost/range/join.hpp>
+#include <unordered_set>
 
 /**
  * @brief process_signal_handling uses sigaction function
@@ -19,12 +20,13 @@ void process_signal_handling();
 class World
 {
 private:
-    std::vector<std::unique_ptr<Tank>> green_tanks;
-    std::vector<std::unique_ptr<Tank>> red_tanks;
+    std::unordered_set<std::unique_ptr<Tank>> tanks;
 
     int height;
     int width;
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
+    unsigned red_tanks;
+    unsigned green_tanks;
 
     static volatile sig_atomic_t world_signal_status;
     std::ofstream map_fifo;

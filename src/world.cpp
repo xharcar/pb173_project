@@ -7,10 +7,11 @@ World::World(WorldOptions& opts)
     : height(opts.get_map_height()),
       width(opts.get_map_width()),
       zone(height, std::vector<Color>(width, Color::EMPTY)),
+      red_tanks(0),
+      green_tanks(0),
       map_fifo(opts.get_fifo_path())
 {
-    red_tanks.reserve(opts.get_red_tanks());
-    green_tanks.reserve(opts.get_green_tanks());
+    tanks.reserve(opts.get_red_tanks() + opts.get_green_tanks());
 
     if (opts.get_daemonize()) {
         /* Replace std::cout with custom syslog stream */
@@ -49,7 +50,7 @@ void World::play_round(WorldOptions opts)
 
 void World::read_commands()
 {
-    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
+    for(auto& box_t : tanks) {
         Tank& t = *box_t.get();
         t.read_command();
     }
@@ -57,7 +58,7 @@ void World::read_commands()
 
 void World::process_shots()
 {
-    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
+    for(auto& box_t : tanks) {
         Tank& t = *box_t.get();
         if (t.get_command()[0] == 'f') {
             fire_direction(t);
@@ -67,15 +68,9 @@ void World::process_shots()
 
 void World::process_moves()
 {
-    //std::cout << "DEBUG P1 reach" << std::endl;
-    for(auto& box_t : boost::join(green_tanks, red_tanks)) {
+    for(auto& box_t : tanks) {
         Tank& t = *box_t.get();
-        //std::cout << "DEBUG P2 reach" << std::endl;
-        //std::cout << "DEBUG command[0]: " << t.get_command()[0] << std::endl;
-        //std::cout << "DEBUG command[1]: " << t.get_command()[1] << std::endl;
-        //std::cout << "DEBUG command: " << t.get_command() << std::endl;
         if (t.get_command()[0] == 'm') {
-            //std::cout << "DEBUG P2 reach" << std::endl;
             movetank(t);
         }
     }
@@ -83,7 +78,7 @@ void World::process_moves()
 
 void World::fire_direction(Tank& t)
 {
-    for (auto& box_target : boost::join(green_tanks, red_tanks)) {
+    for (auto& box_target : tanks) {
         Tank& target = *box_target.get();
         /* Pick the right operation for finding targets relative to this tank's
          * position */
@@ -118,7 +113,7 @@ void World::fire_direction(Tank& t)
 
 void World::movetank(Tank& t)
 {
-    for (auto& box_obstacle : boost::join(green_tanks, red_tanks)) {
+    for (auto& box_obstacle : tanks) {
         Tank& obstacle = *box_obstacle.get();
         int x_shift = 0;
         int y_shift = 0;
@@ -170,39 +165,44 @@ bool World::out_of_bounds(Coord pos)
 
 void World::take_actions()
 {
-    for (auto it_box_t = red_tanks.begin(); it_box_t != red_tanks.end(); it_box_t++) {
-        take_action_tank(it_box_t);
+    /*
+    for (auto it_box_t = tanks.begin(); it_box_t != tanks.end(); it_box_t++) {
+        Tank& t = *it_box_t->get();
+        if (!t.is_alive()) {
+            t.quit();
+            tanks.erase(it_box_t);
+        } else {
+            t.move();
+        }
     }
-    for (auto it_box_t = green_tanks.begin(); it_box_t != green_tanks.end(); it_box_t++) {
-        take_action_tank(it_box_t);
-    }
-}
-
-void World::take_action_tank(std::vector<std::unique_ptr<Tank>>::iterator& it_box_t)
-{
-    Tank& t = *it_box_t->get();
-    auto& tanks = t.get_color() == Color::RED ? red_tanks : green_tanks;
-    if (!t.is_alive()) {
-        //this->zone[t.get_x()][t.get_x()] = Color::EMPTY;
-        t.quit();
-        tanks.erase(it_box_t);
-    } else {
-        t.move();
+    */
+    for(auto& box_t : tanks) {
+        Tank& t = *box_t.get();
+        if (!t.is_alive()) {
+            if (t.get_color() == Color::RED) {
+                red_tanks--;
+            } else {
+                green_tanks--;
+            }
+            t.quit();
+            tanks.erase(box_t);
+        } else {
+            t.move();
+        }
     }
 }
 
 void World::add_tank(Color color)
 {
     Coord pos = free_coord();
-
     this->zone[pos.first][pos.second] = color;
 
     if (color == Color::RED) {
-        red_tanks.emplace_back(new Tank(pos, color));
+        red_tanks++;
+    } else {
+        green_tanks++;
     }
-    else {
-        green_tanks.emplace_back(new Tank(pos, color));
-    }
+    tanks.emplace(new Tank(pos, color));
 }
 
 bool World::is_free(int x, int y)
@@ -227,26 +227,24 @@ Coord World::free_coord()
 
 void World::sum_score(WorldOptions u)
 {
-    for (auto& box_t : red_tanks) {
+    for (auto& box_t : tanks) {
         Tank& t = *box_t.get();
         if (t.is_shot()) {
-            u.incGreenKills();
-        }
-    }
-    for (auto& box_t : green_tanks) {
-        Tank& t = *box_t.get();
-        if (t.is_shot()) {
-            u.incRedKills();
+            if (t.get_color() == Color::RED) {
+                u.incGreenKills();
+            } else {
+                u.incRedKills();
+            }
         }
     }
 }
 
 void World::respawn_tanks(WorldOptions opts)
 {
-    while(red_tanks.size() < opts.get_red_tanks()){
+    while (red_tanks < opts.get_red_tanks()) {
         add_tank(Color::RED);
     }
-    while(green_tanks.size() < opts.get_green_tanks()){
+    while (green_tanks < opts.get_green_tanks()) {
         add_tank(Color::GREEN);
     }
 }
@@ -263,11 +261,14 @@ void World::output_map()
 
 void World::close()
 {
-    for(auto t=red_tanks.begin();t!=red_tanks.end();++t){
+    /*
+    for(auto t=tanks.begin();t!=tanks.end();++t){
         (*t)->quit();
     }
-    for(auto t=green_tanks.begin();t!=green_tanks.end();++t){
-        (*t)->quit();
+    */
+    for (auto& box_t : tanks) {
+        Tank& t = *box_t.get();
+        t.quit();
     }
 }
 
@@ -281,11 +282,11 @@ void World::refresh_zone()
         }
         */
     }
-    for (auto& box_t : red_tanks) {
+    for (auto& box_t : tanks) {
         Tank& t = *box_t.get();
         zone[t.get_x()][t.get_y()] = Color::RED;
     }
-    for (auto& box_t : green_tanks) {
+    for (auto& box_t : tanks) {
         Tank& t = *box_t.get();
         zone[t.get_x()][t.get_y()] = Color::GREEN;
     }
