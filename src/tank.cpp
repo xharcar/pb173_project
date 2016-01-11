@@ -1,15 +1,5 @@
 #include "tank.h"
 
-void tank_sig_handlerr(int signum, siginfo_t* info, void* context)
-{
-    switch (signum) {
-    case SIGUSR2:
-        break;
-    case SIGTERM:
-        break;
-    }
-}
-
 Tank::Tank(int x, int y, Color color)
     : x(x), y(y), color(color), state(TankState::alive)
 {

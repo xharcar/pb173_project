@@ -54,15 +54,15 @@ public:
 
     Tank(Coord position, Color color);
 
-    int get_x() const { return this->x; }
+    int get_x() const { return x; }
 
-    int get_y() const { return this->y; }
+    int get_y() const { return y; }
 
     Coord get_position() const { return Coord(x, y); }
 
-    Color get_color() const { return this->color; }
+    Color get_color() const { return color; }
 
-    std::string get_command() const { return this->command; }
+    std::string get_command() const { return command; }
 
     void get_shot() { state = TankState::shot; }
 

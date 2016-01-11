@@ -31,6 +31,12 @@ private:
     static volatile sig_atomic_t world_signal_status;
     std::ofstream map_fifo;
 
+    WorldOptions opts;
+    unsigned red_kills;
+    unsigned green_kills;
+    unsigned rounds_played;
+
+
 public:
     /**
      * @brief World constructor, also gets a pseudorandom seed
@@ -59,12 +65,12 @@ public:
      *      4.2) remaining tanks obtain new coordinates
      * 5) Destroyed tanks are removed and remaining tanks are moved to new coordinates
      */
-    void play_round(WorldOptions);
+    void play_round();
 
     /**
      * @brief respawn_tanks respawns dead tanks
      */
-    void respawn_tanks(WorldOptions);
+    void respawn_tanks();
 
     /**
      * @brief read_commands fetch commands for all tanks
@@ -89,12 +95,17 @@ public:
     /**
      * @brief compute score based on shot down tanks
      */
-    void sum_score(WorldOptions);
+    void sum_score();
 
     /**
      * @brief prints map info to cout
      */
     void output_map();
+
+    /**
+     * @brief restart
+     */
+    void restart();
 
 private:
     /**

@@ -14,10 +14,6 @@ class WorldOptions
     unsigned mGreenTanks;
     unsigned mRedTanks;
 
-    unsigned red_kills;
-    unsigned green_kills;
-    unsigned rounds_played;
-
 public:
     WorldOptions();
 
@@ -41,17 +37,5 @@ public:
 
     uint get_red_tanks() const { return this->mRedTanks; }
 
-    uint getRedKills() const { return this->red_kills; }
-
-    uint getGreenKills() const { return this->green_kills; }
-
-    uint get_rounds_played() const { return this->rounds_played; }
-
     std::string get_fifo_path() const { return this->fifo_path; }
-
-    void incRedKills() { this->red_kills++; }
-
-    void incGreenKills() { this->green_kills++; }
-
-    void incRoundsPlayed() { this->rounds_played++; }
 };

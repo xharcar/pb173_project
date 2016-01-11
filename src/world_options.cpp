@@ -3,9 +3,6 @@
 WorldOptions::WorldOptions()
     /* Set default values here */
     : daemonize(false)
-    , red_kills(0)
-    , green_kills(0)
-    , rounds_played(0)
 {}
 
 int WorldOptions::parse_options(int argc, char* argv[])

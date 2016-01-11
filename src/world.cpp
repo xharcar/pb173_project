@@ -9,7 +9,11 @@ World::World(WorldOptions& opts)
       zone(height, std::vector<Color>(width, Color::EMPTY)),
       red_tanks(0),
       green_tanks(0),
-      map_fifo(opts.get_fifo_path())
+      map_fifo(opts.get_fifo_path()),
+      opts(opts),
+      red_kills(0),
+      green_kills(0),
+      rounds_played(0)
 {
     tanks.reserve(opts.get_red_tanks() + opts.get_green_tanks());
 
@@ -19,23 +23,23 @@ World::World(WorldOptions& opts)
     }
 }
 
-void World::play_round(WorldOptions opts)
+void World::play_round()
 {
     while(true) {
         // re-inited at every round start for easier management
-        opts.incRoundsPlayed();
+        rounds_played++;
 
-        respawn_tanks(opts);
+        respawn_tanks();
         /* Acquire commands from tankclients */
         read_commands();
         process_shots();
         process_moves();
 
-        sum_score(opts);
+        sum_score();
         std::cout << "Score:" << std::endl
-                  << "Red: " << opts.getRedKills() << std::endl
-                  << "Green: " << opts.getGreenKills() << std::endl
-                  << "Round " << opts.get_rounds_played() << std::endl;
+                  << "Red: " << red_kills << std::endl
+                  << "Green: " << green_kills << std::endl
+                  << "Round " << rounds_played << std::endl;
 
         take_actions();
         refresh_zone();
@@ -225,21 +229,21 @@ Coord World::free_coord()
 }
 
 
-void World::sum_score(WorldOptions u)
+void World::sum_score()
 {
     for (auto& box_t : tanks) {
         Tank& t = *box_t.get();
         if (t.is_shot()) {
             if (t.get_color() == Color::RED) {
-                u.incGreenKills();
+                green_kills++;
             } else {
-                u.incRedKills();
+                red_kills++;
             }
         }
     }
 }
 
-void World::respawn_tanks(WorldOptions opts)
+void World::respawn_tanks()
 {
     while (red_tanks < opts.get_red_tanks()) {
         add_tank(Color::RED);
@@ -257,6 +261,18 @@ void World::output_map()
             map_fifo << ',' << zone[i][j];
         }
     }
+}
+
+void World::restart() {
+    for(auto& box_t : tanks) {
+        Tank& t = *box_t.get();
+        t.quit();
+        tanks.erase(box_t);
+    }
+    green_kills = 0;
+    red_kills = 0;
+    rounds_played = 0;
+    respawn_tanks();
 }
 
 void World::close()
@@ -302,6 +318,7 @@ bool World::handle_signals() {
     switch (world_signal_status) {
     case SIGUSR1:
         /* restart game */
+        restart();
         break;
     case SIGQUIT:
     case SIGINT:
@@ -343,7 +360,7 @@ int main(int argc, char *argv[])
     }
     World w(opts);
 
-    w.play_round(opts);
+    w.play_round();
 
     return EXIT_SUCCESS;
 }
