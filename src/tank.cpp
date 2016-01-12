@@ -1,4 +1,5 @@
 #include "tank.h"
+#define NOSOCKETS
 
 Tank::Tank(int x, int y, Color color)
     : x(x), y(y), color(color), state(TankState::alive)
@@ -27,7 +28,7 @@ void Tank::print_crashed(const Tank& t) const
 }
 
 void Tank::print_out_of_map() const {
-        std::cout << *this << " rolled out of battlefield" << std::endl;
+    std::cout << *this << " rolled out of battlefield" << std::endl;
 }
 
 void Tank::move()
@@ -48,13 +49,14 @@ void Tank::deposit_command_from_client(std::string command)
 
 void Tank::read_command()
 {
-    /*
+#ifndef NOSOCKETS
     std::unique_lock<std::mutex> lock(com_mut);
     com.wait(lock, [this] { return !command_buffer.empty(); });
     std::swap(command, command_buffer.front());
     command_buffer.pop();
-    */
+#else
     mock_read_command();
+#endif
 }
 
 void Tank::mock_read_command()
@@ -65,7 +67,7 @@ void Tank::mock_read_command()
     //command[1] = std::string("lurd")[r_dir(rng)];
 
     //command = std::string("am"[r_op(rng)]) + std::string("lurd"[r_dir(rng)]);
-    command = std::string() + "am"[r_op(rng)] + "lurd"[r_dir(rng)];
+    command = std::string() + "fm"[r_op(rng)] + "lurd"[r_dir(rng)];
     //std::cout << "DEBUG: " << command << std::endl;
     //std::cout << "DEBUG: " << command[0] << command[1] << std::endl;
 }
