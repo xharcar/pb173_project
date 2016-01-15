@@ -23,7 +23,8 @@ enum class TankState {
 class Tank
 {
 private:
-    int x, y;
+    int x;
+    int y;
     Color color;
 
     TankState state;
