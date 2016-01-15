@@ -43,6 +43,19 @@ private:
     //volatile std::sig_atomic_t signal_status = 0;
     int request_status;
 
+    struct addrinfo *myaddr, myhints;
+    int listener, newSock, fdMax;
+    std::string myPort;
+    fd_set master, tmpSet;
+    bool clientConnected;
+
+    std::thread *serverThread;
+    bool threadControl;
+
+    bool createServer();
+    void serverLoop();
+    void getAddress(struct sockaddr *ai_addr, char **address);
+
 public:
     /**
      * @brief Set up tank state to alive (when a tank rolls up onto a
@@ -78,17 +91,6 @@ public:
      * @brief move tank to new_coordinates and print it out
      */
     void move();
-
-    /**
-     * @brief spawns a new tank thread, initialized TID of tank
-     * @param tankpath path to tank binary to be executed
-     */
-    // fixme: add argument for socket passing
-    void spawn_thread()
-    {
-        /* Spawn a thread to communicate with tankclient asynchronously */
-        this->t_handle = std::thread([&]() {});
-    }
 
     /**
      * @brief request a command through a SIGUSR2 signal to tank
