@@ -23,8 +23,7 @@ enum class TankState {
 class Tank
 {
 private:
-    int x;
-    int y;
+    int x, y;
     Color color;
 
     TankState state;
@@ -43,18 +42,17 @@ private:
     //volatile std::sig_atomic_t signal_status = 0;
     int request_status;
 
+    /*
     struct addrinfo *myaddr, myhints;
     int listener, newSock, fdMax;
     std::string myPort;
     fd_set master, tmpSet;
     bool clientConnected;
 
-    std::thread *serverThread;
-    bool threadControl;
-
     bool createServer();
     void serverLoop();
     void getAddress(struct sockaddr *ai_addr, char **address);
+    */
 
 public:
     /**

@@ -4,16 +4,16 @@
 volatile std::sig_atomic_t World::world_signal_status = 0;
 
 World::World(WorldOptions& opts)
-    : height(opts.get_map_height()),
-      width(opts.get_map_width()),
-      zone(height, std::vector<Color>(width, Color::EMPTY)),
-      red_tanks(0),
-      green_tanks(0),
-      map_fifo(opts.get_fifo_path()),
-      opts(opts),
-      red_kills(0),
-      green_kills(0),
-      rounds_played(0)
+    : height(opts.get_map_height())
+    , width(opts.get_map_width())
+    , zone(height, std::vector<Color>(width, Color::EMPTY))
+    , red_tanks(0)
+    , green_tanks(0)
+    , map_fifo(opts.get_fifo_path())
+    , opts(opts)
+    , red_kills(0)
+    , green_kills(0)
+    , rounds_played(0)
 {
     tanks.reserve(opts.get_red_tanks() + opts.get_green_tanks());
 

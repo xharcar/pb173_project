@@ -4,10 +4,11 @@ Tank::Tank(int x, int y, Color color)
     : x(x), y(y), color(color), state(TankState::alive)
 {
     std::cout << "Spawning " << *this << std::endl;
+    /*
     newSock = -1;
     clientConnected = false;
-    threadControl = true;
     t_handle = std::thread(&Tank::serverLoop);
+    */
 }
 
 Tank::Tank(Coord position, Color color)
@@ -75,12 +76,13 @@ void Tank::mock_read_command()
     //std::cout << "DEBUG: " << command[0] << command[1] << std::endl;
 }
 
+/*
 bool Tank::createServer()
 {
     std::uniform_int_distribution<int> r_port(1025, 50000);
     myPort = r_port(rng);
 
-    memset(&myhints, 0, sizeof(struct addrinfo));
+    memset(&myhints, 0, myhints.ai_addrlen);
     myhints.ai_socktype = SOCK_DGRAM;
     myhints.ai_family = AF_INET;
     myhints.ai_flags = AI_PASSIVE;
@@ -113,10 +115,11 @@ bool Tank::createServer()
     fdMax = listener;
     return true;
 }
+*/
 
+/*
 void Tank::serverLoop()
 {
-    this->createServer();
     // Run until the cows come home
     while (1) {
         // work with copy of master set
@@ -185,7 +188,9 @@ void Tank::serverLoop()
         }
     }
 }
+*/
 
+/*
 void Tank::getAddress(sockaddr* ai_addr, char** address)
 {
     // IPv4 address
@@ -214,3 +219,4 @@ void Tank::getAddress(sockaddr* ai_addr, char** address)
         }
     }
 }
+*/

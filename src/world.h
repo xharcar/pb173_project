@@ -47,11 +47,6 @@ public:
      */
     World(WorldOptions& opts);
 
-    /**
-     * @brief World remove the copy constructor
-     */
-    World(const World&) = delete;
-
     ~World() { close(); }
 
     /**
