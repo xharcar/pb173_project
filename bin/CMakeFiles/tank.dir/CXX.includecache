@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/xharcar/pb173/pb173_project/src/tankclient.cpp
+tankclient.h
+/home/xharcar/pb173/pb173_project/src/tankclient.h
+
+/home/xharcar/pb173/pb173_project/src/tankclient.h
+unistd.h
+-
+getopt.h
+-
+time.h
+-
+csignal
+-
+iostream
+-
+

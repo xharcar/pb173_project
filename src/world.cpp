@@ -1,7 +1,7 @@
 #include "world.h"
 #include "world_shared.h"
 
-volatile std::sig_atomic_t World::world_signal_status = 0;
+volatile std::atomic<int> World::world_signal_status;
 
 World::World(WorldOptions& opts)
     : height(opts.get_map_height()),
@@ -11,11 +11,13 @@ World::World(WorldOptions& opts)
       opts(opts)
 {
     tanks.reserve(opts.get_red_tanks() + opts.get_green_tanks());
-
+    
     if (opts.get_daemonize()) {
         /* Replace std::cout with custom syslog stream */
         std::cout.rdbuf(new Log("Internet of Tanks", LOG_USER, LOG_INFO));
     }
+    world_signal_status.store(0);
+	// atomic status inited here for simplicity, doesn't matter anyway
 }
 
 void World::play_round()
@@ -36,7 +38,7 @@ void World::play_round()
                   << "Green: " << green_kills << std::endl
                   << "Round " << rounds_played << std::endl;
 
-        take_actions();
+        //take_actions();
         refresh_zone();
         output_map();
         if (handle_signals()) {
@@ -49,41 +51,37 @@ void World::play_round()
 
 void World::read_commands()
 {
-    for(auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        t.read_command();
+    for(uint i=0;i<tanks.size();i++) {
+        tanks[i]->read_command();
     }
 }
 
 void World::process_shots()
 {
-    for(auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        if (t.get_command()[0] == 'f') {
-            fire_direction(t);
+    for(uint i=0;i<tanks.size();i++) {
+        if (tanks[i]->get_command()[0] == 'f') {
+            fire_direction(tanks[i]);
         }
     }
 }
 
 void World::process_moves()
 {
-    for(auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        if (t.get_command()[0] == 'm') {
-            movetank(t);
+    for(uint i=0;i<tanks.size();i++) {
+        if (tanks[i]->get_command()[0] == 'm') {
+            movetank(tanks[i]);
         }
     }
 }
 
-void World::fire_direction(Tank& t)
+void World::fire_direction(Tank *t)
 {
-    for (auto& box_target : tanks) {
-        Tank& target = *box_target.get();
+    for (uint i=0;i<tanks.size();i++) {
         /* Pick the right operation for finding targets relative to this tank's
          * position */
         std::function<bool(int, int)> x_op = std::equal_to<int>();
         std::function<bool(int, int)> y_op = std::equal_to<int>();
-        switch (t.get_command()[1]) {
+        switch (t->get_command()[1]) {
         case 'u':
             y_op = std::less<int>();
             break;
@@ -101,23 +99,22 @@ void World::fire_direction(Tank& t)
             assert(false);
         }
 
-        if (y_op(target.get_y(), t.get_y()) &&
-            x_op(target.get_x(), t.get_x()))
+        if (y_op(tanks[i]->get_y(), t->get_y()) &&
+            x_op(tanks[i]->get_x(), t->get_x()))
         {
-            t.get_shot();
-            t.print_destroyed(target);
+            t->get_shot();
+            t->print_destroyed(tanks[i]);
         }
     }
 }
 
-void World::movetank(Tank& t)
+void World::movetank(Tank *t)
 {
-    for (auto& box_obstacle : tanks) {
-        Tank& obstacle = *box_obstacle.get();
+    for (uint i=0;i<tanks.size();i++) {
         int x_shift = 0;
         int y_shift = 0;
 
-        switch (t.get_command()[1]) {
+        switch (t->get_command()[1]) {
         case 'u':
             y_shift++;
             break;
@@ -136,22 +133,23 @@ void World::movetank(Tank& t)
         }
 
         /* Set new coordinates only for tanks that haven't been shot or crashed */
-        Coord new_pos = Coord(t.get_x() + x_shift, t.get_y() + y_shift);
-        if (&t != &obstacle &&
-            new_pos == obstacle.get_position() &&
-            !obstacle.is_shot() &&
-            !t.is_shot())
+        Coord new_pos = Coord(t->get_x() + x_shift, t->get_y() + y_shift);
+        if (t->get_order() != tanks[i]->get_order() &&
+            new_pos == tanks[i]->get_position() &&
+            !tanks[i]->is_shot() &&
+            !t->is_shot())
         {
             /* crash tanks */
-            t.get_crashed();
-            obstacle.get_crashed();
-            t.print_crashed(obstacle);
+            t->get_crashed();
+            tanks[i]->get_crashed();
+            t->print_crashed(tanks[i]);
         } else if (out_of_bounds(new_pos)) {
-            t.get_crashed();
-            t.print_out_of_map();
+            t->get_crashed();
+            t->print_out_of_map();
         } else {
             /* Set new cooradinates for tank */
-            t.set_new_position(new_pos);
+	    new_pos = Coord(t->get_x()-x_shift, t->get_y()-y_shift);
+            t->set_new_position(new_pos);
         }
     }
 }
@@ -164,18 +162,7 @@ bool World::out_of_bounds(Coord pos)
 
 void World::take_actions()
 {
-    /*
-    for (auto it_box_t = tanks.begin(); it_box_t != tanks.end(); it_box_t++) {
-        Tank& t = *it_box_t->get();
-        if (!t.is_alive()) {
-            t.quit();
-            tanks.erase(it_box_t);
-        } else {
-            t.move();
-        }
-    }
-    */
-    for(auto& box_t : tanks) {
+ /*   for(auto& box_t : tanks) {
         Tank& t = *box_t.get();
         if (!t.is_alive()) {
             if (t.get_color() == Color::RED) {
@@ -183,15 +170,13 @@ void World::take_actions()
             } else {
                 green_tanks--;
             }
-            t.quit();
-            tanks.erase(box_t);
         } else {
             t.move();
         }
-    }
+    } */
 }
 
-void World::add_tank(Color color)
+void World::add_tank(Color color,int order)
 {
     Coord pos = free_coord();
     this->zone[pos.first][pos.second] = color;
@@ -201,7 +186,20 @@ void World::add_tank(Color color)
     } else {
         green_tanks++;
     }
-    tanks.emplace(new Tank(pos, color));
+    tanks.push_back(new Tank(pos,color,order));
+}
+
+void World::init_tanks(){
+	int count=0;
+	while(red_tanks < opts.get_red_tanks()){
+		add_tank(Color::RED,count);
+		count++;
+	}
+	while(green_tanks < opts.get_green_tanks()){
+		add_tank(Color::GREEN,count);
+		count++;
+	}
+
 }
 
 bool World::is_free(int x, int y)
@@ -226,10 +224,9 @@ Coord World::free_coord()
 
 void World::sum_score()
 {
-    for (auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        if (t.is_shot()) {
-            if (t.get_color() == Color::RED) {
+    for (uint i=0;i<tanks.size();i++) {
+        if (tanks[i]->is_shot()) {
+            if (tanks[i]->get_color() == Color::RED) {
                 green_kills++;
             } else {
                 red_kills++;
@@ -240,11 +237,8 @@ void World::sum_score()
 
 void World::respawn_tanks()
 {
-    while (red_tanks < opts.get_red_tanks()) {
-        add_tank(Color::RED);
-    }
-    while (green_tanks < opts.get_green_tanks()) {
-        add_tank(Color::GREEN);
+    for(uint i=0;i<tanks.size();i++ ){	
+	tanks[i]->revive();
     }
 }
 
@@ -259,11 +253,6 @@ void World::output_map()
 }
 
 void World::restart() {
-    for(auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        t.quit();
-        tanks.erase(box_t);
-    }
     green_kills = 0;
     red_kills = 0;
     rounds_played = 0;
@@ -272,10 +261,11 @@ void World::restart() {
 
 void World::close()
 {
-    for (auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        t.quit();
+    for (uint i=0;i<tanks.size();i++) {
+        tanks[i]->quit();
+	delete tanks[i];
     }
+    tanks.clear();
 }
 
 void World::refresh_zone()
@@ -283,27 +273,26 @@ void World::refresh_zone()
     for (int i = 0; i < height; i++) {
         std::fill(zone[i].begin(), zone[i].end(), Color::EMPTY);
     }
-    for (auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        zone[t.get_x()][t.get_y()] = Color::RED;
+    for (uint i=0;i<tanks.size();i++) {
+        zone[tanks[i]->get_x()][tanks[i]->get_y()] = Color::RED;
     }
-    for (auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        zone[t.get_x()][t.get_y()] = Color::GREEN;
+    for (uint i=0;i<tanks.size();i++) {
+        zone[tanks[i]->get_x()][tanks[i]->get_y()] = Color::GREEN;
     }
 }
 
-void World::set_world_signal_status(int sig, siginfo_t* info, void* context)
+void World::set_world_signal_status(int sig, siginfo_t* info, void* arg)
 {
-    // fixme: atomic store
-    World::world_signal_status = sig;
+   info = info;
+   arg = arg;
+   World::world_signal_status.store(sig,std::memory_order_seq_cst);
 }
+
 
 bool World::handle_signals()
 {
     bool exit = false;
-    // fixme: atomic load
-    switch (world_signal_status) {
+    switch (this->world_signal_status.load(std::memory_order_seq_cst)) {
     case SIGQUIT:
     case SIGINT:
     case SIGTERM:
@@ -325,7 +314,6 @@ void setup_signal_handling()
 {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
-    // sa.sa_sigaction  = World::set_world_signal_status;
     sa.sa_sigaction = World::set_world_signal_status;
     /* SA_SIGINFO flag must be set to use sa_sigaction handler */
     sa.sa_flags = SA_SIGINFO;
@@ -360,7 +348,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     World w(opts);
-
+    w.init_tanks();
     w.play_round();
 
     return EXIT_SUCCESS;

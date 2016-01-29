@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/xharcar/pb173/pb173_project/src/worldclient.cpp
+worldclient.h
+/home/xharcar/pb173/pb173_project/src/worldclient.h
+
+/home/xharcar/pb173/pb173_project/src/worldclient.h
+cassert
+-
+ncurses.h
+-
+csignal
+-
+iostream
+-
+fstream
+-
+fcntl.h
+-
+sys/stat.h
+-
+string.h
+-
+getopt.h
+-
+

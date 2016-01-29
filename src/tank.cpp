@@ -1,9 +1,9 @@
 #include "tank.h"
 
-Tank::Tank(int x, int y, Color color)
-    : x(x), y(y), color(color), state(TankState::alive)
+Tank::Tank(int x, int y, Color color, int order)
+    : x(x), y(y), color(color), state(TankState::alive), vector_order(order)
 {
-    std::cout << "Spawning " << *this << std::endl;
+    std::cout << "Spawning " << this << std::endl;
     /*
     newSock = -1;
     clientConnected = false;
@@ -11,36 +11,40 @@ Tank::Tank(int x, int y, Color color)
     */
 }
 
-Tank::Tank(Coord position, Color color)
-    : Tank(position.first, position.second, color) {}
+Tank::Tank(Coord position, Color color, int order)
+    : Tank(position.first, position.second, color, order) {}
 
-std::ostream& operator<<(std::ostream& os, const Tank& t)
+std::ostream& operator<<(std::ostream& os, const Tank t)
 {
     std::string color = t.get_color() == Color::RED ? "Red" : "Green";
     os << "Tank [" << t.get_x() << ", " << t.get_y() << "] [" << color << "] ";
     return os;
 }
 
-void Tank::print_destroyed(const Tank& t) const
+void Tank::print_destroyed(Tank *t) const
 {
-    std::cout << *this << "destroyed by " << t << std::endl;
+    std::cout << this << "destroyed by " << t << std::endl;
 }
 
-void Tank::print_crashed(const Tank& t) const
+void Tank::print_crashed(Tank *t) const
 {
-    std::cout << *this << "crashed into " << t << std::endl;
+    std::cout << this << "crashed into " << t << std::endl;
 }
 
 void Tank::print_out_of_map() const {
-    std::cout << *this << " rolled out of battlefield" << std::endl;
+    std::cout << this << " rolled out of battlefield" << std::endl;
 }
 
 void Tank::move()
 {
-    std::cout << *this << "moved to [" << new_position.first << ", "
+    std::cout << this << "moved to [" << new_position.first << ", "
               << new_position.second << "]" << std::endl;
     x = new_position.first;
     y = new_position.second;
+}
+
+void Tank::revive(){
+    state = TankState::alive;
 }
 
 void Tank::deposit_command_from_client(std::string command)

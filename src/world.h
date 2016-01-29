@@ -20,15 +20,15 @@ void setup_signal_handling();
 class World
 {
 private:
-    std::unordered_set<std::unique_ptr<Tank>> tanks;
-
+    std::vector<Tank*> tanks;
     int height;
     int width;
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
     unsigned red_tanks = 0;
     unsigned green_tanks = 0;
 
-    static volatile sig_atomic_t world_signal_status;
+    static volatile std::atomic<int> world_signal_status;
+	// sig_atomic_t may default to int, useful ops implementation-dependent;
     std::ofstream map_fifo;
 
     WorldOptions opts;
@@ -102,12 +102,14 @@ public:
      */
     void restart();
 
+    void init_tanks();	
+
     /**
      * @brief set_world_signal_status handler to pass caught signal into a flag
      * in an atomic way
      * @param sig caught signal
      */
-    static void set_world_signal_status(int sig, siginfo_t *info, void *uctx);
+    static void set_world_signal_status(int sig,siginfo_t* info, void* arg);
 
 private:
     /**
@@ -127,8 +129,9 @@ private:
     /**
      * @brief add_tank spawns tank on free coordinates
      * @param color of the new tank
+     * @param order order in vector for identification
      */
-    void add_tank(Color);
+    void add_tank(Color,int order);
 
     /**
      * @brief take_action_tank auxiliary method for take_actions()
@@ -144,12 +147,12 @@ private:
     /**
      * @brief tank fires in a specified direction based on his command
      */
-    void fire_direction(Tank&);
+    void fire_direction(Tank*);
 
     /**
      * @brief movetank moves tank if it hasn't been shot and have received a move order
      */
-    void movetank(Tank&);
+    void movetank(Tank*);
 
     /**
      * @brief handle_signal is used to check flag World::world_signal_status

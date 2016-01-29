@@ -8,7 +8,7 @@
 #include <streambuf>
 #include <utility>
 #include <vector>
-
+#include <atomic>
 #include <cassert>
 #include <csignal>
 #include <cstdlib>
