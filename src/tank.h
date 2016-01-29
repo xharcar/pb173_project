@@ -3,6 +3,17 @@
 
 #include "world_shared.h"
 
+#include <unistd.h>
+#include <time.h>
+#include <signal.h>
+#include <iostream>
+#include <cstring>
+
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -31,9 +42,9 @@ private:
     Coord new_position;  ///< Position the tank takes after movements of all
                          ///other tanks have been processed
 
-    std::thread t_handle;
-    std::queue<std::string> command_buffer;
-    std::condition_variable com; ///< used to wait for socket communication
+    //std::thread t_handle;
+    //std::queue<std::string> command_buffer; //deprecated, we just need one variable for this
+    volatile std::condition_variable com; ///< used to wait for socket communication
                                  ///thread if command_buffer is empty
     std::mutex com_mut;          ///< synchronizing acces to command_buffer
 
@@ -42,17 +53,19 @@ private:
     //volatile std::sig_atomic_t signal_status = 0;
     int request_status;
 
-    /*
+    //server thingies
     struct addrinfo *myaddr, myhints;
     int listener, newSock, fdMax;
     std::string myPort;
     fd_set master, tmpSet;
     bool clientConnected;
 
+    std::thread *serverThread;
+    bool threadControl;
+
     bool createServer();
     void serverLoop();
     void getAddress(struct sockaddr *ai_addr, char **address);
-    */
 
 public:
     /**
