@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[])
 {
-    Options opts;
+    ClientOptions opts;
     parse_args(argc, argv, opts);
     NCursesClient nc_client(opts.pipe);
     /* Refreshing map, react on key presses */
@@ -13,10 +13,10 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void parse_args(int argc, char* argv[], Options& opts)
+void parse_args(int argc, char* argv[], ClientOptions& opts)
 {
     if (argc < 2) {
-        std::cout << "Wrong argument" << std::endl;
+        std::cout << "Wrong number of arguments" << std::endl;
         print_help(argv[0]);
         exit(-1);
     }
@@ -50,11 +50,9 @@ void print_help(char* progname)
               << std::endl;
 }
 
-void WorldClient::get_world_pid()
+void WorldClient::get_world_pid(std::string filepath)
 {
-    std::ifstream pid_file;
-    pid_file.open("/var/run/world.pid");
-    //pid_file.open("/home/neel/Programming/cpp/PB173/bin/world.pid");
+    std::ifstream pid_file(filepath);
     if (pid_file) {
         std::cerr
             << "world.pid file does not exist. World process is not running."

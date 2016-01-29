@@ -10,10 +10,9 @@
 struct TankOptions {
     int mMapHeight;
     int mMapWidth;
-    bool mExit;
+    bool mExit = false;
 
 public:
-    TankOptions();
     void parse(int argc, char *argv[]);
     void print_help();
     void print_error();

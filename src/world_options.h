@@ -6,17 +6,15 @@
  */
 class WorldOptions
 {
-    bool daemonize;
+    bool daemonize = false;
     unsigned round_time;
-    unsigned mMapHeight;
-    unsigned mMapWidth;
+    unsigned map_height;
+    unsigned map_width;
     std::string fifo_path;
-    unsigned mGreenTanks;
-    unsigned mRedTanks;
+    unsigned green_tanks_count;
+    unsigned red_tanks_count;
 
 public:
-    WorldOptions();
-
     int parse_options(int argc, char* argv[]);
 
     int check_valid() const;
@@ -29,13 +27,13 @@ public:
 
     uint getRoundTime() const { return this->round_time; }
 
-    uint get_map_height() const { return this->mMapHeight; }
+    uint get_map_height() const { return this->map_height; }
 
-    uint get_map_width() const { return this->mMapWidth; }
+    uint get_map_width() const { return this->map_width; }
 
-    uint get_green_tanks() const { return this->mGreenTanks; }
+    uint get_green_tanks() const { return this->green_tanks_count; }
 
-    uint get_red_tanks() const { return this->mRedTanks; }
+    uint get_red_tanks() const { return this->red_tanks_count; }
 
     std::string get_fifo_path() const { return this->fifo_path; }
 };

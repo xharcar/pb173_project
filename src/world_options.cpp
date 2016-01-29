@@ -1,10 +1,5 @@
 #include "world_options.h"
 
-WorldOptions::WorldOptions()
-    /* Set default values here */
-    : daemonize(false)
-{}
-
 int WorldOptions::parse_options(int argc, char* argv[])
 {
     struct option longopts[] =
@@ -24,14 +19,14 @@ int WorldOptions::parse_options(int argc, char* argv[])
     {
         switch (c) {
         case 'a':
-            mMapWidth = atoi(argv[optind - 1]);
-            mMapHeight = atoi(argv[optind]);
+            map_width = atoi(argv[optind - 1]);
+            map_height = atoi(argv[optind]);
             break;
         case 'c':
-            mGreenTanks = atoi(optarg);
+            green_tanks_count = atoi(optarg);
             break;
         case 'v':
-            mRedTanks = atoi(optarg);
+            red_tanks_count = atoi(optarg);
             break;
         case 'd':
             daemonize = true;
@@ -55,7 +50,7 @@ int WorldOptions::parse_options(int argc, char* argv[])
 
 int WorldOptions::check_valid() const
 {
-    if (mMapHeight <= 0 || mMapWidth <= 0 || round_time <= 0) {
+    if (map_height <= 0 || map_width <= 0 || round_time <= 0) {
         std::cout << "Map height, width and round time options can not be below zero"
                   << std::endl;
         return EXIT_FAILURE;

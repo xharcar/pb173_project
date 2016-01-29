@@ -7,13 +7,8 @@ World::World(WorldOptions& opts)
     : height(opts.get_map_height()),
       width(opts.get_map_width()),
       zone(height, std::vector<Color>(width, Color::EMPTY)),
-      red_tanks(0),
-      green_tanks(0),
       map_fifo(opts.get_fifo_path()),
-      opts(opts),
-      red_kills(0),
-      green_kills(0),
-      rounds_played(0)
+      opts(opts)
 {
     tanks.reserve(opts.get_red_tanks() + opts.get_green_tanks());
 
@@ -277,11 +272,6 @@ void World::restart() {
 
 void World::close()
 {
-    /*
-    for(auto t=tanks.begin();t!=tanks.end();++t){
-        (*t)->quit();
-    }
-    */
     for (auto& box_t : tanks) {
         Tank& t = *box_t.get();
         t.quit();
@@ -292,11 +282,6 @@ void World::refresh_zone()
 {
     for (int i = 0; i < height; i++) {
         std::fill(zone[i].begin(), zone[i].end(), Color::EMPTY);
-        /*
-        for (int j = 0; j < width; i++) {
-            zone[i][j] = Color::EMPTY;
-        }
-        */
     }
     for (auto& box_t : tanks) {
         Tank& t = *box_t.get();
@@ -308,37 +293,53 @@ void World::refresh_zone()
     }
 }
 
-void World::set_world_signal_status(int sig, siginfo_t* info, void* context) {
+void World::set_world_signal_status(int sig, siginfo_t* info, void* context)
+{
+    // ficme: atomic store
     World::world_signal_status = sig;
 }
 
-bool World::handle_signals() {
-    bool ret = true;
-    //fixme: Should acces to world_signal)status be atomic?
+bool World::handle_signals()
+{
+    bool exit = false;
+    // fixme: atomic load
     switch (world_signal_status) {
-    case SIGUSR1:
-        /* restart game */
-        restart();
-        break;
     case SIGQUIT:
     case SIGINT:
     case SIGTERM:
         /* World will go out of scope */
         /* No need to call close explicitly */
-        // close();
+        exit = true;
         break;
+    case SIGUSR1:
+        /* restart game */
+        restart();
     default:
-        ret = false;
+        exit = false;
         break;
     }
-    return ret;
+    return exit;
+}
+
+void setup_signal_handling()
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    // sa.sa_sigaction  = World::set_world_signal_status;
+    sa.sa_sigaction = World::set_world_signal_status;
+    /* SA_SIGINFO flag must be set to use sa_sigaction handler */
+    sa.sa_flags = SA_SIGINFO;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGQUIT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
 }
 
 int main(int argc, char *argv[])
 {
-    //process_signal_handling();
-    //set_up_thread_hadler(World::set_world_signal_status);
-
+    setup_signal_handling();
     RunningInstance instance("world.pid");
     if (instance.acquire() <= 0) {
         return EXIT_FAILURE;

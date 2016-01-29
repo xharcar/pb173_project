@@ -11,16 +11,18 @@
 #include <string.h>
 #include <getopt.h>
 
-struct Options {
+struct ClientOptions {
     char* pipe;
 };
 
 enum Color {
-    RED = 1,
-    GREEN = 2,
+    //RED = 1,
+    //GREEN = 2,
+    RED = 'r',
+    GREEN = 'g',
 };
 
-void parse_args(int argc, char* argv[], Options& opts);
+void parse_args(int argc, char* argv[], ClientOptions& opts);
 
 void print_help(char* progname);
 
@@ -34,14 +36,15 @@ protected:
 public:
     WorldClient(char* pipe)
     {
-        get_world_pid();
+        get_world_pid("/var/run/world.pid");
+        //"/home/neel/Programming/cpp/PB173/bin/world.pid"
         open_pipe(pipe);
     }
 
     /**
      * @brief Read pid of the world process from the file /var/run/world.pid
      */
-    void get_world_pid();
+    void get_world_pid(std::string filepath);
 
     /**
      * @brief Opens pipe for trasfering map from world process

@@ -9,10 +9,10 @@
 #include <unordered_set>
 
 /**
- * @brief process_signal_handling uses sigaction function
- * to set up World::set_world_signal_status(int sig) as signal handler
+ * @brief setup_signal_handling sets up World::set_world_signal_status()
+ * as signal handler
  */
-void process_signal_handling();
+void setup_signal_handling();
 
 /**
  * @brief Represents an in-game basic world
@@ -25,16 +25,16 @@ private:
     int height;
     int width;
     std::vector< std::vector<Color> > zone; ///< Holds the state of a map >
-    unsigned red_tanks;
-    unsigned green_tanks;
+    unsigned red_tanks = 0;
+    unsigned green_tanks = 0;
 
     static volatile sig_atomic_t world_signal_status;
     std::ofstream map_fifo;
 
     WorldOptions opts;
-    unsigned red_kills;
-    unsigned green_kills;
-    unsigned rounds_played;
+    unsigned red_kills = 0;
+    unsigned green_kills = 0;
+    unsigned rounds_played = 0;
 
 
 public:
@@ -107,6 +107,13 @@ public:
      */
     void restart();
 
+    /**
+     * @brief set_world_signal_status handler to pass caught signal into a flag
+     * in an atomic way
+     * @param sig caught signal
+     */
+    static void set_world_signal_status(int sig, siginfo_t *info, void *uctx);
+
 private:
     /**
      * @brief Checks if given map coordinate is free
@@ -148,13 +155,6 @@ private:
      * @brief movetank moves tank if it hasn't been shot and have received a move order
      */
     void movetank(Tank&);
-
-    /**
-     * @brief set_world_signal_status handler to pass caught signal into a flag
-     * in an atomic way
-     * @param sig caught signal
-     */
-    static void set_world_signal_status(int sig, siginfo_t *info, void *uctx);
 
     /**
      * @brief handle_signal is used to check flag World::world_signal_status

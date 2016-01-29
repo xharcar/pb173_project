@@ -4,9 +4,6 @@
 volatile std::sig_atomic_t wasSigUsr2 = 0;
 volatile std::sig_atomic_t wasExitSig = 0;
 
-/* defaults for TankClient options */
-TankOptions::TankOptions() : mExit(false) {}
-
 void TankOptions::parse(int argc, char *argv[])
 {
     struct option longopts[] = {
