@@ -203,7 +203,7 @@ void NCursesClient::print_tanks()
         }
     }
     close(pipe_stream);
-    pipe_stream = open(mPipe, O_RDONLY);
+    pipe_stream = open(mPipe, O_RDONLY); //we need to reopen the pipe for block
 }
 
 void NCursesClient::keys()
