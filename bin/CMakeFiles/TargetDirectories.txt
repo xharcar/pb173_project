@@ -1,3 +1,0 @@
-/home/xharcar/pb173/pb173_project/bin/CMakeFiles/tank.dir
-/home/xharcar/pb173/pb173_project/bin/CMakeFiles/world.dir
-/home/xharcar/pb173/pb173_project/bin/CMakeFiles/worldclient.dir

@@ -2,12 +2,14 @@
 
 bool Tank::createServer()
 {
-    srand((int)this->tid);
 
-        myPort = ;
+        int myPortInt = 10000;
+        myPortInt += this->color == RED ? 100 : 0; // + 100 for RED tanks - not controlling already opened ports at this time
+        myPortInt += this->vector_order; // + order in vector of tanks in world
+        myPort = std::to_string(myPortInt);
 
         memset(&myhints, 0, sizeof(struct addrinfo));
-        myhints.ai_socktype = SOCK_DGRAM;
+        myhints.ai_socktype = SOCK_STREAM;
         myhints.ai_family = AF_INET;
         myhints.ai_flags = AI_PASSIVE;
 
@@ -20,28 +22,55 @@ bool Tank::createServer()
         }
 
         // Create listener socket
-        listener = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol);
+        listener = socket(myaddr->ai_family, myaddr->ai_socktype, myaddr->ai_protocol);
         if (listener == -1) {
-            printf("Cannot create new socket%s\n", port);
+            printf("Cannot create new socket%s\n", myPort.c_str());
             return false;
         }
 
+        fdMax = listener;
         FD_SET(listener, &master);
 
+        if (bind(listener, myaddr->ai_addr, myaddr->ai_addrlen) != 0) {
+                printf("Cannot bind socket to address\n");
+                return false;
+            }
 
-        if (listen(listener, 15) != 0) {
-            printf("Cannot listen on socket");
+
+        int numOfListenError;
+        numOfListenError = listen(listener, 15);
+
+        switch(errno)
+        {
+        case EADDRINUSE:
+            std::cerr << "Address is in use" << std::endl;
+            return false;
+        case EBADF:
+            std::cerr << "bad descriptor" << std::endl;
+            return false;
+        case ENOTSOCK:
+            std::cerr << "not a socket" << std::endl;
+            return false;
+        case EOPNOTSUPP:
+            std::cerr << "not a supported type" << std::endl;
             return false;
         }
+
+//        if (listen(listener, 15) != 0) {
+//            printf("Cannot listen on socket");
+//            return false;
+//        }
+
         freeaddrinfo(myaddr);
-        std::cout << "Tank TID " << this->tid << " listening on port " << myPort << std::endl;
+        std::cout << "TANK: " << (this->color == RED ? "RED_" : "GREEN_") << vector_order << " Spawned and listening on " << myPort << std::endl;
         fdMax = listener;
         return true;
 }
 
 void Tank::serverLoop()
 {
-    this->createServer();
+    if(!serverCreated)
+        serverCreated = this->createServer();
         // Run until the cows come home
         while (1) {
             // work with copy of master set
@@ -49,7 +78,7 @@ void Tank::serverLoop()
             // wait for data
             if (select(fdMax+1, &tmpSet, NULL, NULL, NULL) == -1) {
                 perror("select");
-                return 1;
+                return;
             }
             // run through the existing connections looking for data to read
             int i;
@@ -65,7 +94,7 @@ void Tank::serverLoop()
                             newSock = accept(listener, (struct sockaddr*) &sockaddr, &sockaddrLength);
                             if (newSock == -1) {
                                 printf("Cannot accept connection\n");
-                                return 1;
+                                return;
                             }
                             // add to master set
                             FD_SET(newSock, &master);
@@ -101,7 +130,8 @@ void Tank::serverLoop()
                                         if (send(i, buf, readBytes, 0) == -1) {
                                             perror("send");
                                         }
-                                        this->action = std::string(buf);
+                                        this->command = std::string(buf);
+                                        std::cout << "we got command! " << buf << std::endl;
                                     }
                                 }
                             }
@@ -138,7 +168,7 @@ void Tank::getAddress(sockaddr *ai_addr, char **address)
 }
 
 Tank::Tank(int x, int y, Color color, int order)
-    : x(x), y(y), color(color), state(TankState::alive), vector_order(order), command("no")
+    : x(x), y(y), color(color), state(TankState::alive), vector_order(order), command("no"), serverCreated(false)
 {
     //std::cout << "Spawning " << this << std::endl;
     this->serverThread = new std::thread(&Tank::serverLoop, this);
@@ -207,4 +237,3 @@ void Tank::revive(){
 //    //std::cout << "DEBUG: " << command[0] << command[1] << std::endl;
 //}
 
-/

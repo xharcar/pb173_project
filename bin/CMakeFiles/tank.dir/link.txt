@@ -1,1 +1,0 @@
-/packages/run.64/gcc-4.8.2/bin/c++    -std=c++11 -pedantic -Wall -Wextra -ggdb3    -pthread -lncurses CMakeFiles/tank.dir/src/tankclient.cpp.o  -o tank -rdynamic 

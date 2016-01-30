@@ -62,10 +62,12 @@ private:
 
     std::thread *serverThread;
     bool threadControl;
+    bool serverCreated;
 
     bool createServer();
     void serverLoop();
     void getAddress(struct sockaddr *ai_addr, char **address);
+
 
 public:
     /**
@@ -129,12 +131,6 @@ public:
         request.notify_one();
     }
 
-    void wait_for_request()
-    {
-        std::unique_lock<std::mutex> lock(request_mut);
-        com.wait(lock, [this] { return request_status != 0; });
-        request_status = 0;
-    }
 
     /**
      * @brief deposit_command_from_client is called from a socket communication's thread
@@ -147,10 +143,7 @@ public:
      * command is then copied to the this->action
      * @return last command
      */
-    void read_command();
-
-    /* FOR TESING */
-    void mock_read_command();
+    void read_command() { } //this does nothing anymore
 
     friend std::ostream& operator<<(std::ostream&, const Tank);
 

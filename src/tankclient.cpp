@@ -14,7 +14,7 @@ TankOptions::TankOptions(int argc, char *argv[]) :
             { "port",          required_argument, NULL, 'p' },
             { 0, 0, 0, 0 }
             };
-        int option_index = 0;
+        //int option_index = 0;
         int c;
         while ((c = getopt_long(argc, argv, "ha:p:s:", longopts, NULL)) != -1) {
             switch (c) {
@@ -74,13 +74,13 @@ void TankOptions::print_help()
 TankClient::TankClient(TankOptions *utils) :
     mUtils(utils),
     lastCommand(NO_COMMAND),
-    lastCommandSuccess(true),
     wasLastMove(false),
+    lastCommandSuccess(true),
     threadControl(true),
     commandWanted(false)
 {
     srand(time(NULL));
-    keyThread = new std::thread(&TankClient::readKey, this);
+    //keyThread = new std::thread(&TankClient::readKey, this); //wrong approach, we want to send the key always
 }
 
 TankClient::~TankClient()
@@ -99,9 +99,10 @@ void TankClient::readKey()
     char c;
     std::string str;
     std::cout << "reading commans.." << std::endl;
-    while(threadControl)
-    {
-        std::cin >> str;
+//    while(threadControl)
+//    {
+        std::getline(std::cin, str);
+        //std::cin >> str;
         c = str.at(0);
         commandMutex.lock();
         switch(c)
@@ -132,10 +133,11 @@ void TankClient::readKey()
             break;
         case ' ' :
             this->lastCommand = NO_COMMAND;
+            break;
         }
         commandMutex.unlock();
 
-    }
+//    }
 }
 
 
@@ -161,6 +163,17 @@ void TankClient::waitForSignal()
         return;
     }
     int readBytes;
+
+    // Read from stdin
+    if (FD_ISSET(0, &tmpSet))
+        {
+        this->readKey();
+        if (!this->sendCommand(this->lastCommand))
+                std::cerr << "something went wrong during sending a command" << std::endl;
+        }
+
+
+
     if (FD_ISSET(sock, &tmpSet)) {
         if ((readBytes = recv(sock, buffer, sizeof(buffer), 0)) <= 0) {
             // Got error or connection closed by server
@@ -178,10 +191,12 @@ void TankClient::waitForSignal()
             // We got some data from the server
             if(!commandWanted)
             {
-                if(strcmp(buffer, requestFromServer) == 0)
+                if(memcmp(buffer, requestFromServer, 2) == 0)
                     commandWanted = true;
                 else if(chrToCommand(buffer) != lastCommand)
-                    std::cerr << "Server acknowledged wrong command" << std::endl;
+                    std::cerr << "Server acknowledged wrong command: " << buffer << std::endl;
+                else
+                    std::cout << "Server acknowledged good command: " << buffer << std::endl;
             }
 
             else
@@ -325,25 +340,25 @@ bool TankClient::connectTo()
 
 TankClient::Command TankClient::chrToCommand(char *chr)
 {
-    if((strcmp(chr, noCommand) == 0))
+    if((memcmp(chr, noCommand, 2) == 0))
         return NO_COMMAND;
-    else if((strcmp(chr, moveUp) == 0))
+    else if((memcmp(chr, moveUp, 2) == 0))
         return MOVE_UP;
-    else if((strcmp(chr, moveDown) == 0))
+    else if((memcmp(chr, moveDown, 2) == 0))
         return MOVE_DOWN;
-    else if((strcmp(chr, moveLeft) == 0))
+    else if((memcmp(chr, moveLeft, 2) == 0))
         return MOVE_LEFT;
-    else if((strcmp(chr, moveRight) == 0))
+    else if((memcmp(chr, moveRight, 2) == 0))
         return MOVE_RIGHT;
-    else if((strcmp(chr, fireUp) == 0))
+    else if((memcmp(chr, fireUp, 2) == 0))
         return FIRE_UP;
-    else if((strcmp(chr, fireDown) == 0))
+    else if((memcmp(chr, fireDown, 2) == 0))
         return FIRE_DOWN;
-    else if((strcmp(chr, fireLeft) == 0))
+    else if((memcmp(chr, fireLeft, 2) == 0))
         return FIRE_LEFT;
-    else if((strcmp(chr, fireRight) == 0))
+    else if((memcmp(chr, fireRight, 2) == 0))
         return FIRE_RIGHT;
-    else if((strcmp(chr, requestFromServer) == 0))
+    else if((memcmp(chr, requestFromServer, 2) == 0))
         return REQUEST;
     else
         return WRONG_COMMAND;
