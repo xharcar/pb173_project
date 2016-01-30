@@ -37,29 +37,23 @@ bool Tank::createServer()
             }
 
 
-        int numOfListenError;
-        numOfListenError = listen(listener, 15);
-
-        switch(errno)
-        {
-        case EADDRINUSE:
-            std::cerr << "Address is in use" << std::endl;
-            return false;
-        case EBADF:
-            std::cerr << "bad descriptor" << std::endl;
-            return false;
-        case ENOTSOCK:
-            std::cerr << "not a socket" << std::endl;
-            return false;
-        case EOPNOTSUPP:
-            std::cerr << "not a supported type" << std::endl;
-            return false;
+        if (listen(listener, 15) != 0) {
+           printf("Cannot listen on socket");
+	   switch(errno){
+        	case EADDRINUSE:
+            		std::cerr << "Address is in use" << std::endl;
+            		return false;
+       	 	case EBADF:
+            		std::cerr << "bad descriptor" << std::endl;
+            		return false;
+        	case ENOTSOCK:
+            		std::cerr << "not a socket" << std::endl;
+            		return false;
+        	case EOPNOTSUPP:
+            		std::cerr << "not a supported type" << std::endl;
+		        return false;
+        	}
         }
-
-//        if (listen(listener, 15) != 0) {
-//            printf("Cannot listen on socket");
-//            return false;
-//        }
 
         freeaddrinfo(myaddr);
         std::cout << "TANK: " << (this->color == RED ? "RED_" : "GREEN_") << vector_order << " Spawned and listening on " << myPort << std::endl;

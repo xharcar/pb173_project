@@ -4,6 +4,7 @@ int main(int argc, char* argv[])
 {
     ClientOptions opts;
     parse_args(argc, argv, opts);
+    std::cout << "Pipe filename = " << opts.pipe << std::endl;
     NCursesClient nc_client(opts.pipe);
     /* Refreshing map, react on key presses */
     /* Does not end if EOF is reached */
@@ -52,18 +53,18 @@ void print_help(char* progname)
 
 void WorldClient::get_world_pid(std::string filepath)
 {
-    std::ifstream pid_file(filepath);
-    if (pid_file) {
+    std::ifstream pid_file(filepath,std::ifstream::in);
+
+    if (pid_file.fail()) {
         std::cerr
             << "world.pid file does not exist. World process is not running."
             << std::endl;
         exit(-1);
     }
     else if (pid_file >> world_pid) {
-        /* Successfully read the number  */
+	std::cout << "Reading PID OK. World PID = " << world_pid << std::endl;
     }
     else {
-        /* Failed to read the number */
         std::cerr << "Failed to read the pid from the world.pid file."
                   << std::endl;
         exit(-1);
@@ -72,48 +73,53 @@ void WorldClient::get_world_pid(std::string filepath)
 
 void WorldClient::open_pipe(char* pipe)
 {
-    int fd;
-    if ((fd = open(pipe, O_RDONLY)) < 0) {
+    FILE* fd;
+    if ((fd = fopen(pipe,"r")) == NULL) {
         std::cerr
             << strerror(errno)
             << "Can not open the pipe for streaming data from world process."
             << std::endl;
         exit(-1);
     }
-    this->pipe_stream = fdopen(fd, "r");
-    if (!this->pipe_stream) {
-        std::cerr
-            << strerror(errno)
-            << "Can not open the pipe for streaming data from world process."
-            << std::endl;
-        exit(-1);
-    }
+    pipe_stream = fd;
+    std::cout << "Pipe successfully opened" << std::endl;
 }
 
 NCursesClient::NCursesClient(char* pipe) : WorldClient(pipe)
 {
+    std::cout << "NC client ctor" << std::endl;
     initscr();
     start_color();
+    std::cout << "initscr and start_color OK" << std::endl;
+
     /* Create color associations in ncurses */
     init_pair(Color::RED, COLOR_RED, COLOR_RED);
     init_pair(Color::GREEN, COLOR_GREEN, COLOR_GREEN);
+    std::cout << "color pairs initialized" << std::endl;
+
     /* Hide the cursor in ncurses */
     curs_set(0);
+    std::cout << "cursor hiding set" << std::endl;
+
     /* Disables line buffering */
     cbreak();
     noecho();
-    nodelay(nc_world, TRUE);
+    std::cout << "cbreak,noecho OK" << std::endl;
 
-    /* Add padding for borders */
     nc_world = newwin(height + 2, width + 2, 0, 0);
+    nodelay(nc_world, TRUE);
+    std::cout << "window created, nodelay set" << std::endl;
+
     // nc_stats = newwin(10, 20, 1, width + 2 + 3);
     box(nc_world, 0, 0);
     wrefresh(nc_world);
     keys();
+    std::cout << "NC client ctor done" << std::endl;
 }
 
 void WorldClient::parse_dimensions()
 {
+    std::cerr << "Parsing dimensions" << std::endl;
     clearerr(this->pipe_stream);
     int dimensions = fscanf(pipe_stream, "%d, %d", &width, &height);
     if (dimensions == EOF && ferror(pipe_stream)) {
@@ -122,7 +128,7 @@ void WorldClient::parse_dimensions()
                   << std::endl;
     }
     else if (dimensions != 2) {
-        std::cerr << "Error: Worng format of the data in the pipe."
+        std::cerr << "Error: Wrong format of the data in the pipe."
                   << std::endl;
         exit(-1);
     }

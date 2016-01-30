@@ -3,11 +3,11 @@
 
 volatile std::atomic<int> World::world_signal_status;
 
-World::World(WorldOptions& opts)
+World::World(WorldOptions& opts, int pd)
     : height(opts.get_map_height()),
       width(opts.get_map_width()),
       zone(height, std::vector<Color>(width, Color::EMPTY)),
-      map_fifo(opts.get_fifo_path()),
+      map_fifo(pd),
       opts(opts)
 {
     tanks.reserve(opts.get_red_tanks() + opts.get_green_tanks());
@@ -244,12 +244,18 @@ void World::respawn_tanks()
 
 void World::output_map()
 {
-    map_fifo << width << ',' << height;
+    std::stringstream ss;
+    ss << width << ',' << height;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            map_fifo << ',' << zone[i][j];
+            ss << ',' << zone[i][j];
         }
     }
+    std::string outstr = ss.str();
+    if(write(map_fifo,outstr.c_str(),outstr.size()+1) < 0){
+	std::cerr << "Failed output to FIFO: " << strerror(errno) << std::endl;	
+    }
+
 }
 
 void World::restart() {
@@ -283,9 +289,9 @@ void World::refresh_zone()
 
 void World::set_world_signal_status(int sig, siginfo_t* info, void* arg)
 {
+   World::world_signal_status.store(sig,std::memory_order_seq_cst);
    info = info;
    arg = arg;
-   World::world_signal_status.store(sig,std::memory_order_seq_cst);
 }
 
 
@@ -328,26 +334,33 @@ void setup_signal_handling()
 int main(int argc, char *argv[])
 {
     setup_signal_handling();
-    RunningInstance instance("world.pid");
+    RunningInstance instance("./world.pid");
     if (instance.acquire() <= 0) {
         return EXIT_FAILURE;
+    }
+    if (instance.write_pid() < 0){
+	std::cout << "Writing PID to PID file failed. Exiting." << std::endl;
+	return EXIT_FAILURE;
     }
 
     WorldOptions opts;
     if (opts.parse_options(argc, argv)) {
+	std::cerr << "World options parse failed" <<std::endl;
         return EXIT_FAILURE;
     }
     if (opts.check_valid()) {
+	std::cerr << "World options invalid" << std::endl;
         return EXIT_FAILURE;
     }
-
+    int pd;
     NamedFifo map_fifo(opts.get_fifo_path());
-    if (map_fifo.open() != 0) {
+    if ((pd = map_fifo.open_nf()) < 0) {
         std::cout << "Failed to open " << opts.get_fifo_path() << ": "
                   << strerror(errno) << std::endl;
         return EXIT_FAILURE;
     }
-    World w(opts);
+    World w(opts,pd);
+
     w.init_tanks();
     w.play_round();
 

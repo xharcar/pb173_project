@@ -36,8 +36,7 @@ protected:
 public:
     WorldClient(char* pipe)
     {
-        get_world_pid("/var/run/world.pid");
-        //"/home/neel/Programming/cpp/PB173/bin/world.pid"
+        get_world_pid("./world.pid");
         open_pipe(pipe);
     }
 

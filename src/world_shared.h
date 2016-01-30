@@ -13,7 +13,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
-
+#include <sstream>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/inotify.h>
@@ -60,25 +60,28 @@ private:
 
 class NamedFifo {
     std::string filepath;
-    int sucess;
+    int success;
 
 public:
     NamedFifo(std::string filepath) : filepath(filepath) {}
 
     ~NamedFifo() {
-        if (sucess == 0) {
             std::remove(filepath.c_str());
-        }
     }
 
     /**
      * @brief open
      * @return success
      */
-    int open() {
-        sucess = mkfifo(filepath.c_str(), 0444);
-        return sucess;
-    }
+    int open_nf() {
+        if((success = mkfifo(filepath.c_str(), 0777)) < 0){
+		return success;
+    	}
+	int s = S_IRWXU|S_IRWXG|S_IRWXO;
+	success = open(filepath.c_str(),O_WRONLY,s);
+        return success;
+    }	
+
 };
 
 /**
@@ -120,6 +123,18 @@ public:
             }
         }
         return pid_fd;
+    }
+
+    ssize_t write_pid(){
+	int pid = (int) getpid();
+	std::cout << "Writing PID : " << pid << " to file." << std::endl;
+	std::string pidstr = std::to_string(pid);
+	std::cout << "Written string: " << pidstr << std::endl;
+	ssize_t rv =  write(pid_fd,pidstr.c_str(),pidstr.size()+1);
+	if(rv >= 0){
+		std::cout << "Write successful. " << rv << " bytes written." << std::endl;
+	}
+	return rv;
     }
 
 private:

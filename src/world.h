@@ -5,7 +5,6 @@
 #include "world_options.h"
 
 #include <fstream>
-#include <boost/range/join.hpp>
 #include <unordered_set>
 
 /**
@@ -29,7 +28,7 @@ private:
 
     static volatile std::atomic<int> world_signal_status;
 	// sig_atomic_t may default to int, useful ops implementation-dependent;
-    std::ofstream map_fifo;
+    int map_fifo;
 
     WorldOptions opts;
     unsigned red_kills = 0;
@@ -41,11 +40,10 @@ public:
     /**
      * @brief World constructor, also gets a pseudorandom seed
      *  and sets the whole world to empty (no tanks on battlefield)
-     * @param height height of the world (Y-axis)
-     * @param width width of the world (X-axis)
-     * @param pipe pipe to write events to
+     * @param opts WorldOptions instance used to create world
+     * @param pd pipe descriptor
      */
-    World(WorldOptions& opts);
+    World(WorldOptions& opts,int pd);
 
     ~World() { close(); }
 
