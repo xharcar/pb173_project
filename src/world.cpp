@@ -245,7 +245,7 @@ void World::respawn_tanks()
 void World::output_map()
 {
     std::stringstream ss;
-    ss << width << ',' << height << "";
+    ss << width << ',' << height << ",";
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             ss << '(' << zone[i][j] << "),";
