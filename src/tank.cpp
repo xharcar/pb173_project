@@ -4,7 +4,6 @@ bool Tank::createServer()
 {
 
         int myPortInt = 10000;
-        myPortInt += this->color == RED ? 100 : 0; // + 100 for RED tanks - not controlling already opened ports at this time
         myPortInt += this->vector_order; // + order in vector of tanks in world
         myPort = std::to_string(myPortInt);
 

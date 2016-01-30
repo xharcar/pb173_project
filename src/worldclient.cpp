@@ -62,7 +62,7 @@ void WorldClient::get_world_pid(std::string filepath)
         exit(-1);
     }
     else if (pid_file >> world_pid) {
-	std::cout << "Reading PID OK. World PID = " << world_pid << std::endl;
+    std::cout << "Reading PID OK. World PID = " << world_pid << std::endl;
     }
     else {
         std::cerr << "Failed to read the pid from the world.pid file."
@@ -73,8 +73,8 @@ void WorldClient::get_world_pid(std::string filepath)
 
 void WorldClient::open_pipe(char* pipe)
 {
-    FILE* fd;
-    if ((fd = fopen(pipe,"r")) == NULL) {
+    int fd;
+    if ((fd = open(pipe, O_RDONLY)) == NULL) {
         std::cerr
             << strerror(errno)
             << "Can not open the pipe for streaming data from world process."
@@ -120,18 +120,43 @@ NCursesClient::NCursesClient(char* pipe) : WorldClient(pipe)
 void WorldClient::parse_dimensions()
 {
     std::cerr << "Parsing dimensions" << std::endl;
-    clearerr(this->pipe_stream);
-    int dimensions = fscanf(pipe_stream, "%d, %d", &width, &height);
-    if (dimensions == EOF && ferror(pipe_stream)) {
-        std::cerr << strerror(errno)
-                  << "Error occured while parsing the pipe stream."
-                  << std::endl;
+
+    width = 0;
+    height = 0;
+    char sizeChar = ' ';
+    //naive implementation
+    while(1)
+    {
+        read(pipe_stream, &sizeChar, 1);
+        if(sizeChar == ',')
+            break;
+        width *= 10;
+        width += (sizeChar - '0');
     }
-    else if (dimensions != 2) {
-        std::cerr << "Error: Wrong format of the data in the pipe."
-                  << std::endl;
-        exit(-1);
+
+    while(1)
+    {
+        read(pipe_stream, &sizeChar, 1);
+        if(sizeChar == ',')
+            break;
+        height *= 10;
+        height += (sizeChar - '0');
     }
+    //clearerr(this->pipe_stream);
+//    int dimensions = fscanf(pipe_stream, "%d,%d", &width, &height);
+//    std::cout << width << "x" << height << ",";
+//    if (dimensions == EOF && ferror(pipe_stream)) {
+//        std::cerr << strerror(errno)
+//                  << "Error occured while parsing the pipe stream."
+//                  << std::endl;
+//    }
+//    else if (dimensions != 2) {
+//        std::cerr << "Error: Wrong format of the data in the pipe." << dimensions
+//                  << std::endl;
+//        width = 0;
+//        height = 0;
+//        //exit(-1);
+//    }
 }
 
 void NCursesClient::print_tanks()
@@ -139,13 +164,19 @@ void NCursesClient::print_tanks()
     char sector;
     int x = 0, y = 0;
     parse_dimensions();
-    while (true) {
-        if (fscanf(pipe_stream, ",%c", &sector) == EOF) {
-            std::cerr << strerror(errno)
-                      << "Error occured while parsing the pipe stream."
-                      << std::endl;
-            break;
-        }
+    char buffer[4];
+
+    while (x < width && y < height) {
+//        if (fscanf(pipe_stream, ",%c", &sector) == EOF) {
+//            std::cerr << strerror(errno)
+//                      << "Error occured while parsing the pipe stream."
+//                      << std::endl;
+//            break;
+//        }
+
+        read(pipe_stream, buffer, 4);
+        sector = buffer[1];
+        std::cout << "[" << x << "," << y << "]_" << sector << " ";
         switch (sector) {
         case 'r':
             draw_tank(x, y, Color::RED);
@@ -157,8 +188,8 @@ void NCursesClient::print_tanks()
             undraw_tank(x, y);
             break;
         default:
-            std::cerr << "Wrong map format in the pipe" << std::endl;
-            assert(false);
+            std::cerr << "Wrong map format in the pipe, char:" << sector << std::endl;
+            //assert(false);
         }
         x++;
         if (x >= this->width) {
@@ -168,9 +199,11 @@ void NCursesClient::print_tanks()
         if (y >= this->height) {
             wrefresh(nc_world);
             keys();
-            parse_dimensions();
+            //parse_dimensions();
         }
     }
+    close(pipe_stream);
+    pipe_stream = open(mPipe, O_RDONLY);
 }
 
 void NCursesClient::keys()

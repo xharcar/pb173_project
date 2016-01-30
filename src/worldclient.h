@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <getopt.h>
+#include <unistd.h>
 
 struct ClientOptions {
     char* pipe;
@@ -29,13 +30,15 @@ void print_help(char* progname);
 class WorldClient {
 protected:
     pid_t world_pid;
-    FILE* pipe_stream;
+    char* mPipe;
+    int pipe_stream;
     int height;
     int width;
 
 public:
     WorldClient(char* pipe)
     {
+        mPipe = pipe;
         get_world_pid("./world.pid");
         open_pipe(pipe);
     }
