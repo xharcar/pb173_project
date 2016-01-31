@@ -88,15 +88,19 @@ void WorldClient::open_pipe(char* pipe)
 NCursesClient::NCursesClient(char* pipe) : WorldClient(pipe)
 {
 //    std::cout << "NC client ctor" << std::endl;
-//    initscr();
-//    start_color();
+    initscr();
+    start_color();
 //    std::cout << "initscr and start_color OK" << std::endl;
 
-//    /* Create color associations in ncurses */
-//    init_pair(Color::RED, COLOR_RED, COLOR_RED);
-//    init_pair(Color::GREEN, COLOR_GREEN, COLOR_GREEN);
+    /* Create color associations in ncurses */
+    init_pair(1, COLOR_RED, COLOR_RED);
+    init_pair(2, COLOR_GREEN, COLOR_GREEN);
+    init_pair(3, COLOR_WHITE, COLOR_YELLOW);
+
 //    std::cout << "color pairs initialized" << std::endl;
 
+    curs_set(FALSE);
+    noecho();
 //    /* Hide the cursor in ncurses */
 //    curs_set(0);
 //    std::cout << "cursor hiding set" << std::endl;
@@ -167,6 +171,7 @@ void NCursesClient::print_tanks()
     parse_dimensions();
     char buffer[4];
 
+    clear();
     while (y < height) {
 //        if (fscanf(pipe_stream, ",%c", &sector) == EOF) {
 //            std::cerr << strerror(errno)
@@ -177,9 +182,8 @@ void NCursesClient::print_tanks()
 
         read(pipe_stream, buffer, 4);
         sector = buffer[1];
-        //std::cout << "[" << x << "," << y << "]_" << sector << " ";
 
-        std::cout << (sector == '0' ? ' ' : sector) << ' ';
+        //std::cout << (sector == '0' ? ' ' : sector) << ' ';
         switch (sector) {
         case 'r':
             draw_tank(x, y, Color::RED);
@@ -196,12 +200,21 @@ void NCursesClient::print_tanks()
         }
         x++;
         if (x >= this->width) {
+            attrset(COLOR_PAIR(3));
+            mvprintw(y, x*2, "|");
             x = 0;
             y++;
+            if(y==height)
+                for(x = 0;x<=width;++x)
+                {
+                    attrset(COLOR_PAIR(3));
+                    mvprintw(y, x*2, "--");
+                }
             std::cout << std::endl;
         }
 
     }
+    refresh();
     //wrefresh(nc_world);
     //keys();
     close(pipe_stream);
@@ -226,6 +239,9 @@ void NCursesClient::keys()
 
 void NCursesClient::draw_tank(int x, int y, Color color)
 {
+
+    attrset(COLOR_PAIR((color == RED ? 1 : 2)));
+    mvprintw(y, x*2, "  ");
 //    wattrset(nc_world, COLOR_PAIR(color));
 //    /* Compensate for border padding */
 //    mvwaddch(nc_world, y + 1, x + 1, ACS_BLOCK);

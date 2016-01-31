@@ -160,8 +160,8 @@ void World::movetank(Tank *t)
 
 bool World::out_of_bounds(Coord pos)
 {
-    return (pos.first < 0 || pos.first > width || pos.second < 0 ||
-            pos.second > height);
+    return (pos.first < 0 || pos.first >= width || pos.second < 0 ||
+            pos.second >= height);
 }
 
 void World::take_actions()
