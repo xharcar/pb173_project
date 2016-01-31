@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <iostream>
 #include <cstring>
-
+#include <sstream>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -145,13 +145,15 @@ public:
      */
     void read_command() { } //this does nothing anymore
 
-    friend std::ostream& operator<<(std::ostream&, const Tank);
+    //friend std::ostream& operator<<(std::ostream&, const Tank);
 
     /**
      * @brief print_crashed prints collided tank's infos
      * @param t tank that has been crashed into
      */
     void print_crashed(Tank *t) const;
+
+    std::string to_str() const;
 
     /**
      * @brief print_destroy print tank's info after destruction and attackers info
