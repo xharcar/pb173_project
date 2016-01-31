@@ -116,10 +116,10 @@ void World::movetank(Tank *t)
 
         switch (t->get_command()[1]) {
         case 'u':
-            y_shift++;
+            y_shift--;
             break;
         case 'd':
-            y_shift--;
+            y_shift++;
             break;
         case 'l':
             x_shift--;
@@ -146,9 +146,9 @@ void World::movetank(Tank *t)
         } else if (out_of_bounds(new_pos)) {
             t->get_crashed();
             t->print_out_of_map();
+            new_pos = Coord(t->get_x(), t->get_y());
         } else {
             /* Set new cooradinates for tank */
-	    new_pos = Coord(t->get_x()-x_shift, t->get_y()-y_shift);
             t->set_new_position(new_pos);
         }
     }
@@ -249,7 +249,7 @@ void World::output_map()
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             ss << '(';
-            switch(zone[i][j])
+            switch(zone[j][i])
             {
             case EMPTY:
                 ss << '0';
@@ -293,10 +293,7 @@ void World::refresh_zone()
         std::fill(zone[i].begin(), zone[i].end(), Color::EMPTY);
     }
     for (uint i=0;i<tanks.size();i++) {
-        zone[tanks[i]->get_x()][tanks[i]->get_y()] = Color::RED;
-    }
-    for (uint i=0;i<tanks.size();i++) {
-        zone[tanks[i]->get_x()][tanks[i]->get_y()] = Color::GREEN;
+        zone[tanks[i]->get_x()][tanks[i]->get_y()] = tanks[i]->get_color();
     }
 }
 

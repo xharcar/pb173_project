@@ -68,9 +68,9 @@ public:
 
     ~NCursesClient()
     {
-        delwin(nc_world);
-        // delwin(nc_stats);
-        endwin();
+//        delwin(nc_world);
+//        // delwin(nc_stats);
+//        endwin();
     }
 
     /**

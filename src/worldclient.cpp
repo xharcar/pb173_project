@@ -87,39 +87,39 @@ void WorldClient::open_pipe(char* pipe)
 
 NCursesClient::NCursesClient(char* pipe) : WorldClient(pipe)
 {
-    std::cout << "NC client ctor" << std::endl;
-    initscr();
-    start_color();
-    std::cout << "initscr and start_color OK" << std::endl;
+//    std::cout << "NC client ctor" << std::endl;
+//    initscr();
+//    start_color();
+//    std::cout << "initscr and start_color OK" << std::endl;
 
-    /* Create color associations in ncurses */
-    init_pair(Color::RED, COLOR_RED, COLOR_RED);
-    init_pair(Color::GREEN, COLOR_GREEN, COLOR_GREEN);
-    std::cout << "color pairs initialized" << std::endl;
+//    /* Create color associations in ncurses */
+//    init_pair(Color::RED, COLOR_RED, COLOR_RED);
+//    init_pair(Color::GREEN, COLOR_GREEN, COLOR_GREEN);
+//    std::cout << "color pairs initialized" << std::endl;
 
-    /* Hide the cursor in ncurses */
-    curs_set(0);
-    std::cout << "cursor hiding set" << std::endl;
+//    /* Hide the cursor in ncurses */
+//    curs_set(0);
+//    std::cout << "cursor hiding set" << std::endl;
 
-    /* Disables line buffering */
-    cbreak();
-    noecho();
-    std::cout << "cbreak,noecho OK" << std::endl;
+//    /* Disables line buffering */
+//    cbreak();
+//    noecho();
+//    std::cout << "cbreak,noecho OK" << std::endl;
 
-    nc_world = newwin(height + 2, width + 2, 0, 0);
-    nodelay(nc_world, TRUE);
-    std::cout << "window created, nodelay set" << std::endl;
+//    nc_world = newwin(height + 2, width + 2, 0, 0);
+//    nodelay(nc_world, TRUE);
+//    std::cout << "window created, nodelay set" << std::endl;
 
-    // nc_stats = newwin(10, 20, 1, width + 2 + 3);
-    box(nc_world, 0, 0);
-    wrefresh(nc_world);
-    keys();
-    std::cout << "NC client ctor done" << std::endl;
+//    // nc_stats = newwin(10, 20, 1, width + 2 + 3);
+//    box(nc_world, 0, 0);
+//    wrefresh(nc_world);
+//    keys();
+//    std::cout << "NC client ctor done" << std::endl;
 }
 
 void WorldClient::parse_dimensions()
 {
-    std::cerr << "Parsing dimensions" << std::endl;
+    //std::cerr << "Parsing dimensions" << std::endl;
 
     width = 0;
     height = 0;
@@ -142,6 +142,7 @@ void WorldClient::parse_dimensions()
         height *= 10;
         height += (sizeChar - '0');
     }
+    //std::cout << std::endl << "DIM:" << width << "x" << height;
     //clearerr(this->pipe_stream);
 //    int dimensions = fscanf(pipe_stream, "%d,%d", &width, &height);
 //    std::cout << width << "x" << height << ",";
@@ -166,7 +167,7 @@ void NCursesClient::print_tanks()
     parse_dimensions();
     char buffer[4];
 
-    while (x < width && y < height) {
+    while (y < height) {
 //        if (fscanf(pipe_stream, ",%c", &sector) == EOF) {
 //            std::cerr << strerror(errno)
 //                      << "Error occured while parsing the pipe stream."
@@ -176,7 +177,9 @@ void NCursesClient::print_tanks()
 
         read(pipe_stream, buffer, 4);
         sector = buffer[1];
-        std::cout << "[" << x << "," << y << "]_" << sector << " ";
+        //std::cout << "[" << x << "," << y << "]_" << sector << " ";
+
+        std::cout << (sector == '0' ? ' ' : sector) << ' ';
         switch (sector) {
         case 'r':
             draw_tank(x, y, Color::RED);
@@ -195,49 +198,48 @@ void NCursesClient::print_tanks()
         if (x >= this->width) {
             x = 0;
             y++;
+            std::cout << std::endl;
         }
-        if (y >= this->height) {
-            wrefresh(nc_world);
-            keys();
-            //parse_dimensions();
-        }
+
     }
+    //wrefresh(nc_world);
+    //keys();
     close(pipe_stream);
     pipe_stream = open(mPipe, O_RDONLY); //we need to reopen the pipe for block
 }
 
 void NCursesClient::keys()
 {
-    char c = (char)getch();
-    switch (c) {
-    case 'x':
-        kill(world_pid, SIGINT);
-        break;
-    case 'r':
-        kill(world_pid, SIGUSR1);
-        break;
-    case 'q':
-        exit(0);
-        break;
-    }
+//    char c = (char)getch();
+//    switch (c) {
+//    case 'x':
+//        kill(world_pid, SIGINT);
+//        break;
+//    case 'r':
+//        kill(world_pid, SIGUSR1);
+//        break;
+//    case 'q':
+//        exit(0);
+//        break;
+//    }
 }
 
 void NCursesClient::draw_tank(int x, int y, Color color)
 {
-    wattrset(nc_world, COLOR_PAIR(color));
-    /* Compensate for border padding */
-    mvwaddch(nc_world, y + 1, x + 1, ACS_BLOCK);
-    /* type cast enum class color */
-    wattroff(nc_world, COLOR_PAIR(color));
-    wrefresh(nc_world);
+//    wattrset(nc_world, COLOR_PAIR(color));
+//    /* Compensate for border padding */
+//    mvwaddch(nc_world, y + 1, x + 1, ACS_BLOCK);
+//    /* type cast enum class color */
+//    wattroff(nc_world, COLOR_PAIR(color));
+//    wrefresh(nc_world);
 }
 
 void NCursesClient::undraw_tank(int x, int y)
 {
-    /* COLOR_PAIR(0) sets the default color */
-    wattrset(nc_world, COLOR_PAIR(0));
-    /* Compensate for border padding */
-    mvwaddch(nc_world, y + 1, x + 1, ' ');
-    wattroff(nc_world, COLOR_PAIR(0));
-    wrefresh(nc_world);
+//    /* COLOR_PAIR(0) sets the default color */
+//    wattrset(nc_world, COLOR_PAIR(0));
+//    /* Compensate for border padding */
+//    mvwaddch(nc_world, y + 1, x + 1, ' ');
+//    wattroff(nc_world, COLOR_PAIR(0));
+//    wrefresh(nc_world);
 }

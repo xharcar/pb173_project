@@ -108,7 +108,7 @@ public:
  
     void revive();
 
-    void set_new_position(Coord new_position) { this->new_position = new_position; }
+    void set_new_position(Coord new_position) { this->new_position = new_position; x = this->new_position.first; y = this->new_position.second;}
 
     /**
      * @brief move tank to new_coordinates and print it out
@@ -140,7 +140,7 @@ public:
 
     /**
      * @brief Tank::read_command is called from a main thread to obtain a command
-     * command is then copied to the this->action
+     * command is then copied to the this->command
      * @return last command
      */
     void read_command() { } //this does nothing anymore

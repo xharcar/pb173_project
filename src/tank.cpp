@@ -124,7 +124,7 @@ void Tank::serverLoop()
                                             perror("send");
                                         }
                                         this->command = std::string(buf);
-                                        std::cout << "we got command! " << buf << std::endl;
+                                        std::cout << "we got command! " << this->command << std::endl;
                                     }
                                 }
                             }
