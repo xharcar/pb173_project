@@ -228,6 +228,7 @@ void NCursesClient::keys()
     switch (c) {
     case 'x':
         kill(world_pid, SIGINT);
+	exit(0); // if world exits, client has no purpose
         break;
     case 'r':
         kill(world_pid, SIGUSR1);

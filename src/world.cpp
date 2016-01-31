@@ -27,9 +27,7 @@ World::World(WorldOptions& opts, int pd)
 void World::play_round()
 {
     while(true) {
-        // re-inited at every round start for easier management
         rounds_played++;
-
         respawn_tanks();
         /* Acquire commands from tankclients */
         read_commands();
@@ -42,10 +40,10 @@ void World::play_round()
                   << "Green: " << green_kills << std::endl
                   << "Round " << rounds_played << std::endl;
 
-        //take_actions();
         refresh_zone();
         output_map();
         if (handle_signals()) {
+	    close();
             break;
         }
         // waits for round time to pass
@@ -114,8 +112,6 @@ void World::fire_direction(Tank *t)
 
 void World::movetank(Tank *t)
 {
-
-
         int x_shift = 0;
         int y_shift = 0;
 
@@ -139,6 +135,13 @@ void World::movetank(Tank *t)
 
         /* Set new coordinates only for tanks that haven't been shot or crashed */
         Coord new_pos = Coord(t->get_x() + x_shift, t->get_y() + y_shift);
+	
+	if (out_of_bounds(new_pos)) {
+            t->get_crashed();
+            t->print_out_of_map();
+            new_pos = Coord(t->get_x(), t->get_y());
+	    return;
+        }
 
         for (uint i=0;i<tanks.size();i++)
         {
@@ -151,39 +154,17 @@ void World::movetank(Tank *t)
                 t->get_crashed();
                 tanks[i]->get_crashed();
                 t->print_crashed(tanks[i]);
+		return;
             }
         }
-          if (out_of_bounds(new_pos)) {
-            t->get_crashed();
-            t->print_out_of_map();
-            new_pos = Coord(t->get_x(), t->get_y());
-        } else {
-            /* Set new cooradinates for tank */
-            t->set_new_position(new_pos);
-        }
 
+        t->set_new_position(new_pos);
 }
 
 bool World::out_of_bounds(Coord pos)
 {
     return (pos.first < 0 || pos.first >= width || pos.second < 0 ||
             pos.second >= height);
-}
-
-void World::take_actions()
-{
- /*   for(auto& box_t : tanks) {
-        Tank& t = *box_t.get();
-        if (!t.is_alive()) {
-            if (t.get_color() == Color::RED) {
-                red_tanks--;
-            } else {
-                green_tanks--;
-            }
-        } else {
-            t.move();
-        }
-    } */
 }
 
 void World::add_tank(Color color,int order)
@@ -310,8 +291,8 @@ void World::refresh_zone()
 void World::set_world_signal_status(int sig, siginfo_t* info, void* arg)
 {
    World::world_signal_status.store(sig,std::memory_order_seq_cst);
-   info = info;
-   arg = arg;
+   info=info;// ignoring other arguments
+   arg=arg;
 }
 
 
@@ -328,7 +309,9 @@ bool World::handle_signals()
         break;
     case SIGUSR1:
         /* restart game */
+	world_signal_status.store(0);
         restart();
+	// need to reset this so world doesn't keep restarting
     default:
         exit = false;
         break;
