@@ -18,10 +18,10 @@ add_executable(world
     #src/randutils.hpp
 )
 
-add_executable(worldclient
-    src/worldclient.h
-    src/worldclient.cpp
-)
+#add_executable(worldclient
+#    src/worldclient.h
+#    src/worldclient.cpp
+#)
 
 add_executable(tank
     src/tankclient.h

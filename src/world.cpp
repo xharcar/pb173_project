@@ -114,7 +114,8 @@ void World::fire_direction(Tank *t)
 
 void World::movetank(Tank *t)
 {
-    for (uint i=0;i<tanks.size();i++) {
+
+
         int x_shift = 0;
         int y_shift = 0;
 
@@ -138,16 +139,21 @@ void World::movetank(Tank *t)
 
         /* Set new coordinates only for tanks that haven't been shot or crashed */
         Coord new_pos = Coord(t->get_x() + x_shift, t->get_y() + y_shift);
-        if (t->get_order() != tanks[i]->get_order() &&
-            new_pos == tanks[i]->get_position() &&
-            !tanks[i]->is_shot() &&
-            !t->is_shot())
+
+        for (uint i=0;i<tanks.size();i++)
         {
-            /* crash tanks */
-            t->get_crashed();
-            tanks[i]->get_crashed();
-            t->print_crashed(tanks[i]);
-        } else if (out_of_bounds(new_pos)) {
+            if (t->get_order() != tanks[i]->get_order() &&
+                new_pos == tanks[i]->get_position() &&
+                !tanks[i]->is_shot() &&
+                !t->is_shot())
+            {
+                /* crash tanks */
+                t->get_crashed();
+                tanks[i]->get_crashed();
+                t->print_crashed(tanks[i]);
+            }
+        }
+          if (out_of_bounds(new_pos)) {
             t->get_crashed();
             t->print_out_of_map();
             new_pos = Coord(t->get_x(), t->get_y());
@@ -155,7 +161,7 @@ void World::movetank(Tank *t)
             /* Set new cooradinates for tank */
             t->set_new_position(new_pos);
         }
-    }
+
 }
 
 bool World::out_of_bounds(Coord pos)

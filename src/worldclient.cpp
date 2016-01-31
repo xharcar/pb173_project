@@ -89,6 +89,7 @@ NCursesClient::NCursesClient(char* pipe) : WorldClient(pipe)
 {
 //    std::cout << "NC client ctor" << std::endl;
     initscr();
+    nodelay(stdscr, TRUE); // yeah
     start_color();
 //    std::cout << "initscr and start_color OK" << std::endl;
 
@@ -216,25 +217,25 @@ void NCursesClient::print_tanks()
     }
     refresh();
     //wrefresh(nc_world);
-    //keys();
+    keys();
     close(pipe_stream);
     pipe_stream = open(mPipe, O_RDONLY); //we need to reopen the pipe for block
 }
 
 void NCursesClient::keys()
 {
-//    char c = (char)getch();
-//    switch (c) {
-//    case 'x':
-//        kill(world_pid, SIGINT);
-//        break;
-//    case 'r':
-//        kill(world_pid, SIGUSR1);
-//        break;
-//    case 'q':
-//        exit(0);
-//        break;
-//    }
+    char c = (char)getch();
+    switch (c) {
+    case 'x':
+        kill(world_pid, SIGINT);
+        break;
+    case 'r':
+        kill(world_pid, SIGUSR1);
+        break;
+    case 'q':
+        exit(0);
+        break;
+    }
 }
 
 void NCursesClient::draw_tank(int x, int y, Color color)
