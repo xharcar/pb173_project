@@ -74,7 +74,7 @@ void WorldClient::get_world_pid(std::string filepath)
 void WorldClient::open_pipe(char* pipe)
 {
     int fd;
-    if ((fd = open(pipe, O_RDONLY)) == NULL) {
+    if ((fd = open(pipe, O_RDONLY)) == -1) {
         std::cerr
             << strerror(errno)
             << "Can not open the pipe for streaming data from world process."

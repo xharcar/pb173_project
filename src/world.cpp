@@ -1,6 +1,10 @@
 #include "world.h"
 #include "world_shared.h"
 
+std::string pf = "./world.pid";
+std::string pfdel = "rm " + pf;
+const char* pfdel_c = pfdel.c_str();
+
 volatile std::atomic<int> World::world_signal_status;
 
 World::World(WorldOptions& opts, int pd)
@@ -344,7 +348,7 @@ void setup_signal_handling()
 int main(int argc, char *argv[])
 {
     setup_signal_handling();
-    RunningInstance instance("./world.pid");
+    RunningInstance instance(pf);
     if (instance.acquire() <= 0) {
         return EXIT_FAILURE;
     }
@@ -373,6 +377,8 @@ int main(int argc, char *argv[])
 
     w.init_tanks();
     w.play_round();
-
+    system(pfdel_c);
+    std::string frm = "rm " + opts.get_fifo_path();
+    system(frm.c_str());
     return EXIT_SUCCESS;
 }
