@@ -175,25 +175,33 @@ Tank::Tank(int x, int y, Color color, int order)
 Tank::Tank(Coord position, Color color, int order)
     : Tank(position.first, position.second, color, order) {}
 
-std::ostream& operator<<(std::ostream& os, const Tank t)
+/*std::ostream& operator<<(std::ostream& os, const Tank t)
 {
     std::string color = t.get_color() == Color::RED ? "Red" : "Green";
     os << "Tank [" << t.get_x() << ", " << t.get_y() << "] [" << color << "] ";
     return os;
+}*/
+
+std::string Tank::to_str() const{
+    std::string cs = color == Color::RED? "Red " : "Green ";
+    std::stringstream ss;
+    ss << cs << " Tank #" << vector_order << " at " << "[" << x << "," << y << "]";
+    return ss.str();
 }
+
 
 void Tank::print_destroyed(Tank *t) const
 {
-    std::cout << this << "destroyed by " << t << std::endl;
+    std::cout << to_str() << "destroyed by " << t->to_str() << std::endl;
 }
 
 void Tank::print_crashed(Tank *t) const
 {
-    std::cout << this << "crashed into " << t << std::endl;
+    std::cout << to_str() << "crashed into " << t->to_str() << std::endl;
 }
 
 void Tank::print_out_of_map() const {
-    std::cout << this << " rolled out of battlefield" << std::endl;
+    std::cout << to_str() << " rolled out of battlefield" << std::endl;
 }
 
 void Tank::move()
