@@ -74,7 +74,7 @@ void WorldClient::get_world_pid(std::string filepath)
 void WorldClient::open_pipe(char* pipe)
 {
     int fd;
-    if ((fd = open(pipe, O_RDONLY)) == NULL) {
+    if ((fd = open(pipe, O_RDONLY)) == -1) {
         std::cerr
             << strerror(errno)
             << "Can not open the pipe for streaming data from world process."
@@ -142,6 +142,7 @@ void WorldClient::parse_dimensions()
         height *= 10;
         height += (sizeChar - '0');
     }
+    std::cout << "Dimensions parsed, height = " << height << "; width = " << width << std::endl;
     //clearerr(this->pipe_stream);
 //    int dimensions = fscanf(pipe_stream, "%d,%d", &width, &height);
 //    std::cout << width << "x" << height << ",";
@@ -167,12 +168,12 @@ void NCursesClient::print_tanks()
     char buffer[4];
 
     while (x < width && y < height) {
-//        if (fscanf(pipe_stream, ",%c", &sector) == EOF) {
-//            std::cerr << strerror(errno)
-//                      << "Error occured while parsing the pipe stream."
-//                      << std::endl;
-//            break;
-//        }
+//          if (fscanf(pipe_stream, ",%c", &sector) == EOF) {
+//              std::cerr << strerror(errno)
+//                        << "Error occured while parsing the pipe stream."
+//                        << std::endl;
+//              break;
+//          }
 
         read(pipe_stream, buffer, 4);
         sector = buffer[1];
@@ -212,6 +213,7 @@ void NCursesClient::keys()
     switch (c) {
     case 'x':
         kill(world_pid, SIGINT);
+	exit(0);
         break;
     case 'r':
         kill(world_pid, SIGUSR1);
