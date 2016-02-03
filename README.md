@@ -13,3 +13,6 @@
 
         make
 
+## Tankclient Usage:
+Command for client is one char on stdin. Movement: wasd, Firing: ijkl, do nothing: space
+i.e. for move up command press 'w' and then press enter
