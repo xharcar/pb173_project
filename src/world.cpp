@@ -85,16 +85,16 @@ void World::fire_direction(Tank *t)
         std::function<bool(int, int)> y_op = std::equal_to<int>();
         switch (t->get_command()[1]) {
         case 'u':
-            y_op = std::less<int>();
-            break;
-        case 'd':
-            y_op = std::greater<int>();
-            break;
-        case 'l':
             x_op = std::less<int>();
             break;
+        case 'd':
+            x_op = std::greater<int>();
+            break;
+        case 'l':
+            y_op = std::less<int>();
+            break;
         case 'r':
-            x_op =  std::greater<int>();
+            y_op =  std::greater<int>();
             break;
         default:
             /* Invalid command */
@@ -117,16 +117,16 @@ void World::movetank(Tank *t)
 
         switch (t->get_command()[1]) {
         case 'u':
-            y_shift--;
-            break;
-        case 'd':
-            y_shift++;
-            break;
-        case 'l':
             x_shift--;
             break;
-        case 'r':
+        case 'd':
             x_shift++;
+            break;
+        case 'l':
+            y_shift--;
+            break;
+        case 'r':
+            y_shift++;
             break;
         default:
             /* malformed command format */
@@ -163,8 +163,8 @@ void World::movetank(Tank *t)
 
 bool World::out_of_bounds(Coord pos)
 {
-    return (pos.first < 0 || pos.first >= width || pos.second < 0 ||
-            pos.second >= height);
+    return (pos.first < 0 || pos.first >= height || pos.second < 0 ||
+            pos.second >= width);
 }
 
 void World::add_tank(Color color,int order)
@@ -206,8 +206,8 @@ Coord World::free_coord()
     std::uniform_int_distribution<int> height_rand(0, height - 1);
     // only loops if first try failed,ends as soon as a free field is found
     do {
-        x = width_rand(rng);
-        y = height_rand(rng);
+        x = height_rand(rng);
+        y = width_rand(rng);
     } while (!is_free(x, y));
     return Coord(x, y);
 }
@@ -240,7 +240,7 @@ void World::output_map()
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             ss << '(';
-            switch(zone[j][i])
+            switch(zone[i][j])
             {
             case EMPTY:
                 ss << '0';

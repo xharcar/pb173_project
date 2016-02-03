@@ -192,7 +192,7 @@ std::string Tank::to_str() const{
 
 void Tank::print_destroyed(Tank *t) const
 {
-    std::cout << to_str() << "destroyed by " << t->to_str() << std::endl;
+    std::cout << to_str() << "destroyed " << t->to_str() << std::endl;
 }
 
 void Tank::print_crashed(Tank *t) const
